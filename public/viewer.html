@@ -290,7 +290,7 @@
 
         .job-check { accent-color: #c15f3c; cursor: pointer; width: 15px; height: 15px; }
 
-        /* Expand/collapse feat groups */
+        /* Expand/collapse feat groups — JS-driven via .expanded class */
         .detail-table .feat-group:not(.no-collapse) tr.job {
             visibility: collapse; opacity: 0;
             transition: opacity 0.2s ease;
@@ -303,15 +303,18 @@
         .detail-table .feat-group:not(.no-collapse) tr.job td * {
             transition: opacity 0.15s ease; opacity: 0;
         }
-        .detail-table .feat-group:not(.no-collapse):hover tr.job {
+        .detail-table .feat-group:not(.no-collapse).expanded tr.job {
             visibility: visible; opacity: 1;
         }
-        .detail-table .feat-group:not(.no-collapse):hover tr.job td {
+        .detail-table .feat-group:not(.no-collapse).expanded tr.job td {
             padding-top: 8px; padding-bottom: 8px; border-bottom-color: #f4f3ee;
             line-height: 1.6; font-size: 13px;
         }
-        .detail-table .feat-group:not(.no-collapse):hover tr.job td * {
+        .detail-table .feat-group:not(.no-collapse).expanded tr.job td * {
             opacity: 1;
+        }
+        .detail-table .feat-group:not(.no-collapse) tr.feat {
+            cursor: pointer;
         }
         .detail-table .feat-group:not(.no-collapse) tr.feat td:first-child::before {
             content: ''; display: inline-block; width: 6px; height: 6px;
@@ -319,7 +322,7 @@
             transform: rotate(-45deg); margin-right: 8px; transition: transform 0.2s ease;
             vertical-align: middle; position: relative; top: -1px;
         }
-        .detail-table .feat-group:not(.no-collapse):hover tr.feat td:first-child::before {
+        .detail-table .feat-group:not(.no-collapse).expanded tr.feat td:first-child::before {
             transform: rotate(45deg);
         }
         tbody tr.total td { font-weight: 700; font-size: 14px; border-top: 3px solid #2d2b35; padding-top: 12px; padding-bottom: 12px; }
@@ -942,6 +945,59 @@
 
     function esc(s) { var d=document.createElement('div'); d.textContent=s; return d.innerHTML.replace(/\n/g,'<br>'); }
     function fmt(d) { return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); }
+
+    // ===== EXPAND/COLLAPSE FEAT GROUPS =====
+    var featGroups = document.querySelectorAll('.detail-table .feat-group:not(.no-collapse)');
+    var clickLocked = null; // the group that was opened by click and stays open
+
+    featGroups.forEach(function(group) {
+        var featRow = group.querySelector('tr.feat');
+
+        // Click on feat row → toggle expand, lock open
+        featRow.addEventListener('click', function(e) {
+            if (e.target.closest('.job-check')) return; // don't interfere with checkboxes
+            if (clickLocked === group) {
+                // clicking the same locked group → close it
+                group.classList.remove('expanded');
+                clickLocked = null;
+            } else {
+                // close all, expand this one, lock it
+                featGroups.forEach(function(g) { g.classList.remove('expanded'); });
+                group.classList.add('expanded');
+                clickLocked = group;
+            }
+        });
+
+        // Hover on a feat row → if it's a different group, expand it and close the locked one
+        featRow.addEventListener('mouseenter', function() {
+            if (clickLocked && clickLocked !== group) {
+                clickLocked.classList.remove('expanded');
+                clickLocked = null;
+            }
+            if (!group.classList.contains('expanded')) {
+                featGroups.forEach(function(g) { if (g !== group && g !== clickLocked) g.classList.remove('expanded'); });
+                group.classList.add('expanded');
+            }
+        });
+
+        // Mouse leaves the whole group (feat + jobs) → close only if not click-locked
+        group.addEventListener('mouseleave', function(e) {
+            // Check if we're moving to another feat-group
+            var to = e.relatedTarget;
+            var toGroup = to ? to.closest('.feat-group') : null;
+            if (toGroup && toGroup !== group) {
+                // moving to another feat group → that group's mouseenter will handle it
+                if (clickLocked !== group) {
+                    group.classList.remove('expanded');
+                }
+                return;
+            }
+            // leaving sideways or to non-feat area → keep open (click-locked behavior)
+            if (group.classList.contains('expanded') && clickLocked !== group) {
+                clickLocked = group; // promote to locked so it stays open
+            }
+        });
+    });
 
     // ===== DEVIS SUR MESURE =====
     var RATE = 500;
