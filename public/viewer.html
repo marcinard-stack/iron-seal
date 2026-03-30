@@ -290,18 +290,26 @@
 
         /* Expand/collapse feat groups */
         .detail-table .feat-group:not(.no-collapse) tr.job {
-            max-height: 0; overflow: hidden; opacity: 0;
-            transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+            visibility: collapse; opacity: 0;
+            transition: opacity 0.2s ease;
         }
         .detail-table .feat-group:not(.no-collapse) tr.job td {
             padding-top: 0; padding-bottom: 0; border-bottom-color: transparent;
-            transition: padding 0.25s ease, border-color 0.15s ease;
+            line-height: 0; font-size: 0;
+            transition: all 0.2s ease;
+        }
+        .detail-table .feat-group:not(.no-collapse) tr.job td * {
+            transition: opacity 0.15s ease; opacity: 0;
         }
         .detail-table .feat-group:not(.no-collapse):hover tr.job {
-            max-height: 80px; opacity: 1;
+            visibility: visible; opacity: 1;
         }
         .detail-table .feat-group:not(.no-collapse):hover tr.job td {
             padding-top: 8px; padding-bottom: 8px; border-bottom-color: #f4f3ee;
+            line-height: 1.6; font-size: 13px;
+        }
+        .detail-table .feat-group:not(.no-collapse):hover tr.job td * {
+            opacity: 1;
         }
         .detail-table .feat-group:not(.no-collapse) tr.feat td:first-child::before {
             content: ''; display: inline-block; width: 6px; height: 6px;
