@@ -8,15 +8,87 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; }
         body {
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-            color: #1a1a1a;
-            background: #f8f9fa;
-            line-height: 1.6;
-            padding: 40px 20px 40px 20px;
+            font-family: -apple-system, system-ui, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            color: #1a1a1a; background: #f4f3ee; line-height: 1.6;
+            padding: 0; overflow-x: hidden;
         }
-        .container { max-width: 1100px; margin: 0 auto; position: relative; }
 
-        /* ---- SIDENAV ---- */
+        /* ---- TOP BAR ---- */
+        .topbar {
+            position: fixed; top: 0; left: 0; right: 0; height: 48px;
+            background: white; border-bottom: 1px solid #e8e6e0;
+            z-index: 300; display: flex; align-items: center; justify-content: space-between;
+            padding: 0 16px;
+        }
+        .topbar-left, .topbar-right { display: flex; align-items: center; gap: 8px; }
+        .topbar-btn {
+            background: none; border: none; cursor: pointer; padding: 8px;
+            border-radius: 6px; color: #6b6560; display: flex; align-items: center;
+            justify-content: center; transition: all 0.15s;
+        }
+        .topbar-btn:hover { background: #edecea; color: #2d2b35; }
+        .topbar-btn svg { width: 18px; height: 18px; }
+        .topbar-title {
+            font-size: 13px; font-weight: 500; color: #6b6560;
+            margin-left: 4px;
+        }
+        .topbar-right .notes-btn {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 13px; font-weight: 500; color: #6b6560;
+            padding: 6px 12px;
+        }
+        .topbar-right .notes-btn svg { width: 16px; height: 16px; }
+        .topbar-right .notes-btn .count {
+            background: #c15f3c; color: white; font-size: 10px; font-weight: 700;
+            border-radius: 50%; width: 18px; height: 18px; line-height: 18px;
+            text-align: center; display: none;
+        }
+
+        /* ---- LEFT SIDEBAR ---- */
+        .left-sidebar {
+            position: fixed; left: 0; top: 48px; bottom: 0; width: 260px;
+            background: #2d2b35; z-index: 250; display: flex; flex-direction: column;
+            transform: translateX(-260px); transition: transform 0.25s ease;
+        }
+        .left-sidebar.open { transform: translateX(0); }
+        .left-sidebar-content { flex: 1; padding: 16px; overflow-y: auto; }
+        .left-sidebar-content::-webkit-scrollbar { width: 4px; }
+        .left-sidebar-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+        .left-sidebar-user {
+            padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.08);
+            display: flex; align-items: center; gap: 10px; cursor: pointer;
+            transition: background 0.15s;
+        }
+        .left-sidebar-user:hover { background: rgba(255,255,255,0.05); }
+        .left-sidebar-user .avatar {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: #c15f3c; color: white; font-size: 13px; font-weight: 600;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .left-sidebar-user .user-info {
+            flex: 1; min-width: 0;
+        }
+        .left-sidebar-user .user-name {
+            font-size: 13px; font-weight: 500; color: #e8e6e0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .left-sidebar-user .user-plan {
+            font-size: 11px; color: #8a8780;
+        }
+        .left-sidebar-user .settings-icon {
+            color: #8a8780; flex-shrink: 0; transition: color 0.15s;
+        }
+        .left-sidebar-user:hover .settings-icon { color: #e8e6e0; }
+        .left-sidebar-user .settings-icon svg { width: 16px; height: 16px; }
+
+        /* Left sidebar overlay */
+        .left-overlay {
+            position: fixed; top: 48px; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.3); z-index: 240; display: none;
+        }
+        .left-overlay.show { display: block; }
+
+        /* ---- SIDENAV (table of contents) ---- */
         .sidenav {
             position: fixed; left: 24px; top: 50%; transform: translateY(-50%);
             z-index: 100; display: flex; flex-direction: column; gap: 0;
@@ -25,121 +97,80 @@
         .sidenav.visible { opacity: 1; }
         .sidenav a {
             display: flex; align-items: center; gap: 10px;
-            text-decoration: none; padding: 4px 0; transition: all 0.3s ease;
+            text-decoration: none; padding: 5px 0; transition: all 0.3s ease;
         }
-        .sidenav a.major { padding: 6px 0; margin-top: 2px; }
+        .sidenav a.major { padding: 7px 0; margin-top: 2px; }
         .sidenav a.major .bar { width: 24px; height: 2px; background: #94a3b8; }
-        .sidenav a.major .label { font-size: 13px; font-weight: 600; color: #64748b; }
+        .sidenav a.major .label { font-size: 14px; font-weight: 600; color: #64748b; }
         .sidenav a.sub { padding-left: 14px; }
         .sidenav a .bar {
             width: 14px; height: 1.5px; background: #d1d5db;
             border-radius: 1px; transition: all 0.3s ease; flex-shrink: 0;
         }
         .sidenav a .label {
-            font-size: 11px; font-weight: 400; color: #b0b8c4;
+            font-size: 12px; font-weight: 400; color: #b0b8c4;
             letter-spacing: 0.02em; white-space: nowrap; transition: all 0.3s ease;
         }
-        .sidenav a.active .bar { width: 32px; height: 3px; background: #1e293b; }
-        .sidenav a.active .label { font-weight: 700; color: #1e293b; }
-        .sidenav a.active.major .label { font-size: 14px; }
+        .sidenav a.active .bar { width: 32px; height: 3px; background: #2d2b35; }
+        .sidenav a.active .label { font-weight: 700; color: #2d2b35; }
+        .sidenav a.active.major .label { font-size: 15px; }
         .sidenav a:hover .bar { background: #64748b; width: 22px; }
         .sidenav a:hover .label { color: #475569; }
         @media (max-width: 1400px) { .sidenav { display: none; } }
-        @media print { .sidenav { display: none; } }
 
-        /* ---- COMMENT PANEL ---- */
-        .comment-toggle {
-            position: fixed; right: 20px; top: 20px;
-            z-index: 200; background: #1e293b; color: white; border: none;
-            height: 36px; padding: 0 14px; border-radius: 8px;
-            cursor: pointer; font-size: 13px; display: flex; align-items: center;
-            gap: 8px; transition: all 0.2s ease; font-weight: 600;
-        }
-        .comment-toggle:hover { background: #334155; }
-        .comment-toggle .icon-bubble {
-            width: 16px; height: 14px; position: relative;
-        }
-        .comment-toggle .icon-bubble svg { width: 16px; height: 14px; }
-        .comment-toggle .count {
-            display: inline-block; background: #3b82f6; color: white;
-            font-size: 10px; font-weight: 700; border-radius: 50%;
-            width: 18px; height: 18px; line-height: 18px; text-align: center;
-            writing-mode: horizontal-tb; margin-bottom: 6px;
-        }
-
+        /* ---- COMMENT PANEL (right) ---- */
         .comment-panel {
-            position: fixed; right: -340px; top: 0; bottom: 0;
+            position: fixed; right: -340px; top: 48px; bottom: 0;
             width: 340px; background: white; z-index: 190;
-            box-shadow: -4px 0 24px rgba(0,0,0,0.1);
-            transition: right 0.3s ease;
-            display: flex; flex-direction: column;
+            box-shadow: -4px 0 24px rgba(0,0,0,0.08); border-left: 1px solid #e8e6e0;
+            transition: right 0.25s ease; display: flex; flex-direction: column;
         }
         .comment-panel.open { right: 0; }
         .comment-panel-header {
-            padding: 20px 20px 16px; border-bottom: 1px solid #e2e8f0;
+            padding: 16px 20px 12px; border-bottom: 1px solid #e8e6e0;
             display: flex; align-items: center; justify-content: space-between;
         }
-        .comment-panel-header h3 {
-            font-size: 15px; font-weight: 700; color: #1e293b;
-        }
+        .comment-panel-header h3 { font-size: 15px; font-weight: 700; color: #2d2b35; }
         .comment-panel-close {
-            background: none; border: none; font-size: 20px; color: #94a3b8;
+            background: none; border: none; font-size: 20px; color: #8a8780;
             cursor: pointer; padding: 4px 8px; border-radius: 4px;
         }
-        .comment-panel-close:hover { background: #f1f5f9; color: #475569; }
+        .comment-panel-close:hover { background: #f4f3ee; color: #2d2b35; }
         .comment-add-btn {
-            margin: 16px 20px; padding: 10px 16px; background: #1e293b; color: white;
+            margin: 12px 20px; padding: 10px 16px; background: #2d2b35; color: white;
             border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
             cursor: pointer; text-align: center; transition: background 0.2s;
         }
-        .comment-add-btn:hover { background: #334155; }
-        .comment-add-btn.placing {
-            background: #f59e0b; color: #78350f;
-        }
-        .comment-list {
-            flex: 1; overflow-y: auto; padding: 0 20px 20px;
-        }
+        .comment-add-btn:hover { background: #3d3b45; }
+        .comment-add-btn.placing { background: #c15f3c; color: white; }
+        .comment-list { flex: 1; overflow-y: auto; padding: 0 20px 20px; }
         .comment-list::-webkit-scrollbar { width: 4px; }
         .comment-list::-webkit-scrollbar-track { background: transparent; }
-        .comment-list::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 2px; }
-        .comment-list::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+        .comment-list::-webkit-scrollbar-thumb { background: #e8e6e0; border-radius: 2px; }
 
         .comment-card {
-            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+            background: #f9f8f6; border: 1px solid #e8e6e0; border-radius: 8px;
             padding: 12px 14px; margin-bottom: 10px; cursor: pointer;
             transition: all 0.2s ease; position: relative;
         }
-        .comment-card:hover { border-color: #3b82f6; box-shadow: 0 0 0 1px #3b82f6; }
-        .comment-card.active { border-color: #3b82f6; background: #eff6ff; }
-        .comment-card.closed { opacity: 0.5; border-color: #e2e8f0; }
-        .comment-card.closed .card-text { text-decoration: line-through; color: #94a3b8; }
-        .comment-card.closed:hover { border-color: #cbd5e1; box-shadow: none; }
-        .comment-card .card-actions {
-            position: absolute; top: 8px; right: 8px; display: flex; gap: 4px;
-        }
+        .comment-card:hover { border-color: #c15f3c; box-shadow: 0 0 0 1px #c15f3c; }
+        .comment-card.active { border-color: #c15f3c; background: #fdf6f3; }
+        .comment-card.closed { opacity: 0.5; border-color: #e8e6e0; }
+        .comment-card.closed .card-text { text-decoration: line-through; color: #8a8780; }
+        .comment-card.closed:hover { border-color: #d5d2cc; box-shadow: none; }
+        .comment-card .card-actions { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; }
         .comment-card .card-btn {
-            background: none; border: 1px solid #e2e8f0; border-radius: 4px;
-            font-size: 11px; color: #64748b; cursor: pointer; padding: 2px 8px;
-            transition: all 0.15s;
+            background: none; border: 1px solid #e8e6e0; border-radius: 4px;
+            font-size: 11px; color: #6b6560; cursor: pointer; padding: 2px 8px; transition: all 0.15s;
         }
-        .comment-card .card-btn:hover { background: #f1f5f9; color: #334155; }
+        .comment-card .card-btn:hover { background: #f4f3ee; color: #2d2b35; }
         .comment-card .card-btn.reopen { display: none; }
         .comment-card.closed .card-btn.close-btn { display: none; }
         .comment-card.closed .card-btn.reopen { display: inline-block; }
-        .comment-card .card-num {
-            font-size: 10px; font-weight: 700; color: #3b82f6;
-            text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;
-        }
-        .comment-card .card-text {
-            font-size: 13px; color: #334155; line-height: 1.5; word-wrap: break-word;
-        }
-        .comment-card .card-meta {
-            font-size: 11px; color: #94a3b8; margin-top: 6px;
-        }
-        .comment-empty {
-            text-align: center; color: #94a3b8; font-size: 13px;
-            padding: 40px 20px; font-style: italic;
-        }
+        .comment-card .card-num { font-size: 10px; font-weight: 700; color: #c15f3c; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .comment-card .card-text { font-size: 13px; color: #2d2b35; line-height: 1.5; word-wrap: break-word; }
+        .comment-card .card-meta { font-size: 11px; color: #8a8780; margin-top: 6px; }
+        .comment-empty { text-align: center; color: #8a8780; font-size: 13px; padding: 40px 20px; font-style: italic; }
 
         /* ---- PINS ---- */
         .comment-pin {
@@ -153,49 +184,46 @@
         .comment-pin svg { width: 30px; height: 26px; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.15)); }
         .comment-pin .pin-num {
             position: absolute; top: 2px; left: 50%; transform: translateX(-50%);
-            font-size: 9px; font-weight: 700; color: white; pointer-events: none;
-            width: 100%; text-align: center;
+            font-size: 9px; font-weight: 700; color: white; pointer-events: none; width: 100%; text-align: center;
         }
-        .comment-pin.closed svg path, .comment-pin.closed svg rect { fill: #cbd5e1; }
-        .comment-pin.closed svg polygon { fill: #cbd5e1; }
+        .comment-pin.closed svg rect, .comment-pin.closed svg polygon { fill: #d5d2cc; }
 
         /* ---- COMMENT BUBBLE ---- */
         .comment-bubble {
-            position: absolute; z-index: 60;
-            background: white; border: 1px solid #e2e8f0; border-radius: 10px;
+            position: absolute; z-index: 60; background: white;
+            border: 1px solid #e8e6e0; border-radius: 10px;
             box-shadow: 0 8px 30px rgba(0,0,0,0.12); padding: 14px;
-            width: 280px; transform: translate(-50%, 8px);
-            display: none;
+            width: 280px; transform: translate(-50%, 8px); display: none;
         }
         .comment-bubble.show { display: block; }
         .comment-bubble textarea {
-            width: 100%; border: 1px solid #e2e8f0; border-radius: 6px;
+            width: 100%; border: 1px solid #e8e6e0; border-radius: 6px;
             padding: 10px; font-size: 13px; font-family: inherit;
-            resize: none; min-height: 60px; outline: none;
-            color: #1e293b; line-height: 1.5;
+            resize: none; min-height: 60px; outline: none; color: #2d2b35; line-height: 1.5;
         }
-        .comment-bubble textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
-        .comment-bubble .bubble-hint {
-            font-size: 11px; color: #94a3b8; margin-top: 6px; text-align: right;
-        }
+        .comment-bubble textarea:focus { border-color: #c15f3c; box-shadow: 0 0 0 2px rgba(193,95,60,0.15); }
+        .comment-bubble .bubble-hint { font-size: 11px; color: #8a8780; margin-top: 6px; text-align: right; }
         .comment-bubble .bubble-hint kbd {
-            background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 3px;
+            background: #f4f3ee; border: 1px solid #e8e6e0; border-radius: 3px;
             padding: 1px 5px; font-size: 10px; font-family: inherit;
         }
 
-        /* Placing mode cursor */
+        /* Placing mode */
         body.placing-mode { cursor: crosshair !important; }
-        body.placing-mode .container { cursor: crosshair !important; }
-        body.placing-mode .container * { cursor: crosshair !important; }
-        body.placing-mode .comment-panel,
-        body.placing-mode .comment-panel *,
-        body.placing-mode .comment-toggle,
-        body.placing-mode .sidenav,
-        body.placing-mode .sidenav * { cursor: default !important; }
+        body.placing-mode .main-content { cursor: crosshair !important; }
+        body.placing-mode .main-content * { cursor: crosshair !important; }
+        body.placing-mode .comment-panel, body.placing-mode .comment-panel *,
+        body.placing-mode .topbar, body.placing-mode .topbar *,
+        body.placing-mode .left-sidebar, body.placing-mode .left-sidebar *,
+        body.placing-mode .sidenav, body.placing-mode .sidenav * { cursor: default !important; }
 
-        /* ---- CONTENT ---- */
+        /* ---- MAIN CONTENT ---- */
+        .main-content {
+            padding: 72px 40px 40px 40px;
+            max-width: 1100px; margin: 0 auto; position: relative;
+        }
         .header {
-            background: linear-gradient(135deg, #1e293b, #334155);
+            background: linear-gradient(135deg, #2d2b35, #3d3b45);
             color: white; padding: 40px; border-radius: 12px; margin-bottom: 32px;
         }
         .header h1 { font-size: 28px; margin-bottom: 8px; font-weight: 700; }
@@ -203,15 +231,15 @@
         .header .meta { margin-top: 20px; font-size: 13px; opacity: 0.6; display: flex; gap: 24px; flex-wrap: wrap; }
         .feature {
             background: white; border-radius: 12px; padding: 32px;
-            margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-            border-left: 4px solid #3b82f6; position: relative;
+            margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            border-left: 4px solid #c15f3c; position: relative;
         }
         .feature.transverse { border-left-color: #8b5cf6; }
-        .feature h2 { font-size: 20px; margin-bottom: 6px; color: #1e293b; }
-        .feature .feat-desc { font-size: 14px; color: #64748b; margin-bottom: 20px; }
-        .feature h3 { font-size: 15px; font-weight: 600; color: #475569; margin: 16px 0 8px 0; }
+        .feature h2 { font-size: 20px; margin-bottom: 6px; color: #2d2b35; }
+        .feature .feat-desc { font-size: 14px; color: #6b6560; margin-bottom: 20px; }
+        .feature h3 { font-size: 15px; font-weight: 600; color: #4a4850; margin: 16px 0 8px 0; }
         .feature ul { margin-left: 20px; margin-bottom: 12px; }
-        .feature li { font-size: 14px; margin-bottom: 4px; color: #334155; }
+        .feature li { font-size: 14px; margin-bottom: 4px; color: #2d2b35; }
         .tag {
             display: inline-block; font-size: 11px; font-weight: 600;
             padding: 2px 8px; border-radius: 4px; margin-left: 4px; vertical-align: middle;
@@ -223,54 +251,84 @@
         .tag.offert { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
         .section {
             background: white; border-radius: 12px; padding: 32px;
-            margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-            position: relative;
+            margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); position: relative;
         }
-        .section h2 { font-size: 22px; margin-bottom: 20px; color: #1e293b; }
+        .section h2 { font-size: 22px; margin-bottom: 20px; color: #2d2b35; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
         thead th {
-            background: #f1f5f9; padding: 10px 12px; text-align: left;
-            font-weight: 600; color: #475569; border-bottom: 2px solid #e2e8f0;
+            background: #f9f8f6; padding: 10px 12px; text-align: left;
+            font-weight: 600; color: #4a4850; border-bottom: 2px solid #e8e6e0;
         }
         thead th.r { text-align: right; }
-        tbody td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        tbody td { padding: 8px 12px; border-bottom: 1px solid #f4f3ee; vertical-align: middle; }
         tbody td.r { text-align: right; white-space: nowrap; }
-        tbody tr:hover { background: #f8fafc; }
-        tbody tr.feat td {
-            font-weight: 700; color: #1e293b; background: #f8fafc;
-            border-bottom: 1px solid #e2e8f0;
-        }
+        tbody tr:hover { background: #faf9f7; }
+        tbody tr.feat td { font-weight: 700; color: #2d2b35; background: #faf9f7; border-bottom: 1px solid #e8e6e0; }
         tbody tr.nice-row td { color: #92400e; }
         tbody tr.offert-row td { color: #15803d; font-style: italic; }
-        tbody tr.total td {
-            font-weight: 700; font-size: 14px; border-top: 3px solid #1e293b;
-            padding-top: 12px; padding-bottom: 12px;
-        }
+        tbody tr.total td { font-weight: 700; font-size: 14px; border-top: 3px solid #2d2b35; padding-top: 12px; padding-bottom: 12px; }
         .callout {
             background: #fef3c7; border-left: 4px solid #f59e0b;
-            padding: 16px 20px; border-radius: 0 8px 8px 0;
-            margin: 12px 0; font-size: 13px; color: #92400e;
+            padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 12px 0; font-size: 13px; color: #92400e;
         }
         .callout strong { color: #78350f; }
         .notes {
             background: white; border-radius: 12px; padding: 32px;
-            margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-            position: relative;
+            margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); position: relative;
         }
-        .notes h2 { font-size: 22px; margin-bottom: 16px; color: #1e293b; }
+        .notes h2 { font-size: 22px; margin-bottom: 16px; color: #2d2b35; }
         .notes ul { margin-left: 20px; }
-        .notes li { font-size: 14px; margin-bottom: 6px; color: #475569; }
+        .notes li { font-size: 14px; margin-bottom: 6px; color: #4a4850; }
         @media print {
             body { background: white; padding: 20px; }
-            .feature, .section, .notes { box-shadow: none; border: 1px solid #e2e8f0; }
+            .topbar, .left-sidebar, .left-overlay, .sidenav, .comment-panel, .comment-pin, .comment-bubble { display: none !important; }
+            .main-content { padding: 20px; }
+            .feature, .section, .notes { box-shadow: none; border: 1px solid #e8e6e0; }
             .header { color-adjust: exact; -webkit-print-color-adjust: exact; }
-            .comment-panel, .comment-toggle, .comment-pin, .comment-bubble { display: none !important; }
         }
     </style>
 </head>
 <body>
 
-<!-- SIDENAV -->
+<!-- TOP BAR -->
+<div class="topbar">
+    <div class="topbar-left">
+        <button class="topbar-btn" id="leftSidebarToggle" title="Menu">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="3" y1="5" x2="15" y2="5"/><line x1="3" y1="9" x2="15" y2="9"/><line x1="3" y1="13" x2="15" y2="13"/></svg>
+        </button>
+        <span class="topbar-title">deal-forge</span>
+    </div>
+    <div class="topbar-right">
+        <button class="topbar-btn notes-btn" id="commentToggle" title="Notes">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="14" height="11" rx="2.5"/><polygon points="5,13 8,17 11,13"/></svg>
+            <span>Notes</span>
+            <span class="count" id="commentCount">0</span>
+        </button>
+    </div>
+</div>
+
+<!-- LEFT SIDEBAR -->
+<div class="left-overlay" id="leftOverlay"></div>
+<div class="left-sidebar" id="leftSidebar">
+    <div class="left-sidebar-content">
+        <!-- empty for now -->
+    </div>
+    <div class="left-sidebar-user">
+        <div class="avatar">MI</div>
+        <div class="user-info">
+            <div class="user-name">Marc Inard</div>
+            <div class="user-plan">Free</div>
+        </div>
+        <div class="settings-icon">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="8" cy="8" r="2.5"/>
+                <path d="M13.5 8a5.5 5.5 0 01-.3 1.4l1.2.7a.5.5 0 01.1.6l-1 1.7a.5.5 0 01-.6.2l-1.2-.5a5.4 5.4 0 01-1.2.7l-.2 1.3a.5.5 0 01-.5.4h-2a.5.5 0 01-.5-.4l-.2-1.3a5.4 5.4 0 01-1.2-.7l-1.2.5a.5.5 0 01-.6-.2l-1-1.7a.5.5 0 01.1-.6l1.2-.7A5.5 5.5 0 012.5 8c0-.5 0-1 .1-1.4l-1.2-.7a.5.5 0 01-.1-.6l1-1.7a.5.5 0 01.6-.2l1.2.5a5.4 5.4 0 011.2-.7l.2-1.3a.5.5 0 01.5-.4h2a.5.5 0 01.5.4l.2 1.3c.4.2.8.4 1.2.7l1.2-.5a.5.5 0 01.6.2l1 1.7a.5.5 0 01-.1.6l-1.2.7c.1.5.2.9.2 1.4z"/>
+            </svg>
+        </div>
+    </div>
+</div>
+
+<!-- SIDENAV (TOC) -->
 <nav class="sidenav" id="sidenav">
     <a href="#cdc" data-section="cdc" class="major"><span class="bar"></span><span class="label">Cahier des charges</span></a>
     <a href="#feat1" data-section="feat1" class="sub"><span class="bar"></span><span class="label">1 — Alerte lead</span></a>
@@ -288,13 +346,6 @@
     <a href="#horsscope" data-section="horsscope" class="sub"><span class="bar"></span><span class="label">Hors scope</span></a>
 </nav>
 
-<!-- COMMENT TOGGLE -->
-<button class="comment-toggle" id="commentToggle" title="Commentaires">
-    <span class="icon-bubble"><svg viewBox="0 0 16 14" fill="none"><rect x="0.5" y="0.5" width="15" height="10" rx="2.5" fill="white"/><polygon points="4,10.5 7,14 10,10.5" fill="white"/></svg></span>
-    <span>Notes</span>
-    <span class="count" id="commentCount" style="display:none;">0</span>
-</button>
-
 <!-- COMMENT PANEL -->
 <div class="comment-panel" id="commentPanel">
     <div class="comment-panel-header">
@@ -303,29 +354,22 @@
     </div>
     <button class="comment-add-btn" id="commentAddBtn">+ Ajouter un commentaire</button>
     <div style="padding:0 20px 10px; display:flex; align-items:center; gap:8px;">
-        <label style="font-size:12px; color:#64748b; cursor:pointer; display:flex; align-items:center; gap:5px; user-select:none;">
-            <input type="checkbox" id="filterClosed" style="accent-color:#3b82f6; cursor:pointer;"> Masquer les commentaires cloturés
+        <label style="font-size:12px; color:#6b6560; cursor:pointer; display:flex; align-items:center; gap:5px; user-select:none;">
+            <input type="checkbox" id="filterClosed" style="accent-color:#c15f3c; cursor:pointer;"> Masquer les cloturés
         </label>
     </div>
     <div class="comment-list" id="commentList">
-        <div class="comment-empty" id="commentEmpty">Aucun commentaire pour le moment</div>
+        <div class="comment-empty" id="commentEmpty">Aucun commentaire</div>
     </div>
 </div>
 
-<div class="container">
-
-    <!-- ======================== -->
-    <!-- CAHIER DES CHARGES       -->
-    <!-- ======================== -->
+<!-- MAIN CONTENT -->
+<div class="main-content" id="mainContent">
 
     <div class="header" id="cdc">
         <h1>Cahier des Charges — Cockpit Sales</h1>
         <div class="subtitle">Projet CarJager Salesforce — Home Page Sales & gestion des intérêts</div>
-        <div class="meta">
-            <span>Version 1.0 — 30 mars 2026</span>
-            <span>Org cible : Production</span>
-            <span>Record Types : Sell, Buy, Ecommerce</span>
-        </div>
+        <div class="meta"><span>Version 1.0 — 30 mars 2026</span><span>Org cible : Production</span><span>Record Types : Sell, Buy, Ecommerce</span></div>
     </div>
 
     <div class="feature" id="feat1">
@@ -421,135 +465,42 @@
     <div class="feature transverse" id="transverse">
         <h2>Transverse — Nettoyage & Home Page</h2>
         <h3>Nettoyage technique</h3>
-        <ul>
-            <li>Convention de nommage flows <code>{OBJET}_{Type}_{Description}</code> + renommage + suppression VR <code>Marketing_Lost</code> + flows obsolètes <span class="tag nice">NICE TO HAVE</span> <span class="tag refacto">REFACTO</span></li>
-        </ul>
+        <ul><li>Convention de nommage flows <code>{OBJET}_{Type}_{Description}</code> + renommage + suppression VR <code>Marketing_Lost</code> + flows obsolètes <span class="tag nice">NICE TO HAVE</span> <span class="tag refacto">REFACTO</span></li></ul>
         <h3>Configuration Home Page</h3>
-        <ul>
-            <li>Assemblage Lightning Home Page Sales : KPIs (haut) + 5 backlogs + assignation profil Sales <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li>
-        </ul>
+        <ul><li>Assemblage Lightning Home Page Sales : KPIs (haut) + 5 backlogs + assignation profil Sales <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li></ul>
     </div>
-
-    <!-- ============================== -->
-    <!-- PROPOSITION COMMERCIALE         -->
-    <!-- ============================== -->
 
     <div class="header" id="propale" style="margin-top: 48px;">
         <h1>Proposition Commerciale — Cockpit Sales</h1>
         <div class="subtitle">Détail des charges, packages et planning de livraison</div>
-        <div class="meta">
-            <span>Version 1.0 — 30 mars 2026</span>
-            <span>Client : CarJager</span>
-        </div>
+        <div class="meta"><span>Version 1.0 — 30 mars 2026</span><span>Client : CarJager</span></div>
     </div>
 
     <div class="section" id="detail">
         <h2>Proposition commerciale — Détail</h2>
         <table>
-            <thead>
-                <tr>
-                    <th style="width:52%">Description</th>
-                    <th style="width:18%" class="r">Type</th>
-                    <th style="width:14%" class="r">Priorité</th>
-                    <th style="width:16%" class="r">J/H</th>
-                </tr>
-            </thead>
+            <thead><tr><th style="width:52%">Description</th><th style="width:18%" class="r">Type</th><th style="width:14%" class="r">Priorité</th><th style="width:16%" class="r">J/H</th></tr></thead>
             <tbody>
-                <tr class="feat">
-                    <td>FEAT 1 — Custom Notification Type + Flow notif nouveau lead attribué</td>
-                    <td class="r"><span class="tag new">NEW</span></td>
-                    <td class="r"><span class="tag must">MUST</span></td>
-                    <td class="r">0,25</td>
-                </tr>
+                <tr class="feat"><td>FEAT 1 — Custom Notification Type + Flow notif nouveau lead attribué</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,25</td></tr>
                 <tr class="feat"><td colspan="3">FEAT 2 — Backlog Tentative de contact</td><td class="r"></td></tr>
-                <tr>
-                    <td>LWC Backlog Cockpit réutilisable + config "Tentative de contact" + champ Date_derniere_relance + flow MAJ</td>
-                    <td class="r"><span class="tag new">NEW</span></td>
-                    <td class="r"><span class="tag must">MUST</span></td>
-                    <td class="r">1,25</td>
-                </tr>
+                <tr><td>LWC Backlog Cockpit réutilisable + config "Tentative de contact" + champ Date_derniere_relance + flow MAJ</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">1,25</td></tr>
                 <tr class="feat"><td colspan="3">FEAT 3 — Backlog Demande de lancement</td><td class="r"></td></tr>
-                <tr>
-                    <td>Config LWC Backlog "Demande de lancement" (réutilisation)</td>
-                    <td class="r"><span class="tag new">NEW</span></td>
-                    <td class="r"><span class="tag must">MUST</span></td>
-                    <td class="r">0,25</td>
-                </tr>
-                <tr class="nice-row">
-                    <td>Harmonisation stades achat : ajout stades au Business Process Brokers</td>
-                    <td class="r"><span class="tag refacto">REFACTO</span></td>
-                    <td class="r"><span class="tag nice">NICE</span></td>
-                    <td class="r">0,25</td>
-                </tr>
+                <tr><td>Config LWC Backlog "Demande de lancement" (réutilisation)</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,25</td></tr>
+                <tr class="nice-row"><td>Harmonisation stades achat : ajout stades au Business Process Brokers</td><td class="r"><span class="tag refacto">REFACTO</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">0,25</td></tr>
                 <tr class="feat"><td colspan="3">FEAT 4 — Intérêts</td><td class="r"></td></tr>
-                <tr>
-                    <td>Option A — LWC Backlog intérêts basique (stades existants, pas de tri avancé)</td>
-                    <td class="r"><span class="tag new">NEW</span></td>
-                    <td class="r"><span class="tag must">MUST</span></td>
-                    <td class="r">0,50</td>
-                </tr>
-                <tr class="nice-row">
-                    <td>Option B — Refonte objet : pipeline stades, champs LeadSource/Plateforme/Raison_perte, validation</td>
-                    <td class="r"><span class="tag refacto">REFACTO</span></td>
-                    <td class="r"><span class="tag nice">NICE</span></td>
-                    <td class="r">0,50</td>
-                </tr>
-                <tr class="nice-row">
-                    <td>Option B — Quick Actions (Opp + Global) + Flow création account/intérêt (match email, Person Account, sync owner)</td>
-                    <td class="r"><span class="tag new">NEW</span></td>
-                    <td class="r"><span class="tag nice">NICE</span></td>
-                    <td class="r">1,00</td>
-                </tr>
-                <tr class="nice-row">
-                    <td>Option B — Flows : sync owner, auto-create intérêt counterparty, auto-close, notif, copie origine</td>
-                    <td class="r"><span class="tag new">NEW</span></td>
-                    <td class="r"><span class="tag nice">NICE</span></td>
-                    <td class="r">1,00</td>
-                </tr>
-                <tr class="feat">
-                    <td>FEAT 5 — Flow scheduled M+1 + notif native + LWC Backlog relance après-vente</td>
-                    <td class="r"><span class="tag new">NEW</span></td>
-                    <td class="r"><span class="tag must">MUST</span></td>
-                    <td class="r">0,50</td>
-                </tr>
+                <tr><td>Option A — LWC Backlog intérêts basique (stades existants, pas de tri avancé)</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,50</td></tr>
+                <tr class="nice-row"><td>Option B — Refonte objet : pipeline stades, champs LeadSource/Plateforme/Raison_perte, validation</td><td class="r"><span class="tag refacto">REFACTO</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">0,50</td></tr>
+                <tr class="nice-row"><td>Option B — Quick Actions (Opp + Global) + Flow création account/intérêt (match email, Person Account, sync owner)</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">1,00</td></tr>
+                <tr class="nice-row"><td>Option B — Flows : sync owner, auto-create intérêt counterparty, auto-close, notif, copie origine</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">1,00</td></tr>
+                <tr class="feat"><td>FEAT 5 — Flow scheduled M+1 + notif native + LWC Backlog relance après-vente</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,50</td></tr>
                 <tr class="feat"><td colspan="3">FEAT 6 — Backlog RDV fixés</td><td class="r"></td></tr>
-                <tr>
-                    <td>Champ Date_RDV__c + validation rule + Flow Event SF + LWC Backlog tri date</td>
-                    <td class="r"><span class="tag new">NEW</span></td>
-                    <td class="r"><span class="tag must">MUST</span></td>
-                    <td class="r">0,75</td>
-                </tr>
-                <tr class="nice-row">
-                    <td>Renommage sous-stades RDV fixé</td>
-                    <td class="r"><span class="tag refacto">REFACTO</span></td>
-                    <td class="r"><span class="tag nice">NICE</span></td>
-                    <td class="r">0,25</td>
-                </tr>
-                <tr class="nice-row">
-                    <td>Intégration Google Calendar (Connected App, Apex OAuth, meeting + invite + Meet)</td>
-                    <td class="r"><span class="tag new">NEW</span></td>
-                    <td class="r"><span class="tag nice">NICE</span></td>
-                    <td class="r">1,25</td>
-                </tr>
-                <tr class="feat">
-                    <td>FEAT 7 — LWC Scorecard KPIs : non-trash, # ventes, CA HT, marge nette</td>
-                    <td class="r"><span class="tag new">NEW</span></td>
-                    <td class="r"><span class="tag must">MUST</span></td>
-                    <td class="r">0,75</td>
-                </tr>
+                <tr><td>Champ Date_RDV__c + validation rule + Flow Event SF + LWC Backlog tri date</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,75</td></tr>
+                <tr class="nice-row"><td>Renommage sous-stades RDV fixé</td><td class="r"><span class="tag refacto">REFACTO</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">0,25</td></tr>
+                <tr class="nice-row"><td>Intégration Google Calendar (Connected App, Apex OAuth, meeting + invite + Meet)</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">1,25</td></tr>
+                <tr class="feat"><td>FEAT 7 — LWC Scorecard KPIs : non-trash, # ventes, CA HT, marge nette</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,75</td></tr>
                 <tr class="feat"><td colspan="3">Transverse — Nettoyage & Home Page</td><td class="r"></td></tr>
-                <tr class="nice-row">
-                    <td>Convention nommage + renommage flows + suppression VR/flows obsolètes + suppression Relance 4/5</td>
-                    <td class="r"><span class="tag refacto">REFACTO</span></td>
-                    <td class="r"><span class="tag nice">NICE</span></td>
-                    <td class="r">0,50</td>
-                </tr>
-                <tr>
-                    <td>Configuration Lightning Home Page Sales : assemblage composants + assignation profil</td>
-                    <td class="r"><span class="tag new">NEW</span></td>
-                    <td class="r"><span class="tag must">MUST</span></td>
-                    <td class="r">0,25</td>
-                </tr>
+                <tr class="nice-row"><td>Convention nommage + renommage flows + suppression VR/flows obsolètes + suppression Relance 4/5</td><td class="r"><span class="tag refacto">REFACTO</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">0,50</td></tr>
+                <tr><td>Configuration Lightning Home Page Sales : assemblage composants + assignation profil</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,25</td></tr>
                 <tr><td colspan="4" style="padding:4px; border:none;"></td></tr>
                 <tr class="feat"><td colspan="3" style="color:#15803d;">Prestations incluses</td><td class="r"></td></tr>
                 <tr class="offert-row"><td>Tests fonctionnels sur Petit Poney (staging)</td><td class="r"></td><td class="r"></td><td class="r"><span class="tag offert">Offert</span></td></tr>
@@ -581,10 +532,10 @@
         <table>
             <thead><tr><th style="width:12%">Semaine</th><th style="width:22%">Dates</th><th style="width:10%" class="r">Capacité</th><th style="width:28%">Package Must Have</th><th style="width:28%">Package complet</th></tr></thead>
             <tbody>
-                <tr><td><strong>S1</strong></td><td>Lun. 6 — Ven. 10 avril</td><td class="r"><strong>3 J/H</strong></td><td style="color:#3b82f6; font-weight:600;">Démo mi-parcours (ven. 10, 30 min)</td><td style="color:#3b82f6; font-weight:600;">Démo mi-parcours (ven. 10, 30 min)</td></tr>
-                <tr><td><strong>S2</strong></td><td>Lun. 13 — Ven. 17 avril</td><td class="r"><strong>3 J/H</strong></td><td style="color:#3b82f6; font-weight:600;">Démo finale + recette (ven. 17, 1h)</td><td></td></tr>
+                <tr><td><strong>S1</strong></td><td>Lun. 6 — Ven. 10 avril</td><td class="r"><strong>3 J/H</strong></td><td style="color:#c15f3c; font-weight:600;">Démo mi-parcours (ven. 10, 30 min)</td><td style="color:#c15f3c; font-weight:600;">Démo mi-parcours (ven. 10, 30 min)</td></tr>
+                <tr><td><strong>S2</strong></td><td>Lun. 13 — Ven. 17 avril</td><td class="r"><strong>3 J/H</strong></td><td style="color:#c15f3c; font-weight:600;">Démo finale + recette (ven. 17, 1h)</td><td></td></tr>
                 <tr style="background: #f0fdf4;"><td></td><td>Lun. 20 avril</td><td class="r"></td><td style="color:#166534; font-weight:700;">MEP production</td><td></td></tr>
-                <tr><td><strong>S3</strong></td><td>Lun. 20 — Ven. 24 avril</td><td class="r"><strong>3 J/H</strong></td><td></td><td style="color:#3b82f6; font-weight:600;">Démo finale + recette (ven. 24, 1h)</td></tr>
+                <tr><td><strong>S3</strong></td><td>Lun. 20 — Ven. 24 avril</td><td class="r"><strong>3 J/H</strong></td><td></td><td style="color:#c15f3c; font-weight:600;">Démo finale + recette (ven. 24, 1h)</td></tr>
                 <tr style="background: #f0fdf4;"><td></td><td>Lun. 27 avril</td><td class="r"></td><td></td><td style="color:#166534; font-weight:700;">MEP production</td></tr>
             </tbody>
         </table>
@@ -594,7 +545,7 @@
         <h2>Hors scope et dépendances</h2>
         <ul>
             <li><strong>Emails Brevo (FEAT 2)</strong> : le déclenchement d'emails automatiques Brevo lors d'une relance sales nécessite un développement backend hors scope</li>
-            <li><strong>Ateliers de validation métier (FEAT 3)</strong> : les ateliers de validation métier et les décisions de chefferie de projet qui en découlent (notamment pour l'harmonisation des stades achat) sont à la responsabilité du chef de projet chez CarJager</li>
+            <li><strong>Ateliers de validation métier (FEAT 3)</strong> : les ateliers de validation métier et les décisions de chefferie de projet qui en découlent sont à la responsabilité du chef de projet chez CarJager</li>
             <li><strong>Cockpit manager</strong> : vue consolidée avec analytics sur le traitement sales et filtres par équipe — prévu en lot 2</li>
             <li><strong>Gestion des doublons</strong> : détection et fusion des leads/intérêts en doublon — sujet identifié, hors scope de ce lot</li>
             <li><strong>App mobile SF</strong> : les composants seront conçus compatibles mobile, mais le déploiement de l'app mobile SF est hors scope</li>
@@ -605,24 +556,41 @@
 
 <script>
 (function() {
-    // Extract doc ID from URL: /deals/{status}/{slug}
     var pathParts = window.location.pathname.split('/').filter(Boolean);
     var DOC_ID = (pathParts.length >= 3 && pathParts[0] === 'deals') ? pathParts[2] : 'default';
     var API = '/api/comments?doc=' + encodeURIComponent(DOC_ID);
+
+    // ===== TOP BAR & SIDEBARS =====
+    var leftSidebar = document.getElementById('leftSidebar');
+    var leftOverlay = document.getElementById('leftOverlay');
+    var leftToggle = document.getElementById('leftSidebarToggle');
+
+    leftToggle.addEventListener('click', function() {
+        leftSidebar.classList.toggle('open');
+        leftOverlay.classList.toggle('show');
+    });
+    leftOverlay.addEventListener('click', function() {
+        leftSidebar.classList.remove('open');
+        leftOverlay.classList.remove('show');
+    });
 
     // ===== SIDENAV =====
     var nav = document.getElementById('sidenav');
     var navLinks = nav.querySelectorAll('a');
     var navSections = [];
     var navHideTimer = null;
+
     function showNav() {
         nav.classList.add('visible');
         clearTimeout(navHideTimer);
         navHideTimer = setTimeout(function() { nav.classList.remove('visible'); }, 5000);
     }
     document.addEventListener('mousemove', showNav);
+    document.addEventListener('scroll', showNav);
+    document.addEventListener('click', showNav);
     nav.addEventListener('mouseenter', function() { clearTimeout(navHideTimer); nav.classList.add('visible'); });
     nav.addEventListener('mouseleave', function() { navHideTimer = setTimeout(function() { nav.classList.remove('visible'); }, 5000); });
+
     navLinks.forEach(function(link) {
         var id = link.getAttribute('href').substring(1);
         var el = document.getElementById(id);
@@ -649,210 +617,152 @@
     var emptyEl = document.getElementById('commentEmpty');
     var countEl = document.getElementById('commentCount');
     var filterBox = document.getElementById('filterClosed');
-    var container = document.querySelector('.container');
+    var container = document.getElementById('mainContent');
 
     var comments = [];
     var placingMode = false;
     var activeBubble = null;
 
-    var PIN_SVG = '<svg viewBox="0 0 30 26" fill="none" xmlns="http://www.w3.org/2000/svg">'
-        + '<rect x="1" y="1" width="28" height="18" rx="4" fill="#93c5fd"/>'
-        + '<polygon points="9,19 14,25 19,19" fill="#93c5fd"/>'
-        + '</svg>';
+    var PIN_SVG = '<svg viewBox="0 0 30 26" fill="none"><rect x="1" y="1" width="28" height="18" rx="4" fill="#93c5fd"/><polygon points="9,19 14,25 19,19" fill="#93c5fd"/></svg>';
 
-    // --- API helpers ---
-    function apiGet() {
-        return fetch(API).then(function(r) { return r.json(); });
-    }
-    function apiPost(data) {
-        return fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(function(r) { return r.json(); });
-    }
-    function apiPut(data) {
-        return fetch(API, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(function(r) { return r.json(); });
-    }
-    function apiDelete(id) {
-        return fetch(API, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id }) });
-    }
+    function apiGet() { return fetch(API).then(function(r) { return r.json(); }); }
+    function apiPost(d) { return fetch(API, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) }).then(function(r) { return r.json(); }); }
+    function apiPut(d) { return fetch(API, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) }).then(function(r) { return r.json(); }); }
+    function apiDel(id) { return fetch(API, { method:'DELETE', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:id}) }); }
 
-    // --- Load comments on startup ---
     apiGet().then(function(rows) {
         rows.forEach(function(row) {
-            var c = { id: row.id, x: row.x, y: row.y, text: row.text, closed: row.closed, created: new Date(row.created_at) };
+            var c = { id:row.id, x:row.x, y:row.y, text:row.text, closed:row.closed, created:new Date(row.created_at) };
             comments.push(c);
-            spawnPinAndBubble(c);
+            spawnPin(c);
         });
         updateCount(); renderCards();
-    }).catch(function() {
-        // API not available — work offline
-        console.warn('API unavailable, working offline');
-    });
+    }).catch(function() { console.warn('API unavailable, working offline'); });
 
-    // --- Panel toggle ---
     toggle.addEventListener('click', function() { panel.classList.toggle('open'); });
     closeBtn.addEventListener('click', function() { panel.classList.remove('open'); });
+    filterBox.addEventListener('change', function() { renderCards(); updatePinVis(); });
 
-    // --- Filter ---
-    filterBox.addEventListener('change', function() { renderCards(); updatePinVisibility(); });
-    function updatePinVisibility() {
+    function updatePinVis() {
         var hide = filterBox.checked;
         comments.forEach(function(c) {
-            var pin = container.querySelector('.comment-pin[data-id="' + c.id + '"]');
-            if (pin) pin.style.display = (hide && c.closed) ? 'none' : '';
+            var p = container.querySelector('.comment-pin[data-id="'+c.id+'"]');
+            if (p) p.style.display = (hide && c.closed) ? 'none' : '';
         });
     }
 
-    // --- Add button ---
     addBtn.addEventListener('click', function(e) {
         e.stopPropagation();
-        if (placingMode) exitPlacingMode(); else enterPlacingMode();
+        if (placingMode) exitPlace(); else enterPlace();
     });
-    function enterPlacingMode() {
-        placingMode = true;
-        document.body.classList.add('placing-mode');
-        addBtn.textContent = '✕ Annuler le placement';
-        addBtn.classList.add('placing');
+    function enterPlace() {
+        placingMode = true; document.body.classList.add('placing-mode');
+        addBtn.textContent = '✕ Annuler'; addBtn.classList.add('placing');
         closeAllBubbles();
     }
-    function exitPlacingMode() {
-        placingMode = false;
-        document.body.classList.remove('placing-mode');
-        addBtn.textContent = '+ Ajouter un commentaire';
-        addBtn.classList.remove('placing');
+    function exitPlace() {
+        placingMode = false; document.body.classList.remove('placing-mode');
+        addBtn.textContent = '+ Ajouter un commentaire'; addBtn.classList.remove('placing');
     }
 
-    // --- Place pin ---
     container.addEventListener('click', function(e) {
         if (!placingMode) return;
         if (e.target.closest('.comment-pin') || e.target.closest('.comment-bubble')) return;
-        exitPlacingMode();
+        exitPlace();
         var relX = e.pageX - container.getBoundingClientRect().left - window.scrollX;
         createComment(relX, e.pageY);
     });
 
-    // --- Drag pins ---
     document.addEventListener('mousedown', function(e) {
         var pin = e.target.closest('.comment-pin');
         if (!pin || placingMode) return;
         var id = parseInt(pin.dataset.id);
         var comment = comments.find(function(c) { return c.id === id; });
         if (!comment) return;
-        var startX = e.pageX, startY = e.pageY, moved = false;
-        function onMove(ev) {
-            var dx = ev.pageX - startX, dy = ev.pageY - startY;
-            if (!moved && Math.abs(dx) + Math.abs(dy) < 5) return;
-            moved = true;
-            pin.classList.add('dragging');
-            var relX = ev.pageX - container.getBoundingClientRect().left - window.scrollX;
-            pin.style.left = relX + 'px';
-            pin.style.top = ev.pageY + 'px';
-            var bubble = container.querySelector('.comment-bubble[data-id="' + id + '"]');
-            if (bubble) { bubble.style.left = relX + 'px'; bubble.style.top = (ev.pageY + 6) + 'px'; }
-            comment.x = relX;
-            comment.y = ev.pageY;
+        var sX = e.pageX, sY = e.pageY, moved = false;
+        function onM(ev) {
+            if (!moved && Math.abs(ev.pageX-sX)+Math.abs(ev.pageY-sY) < 5) return;
+            moved = true; pin.classList.add('dragging');
+            var rx = ev.pageX - container.getBoundingClientRect().left - window.scrollX;
+            pin.style.left = rx+'px'; pin.style.top = ev.pageY+'px';
+            var b = container.querySelector('.comment-bubble[data-id="'+id+'"]');
+            if (b) { b.style.left = rx+'px'; b.style.top = (ev.pageY+6)+'px'; }
+            comment.x = rx; comment.y = ev.pageY;
         }
-        function onUp() {
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup', onUp);
+        function onU() {
+            document.removeEventListener('mousemove', onM);
+            document.removeEventListener('mouseup', onU);
             pin.classList.remove('dragging');
-            if (moved) {
-                apiPut({ id: comment.id, x: comment.x, y: comment.y });
-                renderCards();
-            }
+            if (moved) { apiPut({id:comment.id,x:comment.x,y:comment.y}); renderCards(); }
         }
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup', onUp);
+        document.addEventListener('mousemove', onM);
+        document.addEventListener('mouseup', onU);
     });
 
-    // --- Spawn pin + bubble DOM for a comment ---
-    function spawnPinAndBubble(comment) {
+    function spawnPin(c) {
         var pin = document.createElement('div');
-        pin.className = 'comment-pin' + (comment.closed ? ' closed' : '');
-        pin.dataset.id = comment.id;
-        pin.style.left = comment.x + 'px';
-        pin.style.top = comment.y + 'px';
-        pin.innerHTML = PIN_SVG + '<span class="pin-num">' + comment.id + '</span>';
+        pin.className = 'comment-pin'+(c.closed?' closed':'');
+        pin.dataset.id = c.id;
+        pin.style.left = c.x+'px'; pin.style.top = c.y+'px';
+        pin.innerHTML = PIN_SVG+'<span class="pin-num">'+c.id+'</span>';
         container.appendChild(pin);
-
-        var bubble = document.createElement('div');
-        bubble.className = 'comment-bubble';
-        bubble.dataset.id = comment.id;
-        bubble.style.left = comment.x + 'px';
-        bubble.style.top = (comment.y + 6) + 'px';
-        bubble.innerHTML = '<textarea placeholder="Votre commentaire..."></textarea>'
-            + '<div class="bubble-hint"><kbd>Entrée</kbd> pour valider</div>';
-        container.appendChild(bubble);
-
-        pin.addEventListener('click', function(ev) {
-            ev.stopPropagation();
-            if (placingMode) return;
-            openBubbleForComment(comment.id);
-        });
+        var bub = document.createElement('div');
+        bub.className = 'comment-bubble'; bub.dataset.id = c.id;
+        bub.style.left = c.x+'px'; bub.style.top = (c.y+6)+'px';
+        bub.innerHTML = '<textarea placeholder="Votre commentaire..."></textarea><div class="bubble-hint"><kbd>Entrée</kbd> pour valider</div>';
+        container.appendChild(bub);
+        pin.addEventListener('click', function(ev) { ev.stopPropagation(); if (!placingMode) openBubble(c.id); });
     }
 
-    // --- Create comment ---
-    function createComment(relX, absY) {
-        apiPost({ x: relX, y: absY, text: '' }).then(function(row) {
-            var comment = { id: row.id, x: row.x, y: row.y, text: '', closed: false, created: new Date(row.created_at) };
-            comments.push(comment);
-            spawnPinAndBubble(comment);
-
-            closeAllBubbles();
-            var bubble = container.querySelector('.comment-bubble[data-id="' + comment.id + '"]');
-            bubble.classList.add('show');
-            activeBubble = bubble;
-            var ta = bubble.querySelector('textarea');
+    function createComment(rx, ay) {
+        apiPost({x:rx,y:ay,text:''}).then(function(row) {
+            var c = {id:row.id,x:row.x,y:row.y,text:'',closed:false,created:new Date(row.created_at)};
+            comments.push(c); spawnPin(c); closeAllBubbles();
+            var bub = container.querySelector('.comment-bubble[data-id="'+c.id+'"]');
+            bub.classList.add('show'); activeBubble = bub;
+            var ta = bub.querySelector('textarea');
             setTimeout(function() { ta.focus(); }, 50);
-
             ta.addEventListener('keydown', function(ev) {
-                if (ev.key === 'Enter' && !ev.shiftKey) {
-                    ev.preventDefault();
-                    comment.text = ta.value.trim();
-                    if (!comment.text) { removeComment(comment.id); }
-                    else {
-                        apiPut({ id: comment.id, text: comment.text });
-                        bubble.classList.remove('show'); activeBubble = null; renderCards();
-                    }
+                if (ev.key==='Enter' && !ev.shiftKey) {
+                    ev.preventDefault(); c.text = ta.value.trim();
+                    if (!c.text) removeComment(c.id);
+                    else { apiPut({id:c.id,text:c.text}); bub.classList.remove('show'); activeBubble=null; renderCards(); }
                 }
             });
-
             setTimeout(function() {
-                document.addEventListener('click', function handler(ev) {
-                    if (bubble.contains(ev.target) || container.querySelector('.comment-pin[data-id="' + comment.id + '"]').contains(ev.target)) return;
-                    if (bubble.classList.contains('show')) {
-                        comment.text = ta.value.trim();
-                        if (!comment.text) removeComment(comment.id);
-                        else { apiPut({ id: comment.id, text: comment.text }); bubble.classList.remove('show'); activeBubble = null; renderCards(); }
+                document.addEventListener('click', function h(ev) {
+                    if (bub.contains(ev.target)) return;
+                    var pin = container.querySelector('.comment-pin[data-id="'+c.id+'"]');
+                    if (pin && pin.contains(ev.target)) return;
+                    if (bub.classList.contains('show')) {
+                        c.text = ta.value.trim();
+                        if (!c.text) removeComment(c.id);
+                        else { apiPut({id:c.id,text:c.text}); bub.classList.remove('show'); activeBubble=null; renderCards(); }
                     }
-                    document.removeEventListener('click', handler);
+                    document.removeEventListener('click', h);
                 });
             }, 100);
-
             if (!panel.classList.contains('open')) panel.classList.add('open');
             updateCount(); renderCards();
         });
     }
 
-    // --- Open bubble ---
-    function openBubbleForComment(id) {
+    function openBubble(id) {
         closeAllBubbles();
-        var bubble = container.querySelector('.comment-bubble[data-id="' + id + '"]');
-        var comment = comments.find(function(c) { return c.id === id; });
-        if (!bubble || !comment) return;
-        var ta = bubble.querySelector('textarea');
-        ta.value = comment.text;
-        bubble.classList.add('show');
-        activeBubble = bubble;
+        var bub = container.querySelector('.comment-bubble[data-id="'+id+'"]');
+        var c = comments.find(function(x) { return x.id===id; });
+        if (!bub || !c) return;
+        var ta = bub.querySelector('textarea'); ta.value = c.text;
+        bub.classList.add('show'); activeBubble = bub;
         setTimeout(function() { ta.focus(); }, 50);
         ta.onkeydown = function(ev) {
-            if (ev.key === 'Enter' && !ev.shiftKey) {
-                ev.preventDefault();
-                comment.text = ta.value.trim();
-                apiPut({ id: comment.id, text: comment.text });
-                bubble.classList.remove('show'); activeBubble = null; renderCards();
+            if (ev.key==='Enter' && !ev.shiftKey) {
+                ev.preventDefault(); c.text = ta.value.trim();
+                apiPut({id:c.id,text:c.text}); bub.classList.remove('show'); activeBubble=null; renderCards();
             }
         };
-        document.querySelectorAll('.comment-card').forEach(function(c) { c.classList.remove('active'); });
-        var card = document.querySelector('.comment-card[data-id="' + id + '"]');
+        document.querySelectorAll('.comment-card').forEach(function(x) { x.classList.remove('active'); });
+        var card = document.querySelector('.comment-card[data-id="'+id+'"]');
         if (card) card.classList.add('active');
     }
 
@@ -863,79 +773,57 @@
     }
 
     function removeComment(id) {
-        apiDelete(id);
-        comments = comments.filter(function(c) { return c.id !== id; });
-        var pin = container.querySelector('.comment-pin[data-id="' + id + '"]');
-        var bubble = container.querySelector('.comment-bubble[data-id="' + id + '"]');
-        if (pin) pin.remove();
-        if (bubble) bubble.remove();
-        updateCount(); renderCards();
+        apiDel(id); comments = comments.filter(function(c) { return c.id!==id; });
+        var p = container.querySelector('.comment-pin[data-id="'+id+'"]');
+        var b = container.querySelector('.comment-bubble[data-id="'+id+'"]');
+        if (p) p.remove(); if (b) b.remove(); updateCount(); renderCards();
     }
 
     function toggleClosed(id) {
-        var comment = comments.find(function(c) { return c.id === id; });
-        if (!comment) return;
-        comment.closed = !comment.closed;
-        apiPut({ id: comment.id, closed: comment.closed });
-        var pin = container.querySelector('.comment-pin[data-id="' + id + '"]');
-        if (pin) { if (comment.closed) pin.classList.add('closed'); else pin.classList.remove('closed'); }
-        closeAllBubbles();
-        updateCount(); renderCards(); updatePinVisibility();
+        var c = comments.find(function(x) { return x.id===id; });
+        if (!c) return; c.closed = !c.closed;
+        apiPut({id:c.id,closed:c.closed});
+        var p = container.querySelector('.comment-pin[data-id="'+id+'"]');
+        if (p) { if (c.closed) p.classList.add('closed'); else p.classList.remove('closed'); }
+        closeAllBubbles(); updateCount(); renderCards(); updatePinVis();
     }
 
     function updateCount() {
         var n = comments.filter(function(c) { return c.text && !c.closed; }).length;
-        var total = comments.filter(function(c) { return c.text; }).length;
-        countEl.textContent = n;
-        countEl.style.display = total > 0 ? 'inline-block' : 'none';
-        countEl.style.opacity = (n === 0 && total > 0) ? '0.5' : '1';
-        if (n === 0 && total > 0) countEl.textContent = total;
+        var t = comments.filter(function(c) { return c.text; }).length;
+        countEl.textContent = n; countEl.style.display = t > 0 ? 'inline-block' : 'none';
+        countEl.style.opacity = (n===0 && t>0) ? '0.5' : '1';
+        if (n===0 && t>0) countEl.textContent = t;
     }
 
     function renderCards() {
-        var hideClosed = filterBox.checked;
-        var sorted = comments.filter(function(c) {
-            if (!c.text) return false;
-            if (hideClosed && c.closed) return false;
-            return true;
-        }).slice().sort(function(a, b) { return a.y - b.y; });
-
+        var hide = filterBox.checked;
+        var sorted = comments.filter(function(c) { return c.text && !(hide && c.closed); }).slice().sort(function(a,b) { return a.y-b.y; });
         listEl.innerHTML = '';
-        if (sorted.length === 0) {
-            if (comments.some(function(c) { return c.text; })) {
-                listEl.innerHTML = '<div class="comment-empty">Tous les commentaires sont cloturés</div>';
-            } else {
-                listEl.appendChild(emptyEl);
-            }
+        if (!sorted.length) {
+            if (comments.some(function(c) { return c.text; })) listEl.innerHTML = '<div class="comment-empty">Tous les commentaires sont cloturés</div>';
+            else listEl.appendChild(emptyEl);
             return;
         }
-
         sorted.forEach(function(c) {
             var card = document.createElement('div');
-            card.className = 'comment-card' + (c.closed ? ' closed' : '');
-            card.dataset.id = c.id;
-            card.innerHTML = '<div class="card-actions">'
-                + '<button class="card-btn close-btn" title="Cloturer">Cloturer</button>'
-                + '<button class="card-btn reopen" title="Réouvrir">Réouvrir</button>'
-                + '</div>'
-                + '<div class="card-num"># ' + c.id + '</div>'
-                + '<div class="card-text">' + escHtml(c.text) + '</div>'
-                + '<div class="card-meta">' + formatTime(c.created) + '</div>';
+            card.className = 'comment-card'+(c.closed?' closed':''); card.dataset.id = c.id;
+            card.innerHTML = '<div class="card-actions"><button class="card-btn close-btn">Cloturer</button><button class="card-btn reopen">Réouvrir</button></div>'
+                +'<div class="card-num"># '+c.id+'</div><div class="card-text">'+esc(c.text)+'</div><div class="card-meta">'+fmt(c.created)+'</div>';
             card.querySelector('.close-btn').addEventListener('click', function(ev) { ev.stopPropagation(); toggleClosed(c.id); });
             card.querySelector('.reopen').addEventListener('click', function(ev) { ev.stopPropagation(); toggleClosed(c.id); });
             card.addEventListener('click', function() {
-                if (c.closed) return;
-                openBubbleForComment(c.id);
-                var pin = container.querySelector('.comment-pin[data-id="' + c.id + '"]');
-                if (pin) pin.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (c.closed) return; openBubble(c.id);
+                var p = container.querySelector('.comment-pin[data-id="'+c.id+'"]');
+                if (p) p.scrollIntoView({behavior:'smooth',block:'center'});
             });
             listEl.appendChild(card);
         });
         updateCount();
     }
 
-    function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML.replace(/\n/g, '<br>'); }
-    function formatTime(d) { return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0'); }
+    function esc(s) { var d=document.createElement('div'); d.textContent=s; return d.innerHTML.replace(/\n/g,'<br>'); }
+    function fmt(d) { return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); }
 })();
 </script>
 
