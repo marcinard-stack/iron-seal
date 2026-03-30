@@ -284,9 +284,34 @@
         tbody td { padding: 8px 12px; border-bottom: 1px solid #f4f3ee; vertical-align: middle; }
         tbody td.r { text-align: right; white-space: nowrap; }
         tbody tr:hover { background: #faf9f7; }
-        tbody tr.feat td { font-weight: 700; color: #2d2b35; background: #faf9f7; border-bottom: 1px solid #e8e6e0; }
+        tbody tr.feat td { font-weight: 700; color: #2d2b35; background: #faf9f7; border-bottom: 1px solid #e8e6e0; cursor: default; }
         tbody tr.nice-row td { color: #92400e; }
         tbody tr.offert-row td { color: #2d2b35; }
+
+        /* Expand/collapse feat groups */
+        .detail-table .feat-group:not(.no-collapse) tr.job {
+            max-height: 0; overflow: hidden; opacity: 0;
+            transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+        }
+        .detail-table .feat-group:not(.no-collapse) tr.job td {
+            padding-top: 0; padding-bottom: 0; border-bottom-color: transparent;
+            transition: padding 0.25s ease, border-color 0.15s ease;
+        }
+        .detail-table .feat-group:not(.no-collapse):hover tr.job {
+            max-height: 80px; opacity: 1;
+        }
+        .detail-table .feat-group:not(.no-collapse):hover tr.job td {
+            padding-top: 8px; padding-bottom: 8px; border-bottom-color: #f4f3ee;
+        }
+        .detail-table .feat-group:not(.no-collapse) tr.feat td:first-child::before {
+            content: ''; display: inline-block; width: 6px; height: 6px;
+            border-right: 1.5px solid #8a8780; border-bottom: 1.5px solid #8a8780;
+            transform: rotate(-45deg); margin-right: 8px; transition: transform 0.2s ease;
+            vertical-align: middle; position: relative; top: -1px;
+        }
+        .detail-table .feat-group:not(.no-collapse):hover tr.feat td:first-child::before {
+            transform: rotate(45deg);
+        }
         tbody tr.total td { font-weight: 700; font-size: 14px; border-top: 3px solid #2d2b35; padding-top: 12px; padding-bottom: 12px; }
         .callout {
             background: #fef3c7; border-left: 4px solid #f59e0b;
@@ -524,30 +549,51 @@
 
     <div class="section" id="detail">
         <h2>Proposition commerciale — Détail</h2>
-        <table>
+        <table class="detail-table">
             <thead><tr><th style="width:52%">Description</th><th style="width:18%" class="r">Type</th><th style="width:14%" class="r">Priorité</th><th style="width:16%" class="r">J/H</th></tr></thead>
+            <tbody class="feat-group">
+                <tr class="feat"><td colspan="3">FEAT 1 — Alerte nouveau lead</td><td class="r"><strong>0,25</strong></td></tr>
+                <tr class="job"><td>Custom Notification Type + Flow notif nouveau lead attribué</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,25</td></tr>
+            </tbody>
+            <tbody class="feat-group">
+                <tr class="feat"><td colspan="3">FEAT 2 — Backlog Tentative de contact</td><td class="r"><strong>1,25</strong></td></tr>
+                <tr class="job"><td>LWC Backlog Cockpit réutilisable + config "Tentative de contact" + champ Date_derniere_relance + flow MAJ</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">1,25</td></tr>
+            </tbody>
+            <tbody class="feat-group">
+                <tr class="feat"><td colspan="3">FEAT 3 — Backlog Demande de lancement</td><td class="r"><strong>0,50</strong></td></tr>
+                <tr class="job"><td>Config LWC Backlog "Demande de lancement" (réutilisation)</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,25</td></tr>
+                <tr class="job nice-row"><td>Harmonisation stades achat : ajout stades au Business Process Brokers</td><td class="r"><span class="tag refacto">REFACTO</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">0,25</td></tr>
+            </tbody>
+            <tbody class="feat-group">
+                <tr class="feat"><td colspan="3">FEAT 4 — Intérêts</td><td class="r"><strong>3,00</strong></td></tr>
+                <tr class="job"><td>Option A — LWC Backlog intérêts basique (stades existants, pas de tri avancé)</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,50</td></tr>
+                <tr class="job nice-row"><td>Option B — Refonte objet : pipeline stades, champs LeadSource/Plateforme/Raison_perte, validation</td><td class="r"><span class="tag refacto">REFACTO</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">0,50</td></tr>
+                <tr class="job nice-row"><td>Option B — Quick Actions (Opp + Global) + Flow création account/intérêt (match email, Person Account, sync owner)</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">1,00</td></tr>
+                <tr class="job nice-row"><td>Option B — Flows : sync owner, auto-create intérêt counterparty, auto-close, notif, copie origine</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">1,00</td></tr>
+            </tbody>
+            <tbody class="feat-group">
+                <tr class="feat"><td colspan="3">FEAT 5 — Relance après-vente</td><td class="r"><strong>0,50</strong></td></tr>
+                <tr class="job"><td>Flow scheduled M+1 + notif native + LWC Backlog relance après-vente</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,50</td></tr>
+            </tbody>
+            <tbody class="feat-group">
+                <tr class="feat"><td colspan="3">FEAT 6 — Backlog RDV fixés</td><td class="r"><strong>2,25</strong></td></tr>
+                <tr class="job"><td>Champ Date_RDV__c + validation rule + Flow Event SF + LWC Backlog tri date</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,75</td></tr>
+                <tr class="job nice-row"><td>Renommage sous-stades RDV fixé</td><td class="r"><span class="tag refacto">REFACTO</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">0,25</td></tr>
+                <tr class="job nice-row"><td>Intégration Google Calendar (Connected App, Apex OAuth, meeting + invite + Meet)</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">1,25</td></tr>
+            </tbody>
+            <tbody class="feat-group">
+                <tr class="feat"><td colspan="3">FEAT 7 — KPIs Sales</td><td class="r"><strong>0,75</strong></td></tr>
+                <tr class="job"><td>LWC Scorecard KPIs : non-trash, # ventes, CA HT, marge nette</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,75</td></tr>
+            </tbody>
+            <tbody class="feat-group">
+                <tr class="feat"><td colspan="3">Transverse — Nettoyage & Home Page</td><td class="r"><strong>0,75</strong></td></tr>
+                <tr class="job nice-row"><td>Convention nommage + renommage flows + suppression VR/flows obsolètes + suppression Relance 4/5</td><td class="r"><span class="tag refacto">REFACTO</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">0,50</td></tr>
+                <tr class="job"><td>Configuration Lightning Home Page Sales : assemblage composants + assignation profil</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,25</td></tr>
+            </tbody>
             <tbody>
-                <tr class="feat"><td>FEAT 1 — Custom Notification Type + Flow notif nouveau lead attribué</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,25</td></tr>
-                <tr class="feat"><td colspan="3">FEAT 2 — Backlog Tentative de contact</td><td class="r"></td></tr>
-                <tr><td>LWC Backlog Cockpit réutilisable + config "Tentative de contact" + champ Date_derniere_relance + flow MAJ</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">1,25</td></tr>
-                <tr class="feat"><td colspan="3">FEAT 3 — Backlog Demande de lancement</td><td class="r"></td></tr>
-                <tr><td>Config LWC Backlog "Demande de lancement" (réutilisation)</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,25</td></tr>
-                <tr class="nice-row"><td>Harmonisation stades achat : ajout stades au Business Process Brokers</td><td class="r"><span class="tag refacto">REFACTO</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">0,25</td></tr>
-                <tr class="feat"><td colspan="3">FEAT 4 — Intérêts</td><td class="r"></td></tr>
-                <tr><td>Option A — LWC Backlog intérêts basique (stades existants, pas de tri avancé)</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,50</td></tr>
-                <tr class="nice-row"><td>Option B — Refonte objet : pipeline stades, champs LeadSource/Plateforme/Raison_perte, validation</td><td class="r"><span class="tag refacto">REFACTO</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">0,50</td></tr>
-                <tr class="nice-row"><td>Option B — Quick Actions (Opp + Global) + Flow création account/intérêt (match email, Person Account, sync owner)</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">1,00</td></tr>
-                <tr class="nice-row"><td>Option B — Flows : sync owner, auto-create intérêt counterparty, auto-close, notif, copie origine</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">1,00</td></tr>
-                <tr class="feat"><td>FEAT 5 — Flow scheduled M+1 + notif native + LWC Backlog relance après-vente</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,50</td></tr>
-                <tr class="feat"><td colspan="3">FEAT 6 — Backlog RDV fixés</td><td class="r"></td></tr>
-                <tr><td>Champ Date_RDV__c + validation rule + Flow Event SF + LWC Backlog tri date</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,75</td></tr>
-                <tr class="nice-row"><td>Renommage sous-stades RDV fixé</td><td class="r"><span class="tag refacto">REFACTO</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">0,25</td></tr>
-                <tr class="nice-row"><td>Intégration Google Calendar (Connected App, Apex OAuth, meeting + invite + Meet)</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">1,25</td></tr>
-                <tr class="feat"><td>FEAT 7 — LWC Scorecard KPIs : non-trash, # ventes, CA HT, marge nette</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,75</td></tr>
-                <tr class="feat"><td colspan="3">Transverse — Nettoyage & Home Page</td><td class="r"></td></tr>
-                <tr class="nice-row"><td>Convention nommage + renommage flows + suppression VR/flows obsolètes + suppression Relance 4/5</td><td class="r"><span class="tag refacto">REFACTO</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">0,50</td></tr>
-                <tr><td>Configuration Lightning Home Page Sales : assemblage composants + assignation profil</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,25</td></tr>
                 <tr><td colspan="4" style="padding:4px; border:none;"></td></tr>
+            </tbody>
+            <tbody class="feat-group no-collapse">
                 <tr class="feat"><td colspan="3">Prestations incluses</td><td class="r"></td></tr>
                 <tr class="offert-row"><td>Tests fonctionnels sur Petit Poney (staging)</td><td class="r"></td><td class="r"></td><td class="r"><span class="tag offert">Offert</span></td></tr>
                 <tr class="offert-row"><td>Production du cahier de recette</td><td class="r"></td><td class="r"></td><td class="r"><span class="tag offert">Offert</span></td></tr>
