@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/deals/:status/:slug", "destination": "/public/viewer.html" },
     { "source": "/(.*)", "destination": "/public/$1" }
   ]
 }
