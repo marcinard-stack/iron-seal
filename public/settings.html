@@ -191,6 +191,32 @@
         <button class="logout-btn" id="ibanAdd" style="margin-top:12px;">+ Ajouter un IBAN</button>
     </div>
 
+    <div class="section-card">
+        <h2>Notifications email</h2>
+        <p style="font-size:12px; color:#8a8780; margin-bottom:14px;">Choisissez les emails que vous souhaitez recevoir. Vous pouvez les désactiver à tout moment.</p>
+        <div class="field" style="margin-bottom:10px;">
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:400; font-size:13px; color:#2d2b35;">
+                <input type="checkbox" id="prefProposal" style="accent-color:#c15f3c; width:15px; height:15px;" checked>
+                Nouvelle proposition reçue
+            </label>
+            <div class="hint" style="margin-left:23px;">Quand un freelance vous envoie un devis</div>
+        </div>
+        <div class="field" style="margin-bottom:10px;">
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:400; font-size:13px; color:#2d2b35;">
+                <input type="checkbox" id="prefBackDraft" style="accent-color:#c15f3c; width:15px; height:15px;" checked>
+                Retour en brouillon
+            </label>
+            <div class="hint" style="margin-left:23px;">Quand un projet repasse en brouillon (demande de modifications)</div>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:400; font-size:13px; color:#2d2b35;">
+                <input type="checkbox" id="prefComment" style="accent-color:#c15f3c; width:15px; height:15px;" checked>
+                Nouveau commentaire
+            </label>
+            <div class="hint" style="margin-left:23px;">Quand quelqu'un ajoute un commentaire sur un de vos projets</div>
+        </div>
+    </div>
+
     <div style="display:flex; align-items:center; margin-top:4px;">
         <button class="save-btn" id="saveBtn">Enregistrer</button>
         <span class="save-status" id="saveStatus">Enregistré</span>
@@ -216,6 +242,10 @@
             document.getElementById('tvaIntra').value = data.account.tva_intra || '';
             document.getElementById('defaultTjm').value = data.account.default_tjm || '';
             document.getElementById('defaultCap').value = data.account.default_weekly_cap || '';
+            var prefs = data.user.email_prefs || {};
+            document.getElementById('prefProposal').checked = prefs.proposal_received !== false;
+            document.getElementById('prefBackDraft').checked = prefs.back_to_draft !== false;
+            document.getElementById('prefComment').checked = prefs.comment_added !== false;
         })
         .catch(function() {
             localStorage.removeItem('df_token');
@@ -238,7 +268,12 @@
                 siren: document.getElementById('siren').value.trim(),
                 tva_intra: document.getElementById('tvaIntra').value.trim(),
                 default_tjm: parseFloat(document.getElementById('defaultTjm').value) || null,
-                default_weekly_cap: parseFloat(document.getElementById('defaultCap').value) || null
+                default_weekly_cap: parseFloat(document.getElementById('defaultCap').value) || null,
+                email_prefs: {
+                    proposal_received: document.getElementById('prefProposal').checked,
+                    back_to_draft: document.getElementById('prefBackDraft').checked,
+                    comment_added: document.getElementById('prefComment').checked
+                }
             })
         }).then(function(r) {
             btn.disabled = false; btn.textContent = 'Enregistrer';

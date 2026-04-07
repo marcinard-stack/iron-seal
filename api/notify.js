@@ -82,8 +82,10 @@ export default async function handler(req, res) {
     if (type === 'proposed') {
       // Freelance proposes → notify client
       if (!project.client_account_id) return res.json({ ok: true, skipped: 'no client account on project' });
-      var clients = await sql`SELECT email, name FROM users WHERE account_id = ${project.client_account_id}`;
+      var clients = await sql`SELECT email, name, email_prefs FROM users WHERE account_id = ${project.client_account_id}`;
       if (!clients.length) return res.json({ ok: true, skipped: 'no client user' });
+      var prefs = clients[0].email_prefs || {};
+      if (prefs.proposal_received === false) return res.json({ ok: true, skipped: 'email disabled by user' });
       var senderName = sender ? sender.name : 'Un freelance';
       var magicToken = await createMagicToken(sql, clients[0].email);
       var directLink = (req.headers.origin || 'https://deal-forge-tawny.vercel.app') + '/deals/' + project.status + '/' + project.slug + '?auth=' + magicToken;
@@ -106,8 +108,10 @@ export default async function handler(req, res) {
         notifyAccountId = project.freelance_account_id;
       }
       if (!notifyAccountId) return res.json({ ok: true, skipped: 'no counterpart account' });
-      var recipients = await sql`SELECT email, name FROM users WHERE account_id = ${notifyAccountId}`;
+      var recipients = await sql`SELECT email, name, email_prefs FROM users WHERE account_id = ${notifyAccountId}`;
       if (!recipients.length) return res.json({ ok: true, skipped: 'no counterpart user' });
+      var rPrefs = recipients[0].email_prefs || {};
+      if (rPrefs.back_to_draft === false) return res.json({ ok: true, skipped: 'email disabled by user' });
       var requesterName = sender ? sender.name : 'Un utilisateur';
       var isClient = sender && sender.account_id == project.client_account_id;
       var magicToken = await createMagicToken(sql, recipients[0].email);

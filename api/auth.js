@@ -105,7 +105,7 @@ export default async function handler(req, res) {
 
       if (req.method === 'GET') {
         var rows = await sql`
-          SELECT u.id, u.email, u.name, u.role, u.avatar_url,
+          SELECT u.id, u.email, u.name, u.role, u.avatar_url, u.email_prefs,
                  a.id as account_id, a.name as account_name, a.type as account_type,
                  a.legal_name, a.siren, a.tva_intra, a.default_tjm, a.default_weekly_cap, a.plan
           FROM users u JOIN accounts a ON a.id = u.account_id WHERE u.id = ${userId}
@@ -113,7 +113,7 @@ export default async function handler(req, res) {
         if (!rows.length) return res.status(404).json({ error: 'User not found' });
         var r = rows[0];
         return res.json({
-          user: { id: r.id, email: r.email, name: r.name, role: r.role, avatar_url: r.avatar_url },
+          user: { id: r.id, email: r.email, name: r.name, role: r.role, avatar_url: r.avatar_url, email_prefs: r.email_prefs },
           account: {
             id: r.account_id, name: r.account_name, type: r.account_type,
             legal_name: r.legal_name, siren: r.siren, tva_intra: r.tva_intra,
@@ -125,6 +125,7 @@ export default async function handler(req, res) {
       if (req.method === 'PUT') {
         var body = req.body;
         if (body.name !== undefined) await sql`UPDATE users SET name = ${body.name} WHERE id = ${userId}`;
+        if (body.email_prefs !== undefined) await sql`UPDATE users SET email_prefs = ${JSON.stringify(body.email_prefs)}::jsonb WHERE id = ${userId}`;
         var user = await sql`SELECT account_id FROM users WHERE id = ${userId}`;
         var accountId = user[0].account_id;
         if (body.account_name !== undefined) await sql`UPDATE accounts SET name = ${body.account_name}, updated_at = NOW() WHERE id = ${accountId}`;
