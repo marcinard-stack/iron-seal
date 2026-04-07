@@ -375,22 +375,31 @@
         .notes h2 { font-size: 18px; font-weight: 700; margin-bottom: 14px; color: #2d2b35; }
         .notes ul { margin-left: 18px; }
         .notes li { font-size: 13px; margin-bottom: 5px; color: #4a4850; }
-        /* ---- PROJECT ACTION BAR ---- */
+        /* ---- PROJECT ACTION BAR (fixed bottom) ---- */
         .project-action-bar {
-            background: white; border-radius: 10px; padding: 20px 28px;
-            margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
-            display: none; text-align: center;
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: linear-gradient(to bottom, rgba(244,243,238,0) 0%, #f4f3ee 30%);
+            padding: 32px 0 24px; text-align: right; z-index: 180;
+            display: none; pointer-events: none;
         }
-        .project-action-bar p { font-size: 13px; color: #6b6560; margin-bottom: 14px; }
+        .project-action-bar-inner {
+            max-width: 1100px; margin: 0 auto; padding: 0 36px;
+            display: flex; align-items: center; justify-content: flex-end; gap: 12px;
+            pointer-events: auto;
+        }
+        .project-action-bar p {
+            font-size: 12px; color: #8a8780; margin: 0; flex: 1; text-align: left;
+        }
         .action-btn {
-            padding: 11px 28px; border: none; border-radius: 8px;
+            padding: 10px 24px; border: none; border-radius: 8px;
             font-size: 13px; font-weight: 600; cursor: pointer;
-            transition: all 0.15s; font-family: inherit; margin: 0 4px;
+            transition: all 0.15s; font-family: inherit;
         }
+        .action-btn:disabled { opacity: 0.35; cursor: default; }
         .action-btn.primary { background: #c15f3c; color: white; }
-        .action-btn.primary:hover { background: #a84e30; }
+        .action-btn.primary:hover:not(:disabled) { background: #a84e30; }
         .action-btn.secondary { background: white; color: #6b6560; border: 1px solid #e8e6e0; }
-        .action-btn.secondary:hover { background: #f4f3ee; color: #2d2b35; }
+        .action-btn.secondary:hover:not(:disabled) { background: #f4f3ee; color: #2d2b35; }
 
         .status-banner {
             padding: 12px 28px; border-radius: 10px; margin-bottom: 20px;
@@ -750,11 +759,16 @@
         </ul>
     </div>
 
-    <div class="project-action-bar" id="actionBar">
-        <p id="actionText"></p>
-        <div id="actionButtons"></div>
-    </div>
+    <div style="height: 80px;"></div>
 
+
+</div>
+
+<div class="project-action-bar" id="actionBar">
+    <div class="project-action-bar-inner">
+        <p id="actionText"></p>
+        <div id="actionButtons" style="display:flex; gap:8px;"></div>
+    </div>
 </div>
 
 <script>
@@ -1483,11 +1497,9 @@
     var USER_ACCOUNT_ID = null;
 
     function setupStatusActions() {
-        console.log('[STATUS]', 'PROJECT_DATA:', PROJECT_DATA, 'USER_ACCOUNT_ID:', USER_ACCOUNT_ID, 'IS_SHARED:', IS_SHARED);
         if (!PROJECT_DATA || IS_SHARED) return;
         var status = PROJECT_DATA.status;
         var isFreelance = USER_ACCOUNT_ID && PROJECT_DATA.freelance_account_id == USER_ACCOUNT_ID;
-        console.log('[STATUS]', 'status:', status, 'isFreelance:', isFreelance, 'freelance_account_id:', PROJECT_DATA.freelance_account_id);
         var isClient = USER_ACCOUNT_ID && PROJECT_DATA.client_account_id == USER_ACCOUNT_ID;
         var banner = document.getElementById('statusBanner');
         var bar = document.getElementById('actionBar');
@@ -1500,12 +1512,13 @@
 
         if (status === 'draft' && isFreelance) {
             bar.style.display = 'block';
-            text.textContent = 'Votre proposition est prête ? Envoyez-la au client pour validation.';
-            buttons.innerHTML = '<button class="action-btn primary" id="btnPropose">Proposer le devis</button>';
+            text.textContent = 'Votre proposition est prête ?';
+            buttons.innerHTML = '<button class="action-btn primary" id="btnPropose" disabled>Proposer le devis</button>';
             document.getElementById('btnPropose').addEventListener('click', function() {
                 if (!confirm('Proposer ce devis au client ? Le projet passera en statut "Proposé".')) return;
                 changeStatus('proposed');
             });
+            trackScroll('btnPropose');
         }
 
         if (status === 'proposed') {
@@ -1517,7 +1530,7 @@
 
             bar.style.display = 'block';
             if (isFreelance) {
-                text.textContent = 'Vous pouvez retirer votre proposition pour la modifier.';
+                text.textContent = '';
                 buttons.innerHTML = '<button class="action-btn secondary" id="btnBackDraft">Retour en brouillon</button>';
                 document.getElementById('btnBackDraft').addEventListener('click', function() {
                     if (!confirm('Retirer la proposition et repasser en brouillon ?')) return;
@@ -1525,7 +1538,7 @@
                 });
             }
             if (isClient) {
-                text.textContent = 'Vous pouvez accepter cette proposition ou demander des modifications.';
+                text.textContent = '';
                 buttons.innerHTML = '<button class="action-btn secondary" id="btnRequestEdit">Demander des modifications</button>';
                 document.getElementById('btnRequestEdit').addEventListener('click', function() {
                     if (!confirm('Demander au freelance de modifier sa proposition ?')) return;
@@ -1533,6 +1546,17 @@
                 });
             }
         }
+    }
+
+    function trackScroll(btnId) {
+        var btn = document.getElementById(btnId);
+        if (!btn) return;
+        function checkScroll() {
+            var atBottom = (window.innerHeight + window.scrollY) >= (document.body.scrollHeight - 150);
+            btn.disabled = !atBottom;
+        }
+        window.addEventListener('scroll', checkScroll);
+        checkScroll();
     }
 
     function changeStatus(newStatus) {
