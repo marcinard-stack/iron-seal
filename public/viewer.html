@@ -240,30 +240,31 @@
 
         /* ---- MAIN CONTENT ---- */
         .main-content {
-            padding: 72px 40px 40px 40px;
+            padding: 68px 36px 36px 36px;
             max-width: 1100px; margin: 0 auto; position: relative;
         }
         .header {
             background: linear-gradient(135deg, #2d2b35, #3d3b45);
-            color: white; padding: 40px; border-radius: 12px; margin-bottom: 32px;
+            color: white; padding: 28px 32px; border-radius: 10px; margin-bottom: 24px;
         }
-        .header h1 { font-size: 28px; margin-bottom: 8px; font-weight: 700; }
-        .header .subtitle { font-size: 16px; opacity: 0.8; }
-        .header .meta { margin-top: 20px; font-size: 13px; opacity: 0.6; display: flex; gap: 24px; flex-wrap: wrap; }
+        .header h1 { font-size: 24px; margin-bottom: 6px; font-weight: 700; letter-spacing: -0.01em; }
+        .header .subtitle { font-size: 14px; opacity: 0.8; }
+        .header .meta { margin-top: 16px; font-size: 12px; opacity: 0.6; display: flex; gap: 20px; flex-wrap: wrap; }
         .feature {
-            background: white; border-radius: 12px; padding: 32px;
-            margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-            border-left: 4px solid #b1ada1; position: relative;
+            background: white; border-radius: 10px; padding: 24px 28px;
+            margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+            border-left: 3px solid #b1ada1; position: relative;
         }
         .feature.transverse { border-left-color: #b1ada1; }
-        .feature h2 { font-size: 20px; margin-bottom: 6px; color: #2d2b35; }
-        .feature .feat-desc { font-size: 14px; color: #6b6560; margin-bottom: 20px; }
-        .feature h3 { font-size: 15px; font-weight: 600; color: #4a4850; margin: 16px 0 8px 0; }
-        .feature ul { margin-left: 20px; margin-bottom: 12px; }
-        .feature li { font-size: 14px; margin-bottom: 4px; color: #2d2b35; }
+        .feature h2 { font-size: 18px; margin-bottom: 6px; color: #2d2b35; font-weight: 700; }
+        .feature .feat-desc { font-size: 13px; color: #6b6560; margin-bottom: 16px; }
+        .feature h3 { font-size: 14px; font-weight: 600; color: #4a4850; margin: 14px 0 6px 0; }
+        .feature ul { margin-left: 18px; margin-bottom: 10px; }
+        .feature li { font-size: 13px; margin-bottom: 4px; color: #2d2b35; }
         .tag {
-            display: inline-block; font-size: 11px; font-weight: 600;
-            padding: 2px 8px; border-radius: 4px; margin-left: 4px; vertical-align: middle;
+            display: inline-block; font-size: 10px; font-weight: 600;
+            padding: 2px 7px; border-radius: 6px; margin-left: 4px; vertical-align: middle;
+            letter-spacing: 0.02em;
         }
         .tag.must { background: #dcfce7; color: #166534; }
         .tag.nice { background: #fef3c7; color: #92400e; }
@@ -271,17 +272,18 @@
         .tag.refacto { background: #f3e8ff; color: #6b21a8; }
         .tag.offert { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
         .section {
-            background: white; border-radius: 12px; padding: 32px;
-            margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); position: relative;
+            background: white; border-radius: 10px; padding: 24px 28px;
+            margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); position: relative;
         }
-        .section h2 { font-size: 22px; margin-bottom: 20px; color: #2d2b35; }
+        .section h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; color: #2d2b35; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
         thead th {
-            background: #f9f8f6; padding: 10px 12px; text-align: left;
+            background: #f9f8f6; padding: 9px 12px; text-align: left;
             font-weight: 600; color: #4a4850; border-bottom: 2px solid #e8e6e0;
+            font-size: 12px; letter-spacing: 0.01em;
         }
         thead th.r { text-align: right; }
-        tbody td { padding: 8px 12px; border-bottom: 1px solid #f4f3ee; vertical-align: middle; }
+        tbody td { padding: 7px 12px; border-bottom: 1px solid #f4f3ee; vertical-align: middle; font-size: 13px; }
         tbody td.r { text-align: right; white-space: nowrap; }
         tbody tr:hover { background: #faf9f7; }
         tbody tr.feat td { font-weight: 700; color: #2d2b35; background: #faf9f7; border-bottom: 1px solid #e8e6e0; cursor: default; }
@@ -325,19 +327,19 @@
         .detail-table .feat-group:not(.no-collapse).expanded tr.feat td:first-child::before {
             transform: rotate(45deg);
         }
-        tbody tr.total td { font-weight: 700; font-size: 14px; border-top: 3px solid #2d2b35; padding-top: 12px; padding-bottom: 12px; }
+        tbody tr.total td { font-weight: 700; font-size: 13px; border-top: 2px solid #2d2b35; padding-top: 10px; padding-bottom: 10px; }
         .callout {
-            background: #fef3c7; border-left: 4px solid #f59e0b;
-            padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 12px 0; font-size: 13px; color: #92400e;
+            background: #fef3c7; border-left: 3px solid #f59e0b;
+            padding: 12px 16px; border-radius: 0 6px 6px 0; margin: 10px 0; font-size: 12px; color: #92400e;
         }
         .callout strong { color: #78350f; }
         .notes {
-            background: white; border-radius: 12px; padding: 32px;
-            margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); position: relative;
+            background: white; border-radius: 10px; padding: 24px 28px;
+            margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); position: relative;
         }
-        .notes h2 { font-size: 22px; margin-bottom: 16px; color: #2d2b35; }
-        .notes ul { margin-left: 20px; }
-        .notes li { font-size: 14px; margin-bottom: 6px; color: #4a4850; }
+        .notes h2 { font-size: 18px; font-weight: 700; margin-bottom: 14px; color: #2d2b35; }
+        .notes ul { margin-left: 18px; }
+        .notes li { font-size: 13px; margin-bottom: 5px; color: #4a4850; }
         @media print {
             body { background: white; padding: 20px; }
             .topbar, .left-sidebar, .left-overlay, .sidenav, .comment-panel, .comment-pin, .comment-bubble { display: none !important; }
@@ -554,7 +556,7 @@
         <ul><li>Assemblage Lightning Home Page Sales : KPIs (haut) + 5 backlogs + assignation profil Sales <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li></ul>
     </div>
 
-    <div class="header" id="propale" style="margin-top: 48px;">
+    <div class="header" id="propale" style="margin-top: 40px;">
         <h1>Proposition Commerciale — Cockpit Sales</h1>
         <div class="subtitle">Détail des charges, packages et planning de livraison</div>
         <div class="meta"><span>Version 1.0 — 30 mars 2026</span><span>Client : CarJager</span></div>
@@ -644,7 +646,7 @@
                 <tr class="total" style="border-top:none;"><td style="color:#c15f3c;">Devis sur mesure</td><td class="r"></td><td class="r"></td><td class="r"></td><td class="r" style="color:#c15f3c;"><strong id="customTotal">—</strong></td></tr>
             </tbody>
         </table>
-        <p style="margin-top:12px; font-size:12px; color:#8a8780;">Base tarifaire : 500 &euro; HT / jour-homme. La colonne "Sur mesure" se calcule automatiquement selon les jobs cochés dans le détail ci-dessus.</p>
+        <p style="margin-top:10px; font-size:11px; color:#8a8780;">Base tarifaire : 500 &euro; HT / jour-homme. La colonne "Sur mesure" se calcule automatiquement selon les jobs cochés dans le détail ci-dessus.</p>
     </div>
 
     <div class="section" id="planning">
