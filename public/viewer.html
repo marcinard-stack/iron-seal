@@ -1143,6 +1143,44 @@
         });
     }
 
+    // ===== POLLING — sync checkbox state every 5s =====
+    var lastJobStates = {}; // jobId → included
+
+    function pollFeatures() {
+        if (!SLUG) return;
+        fetch('/api/features?slug=' + encodeURIComponent(SLUG))
+            .then(function(r) { return r.json(); })
+            .then(function(features) {
+                var changed = false;
+                features.forEach(function(feat) {
+                    feat.jobs.forEach(function(job) {
+                        if (job.is_offered) return;
+                        var prev = lastJobStates[job.id];
+                        if (prev !== undefined && prev !== job.included) {
+                            changed = true;
+                            // Update matrix checkbox
+                            var matrixCb = document.querySelector('.detail-table tr[data-job-id="' + job.id + '"] .job-check');
+                            if (matrixCb) matrixCb.checked = job.included;
+                            // Update CDC checkbox
+                            var cdcCb = document.querySelector('.job-check-cdc[data-job-id="' + job.id + '"]');
+                            if (cdcCb) cdcCb.checked = job.included;
+                        }
+                        lastJobStates[job.id] = job.included;
+                    });
+                });
+                if (changed) recalcAll();
+            })
+            .catch(function() {}); // silent fail on poll
+    }
+
+    function initJobStates(features) {
+        features.forEach(function(feat) {
+            feat.jobs.forEach(function(job) {
+                if (!job.is_offered) lastJobStates[job.id] = job.included;
+            });
+        });
+    }
+
     // Load features + exclusions from API
     if (SLUG) {
         Promise.all([
@@ -1154,7 +1192,10 @@
             recalcAll();
             setupCdcCheckboxes(allFeatures);
             bindMatrixSync();
+            initJobStates(allFeatures);
             renderExclusions(results[1]);
+            // Start polling every 5 seconds
+            setInterval(pollFeatures, 5000);
         }).catch(function(err) {
             console.warn('API load failed:', err);
         });
