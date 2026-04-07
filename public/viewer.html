@@ -271,10 +271,11 @@
         .feature h2 { font-size: 18px; margin-bottom: 6px; color: #2d2b35; font-weight: 700; }
         .feature .feat-desc { font-size: 13px; color: #6b6560; margin-bottom: 16px; }
         .feature h3 { font-size: 14px; font-weight: 600; color: #4a4850; margin: 14px 0 6px 0; }
-        .feature ul { margin-left: 18px; margin-bottom: 10px; }
-        .feature li { font-size: 13px; margin-bottom: 4px; color: #2d2b35; }
-        .feature li[data-job-pos] { list-style: none; margin-left: -18px; margin-bottom: 8px; }
-        .feature li.job-subtask { color: #8a8780; font-size: 12px; margin-left: 14px; list-style: '\2013\0020'; }
+        .feature ul { margin-left: 18px; margin-bottom: 10px; list-style: none; }
+        .feature li { font-size: 12px; margin-bottom: 3px; color: #8a8780; padding-left: 14px; position: relative; }
+        .feature li::before { content: '\2013'; position: absolute; left: 0; color: #b1ada1; }
+        .feature li[data-job-pos] { list-style: none; margin-left: -18px; margin-bottom: 8px; font-size: 13px; color: #2d2b35; padding-left: 0; }
+        .feature li[data-job-pos]::before { display: none; }
         .job-row {
             display: flex; align-items: baseline; gap: 0;
         }
@@ -1123,14 +1124,6 @@
                     + '<span class="job-incl"><input type="checkbox" class="job-check-cdc" data-job-id="' + job.id + '"' + (job.included ? ' checked' : '') + '></span>'
                     + '</div>';
 
-                // Indent following li items that are sub-tasks (no data-job-pos, no tags)
-                var next = li.nextElementSibling;
-                while (next && next.tagName === 'LI' && !next.hasAttribute('data-job-pos')) {
-                    if (!next.querySelector('.tag')) {
-                        next.classList.add('job-subtask');
-                    }
-                    next = next.nextElementSibling;
-                }
             });
         });
 
