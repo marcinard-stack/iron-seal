@@ -679,7 +679,7 @@
 </div>
 
 <!-- PROPOSE MODAL -->
-<div class="confirm-overlay" id="proposeOverlay" style="display:none;">
+<div class="confirm-overlay" id="proposeOverlay">
     <div class="confirm-modal" style="width:420px;">
         <p style="font-size:15px; font-weight:700; color:#2d2b35; margin-bottom:4px;">Proposer le devis</p>
         <p style="font-size:13px; color:#8a8780; margin-bottom:16px;">Le client recevra un email avec un lien direct vers la proposition.</p>
@@ -695,7 +695,7 @@
 </div>
 
 <!-- ONBOARDING MODAL (post-signature) -->
-<div class="confirm-overlay" id="onboardOverlay" style="display:none;">
+<div class="confirm-overlay" id="onboardOverlay">
     <div class="confirm-modal" style="width:460px;">
         <p style="font-size:15px; font-weight:700; color:#2d2b35; margin-bottom:4px;">Premier devis sur deal-forge ?</p>
         <p style="font-size:13px; color:#8a8780; margin-bottom:16px;">Complétez vos informations pour qu'elles apparaissent sur vos documents.</p>
@@ -1058,8 +1058,8 @@
             submitBtn.disabled = !emailInput.value.includes('@');
         });
         emailInput.addEventListener('keydown', function(e) { if (e.key === 'Enter' && !submitBtn.disabled) submitBtn.click(); });
-        cancelBtn.addEventListener('click', function() { overlay.style.display = 'none'; });
-        overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.style.display = 'none'; });
+        cancelBtn.addEventListener('click', function() { overlay.classList.remove('show'); });
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.classList.remove('show'); });
 
         submitBtn.addEventListener('click', function() {
             var email = emailInput.value.trim();
@@ -1067,16 +1067,14 @@
             submitBtn.disabled = true; submitBtn.textContent = 'Envoi en cours...';
             var dfToken = localStorage.getItem('df_token') || '';
 
-            // 1. Invite client (creates account if needed, links to project, sends email)
             fetch('/api/notify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
                 body: JSON.stringify({ type: 'invite_and_propose', slug: SLUG, client_email: email })
             }).then(function(r) { return r.json(); }).then(function(result) {
-                // 2. Change status
                 return changeStatus('proposed');
             }).then(function() {
-                overlay.style.display = 'none';
+                overlay.classList.remove('show');
                 submitBtn.textContent = 'Envoyer la proposition'; submitBtn.disabled = false;
             }).catch(function() {
                 submitBtn.textContent = 'Envoyer la proposition'; submitBtn.disabled = false;
@@ -1097,15 +1095,14 @@
         }
         fields.forEach(function(id) { document.getElementById(id).addEventListener('input', checkFilled); });
 
-        skipBtn.addEventListener('click', function() { overlay.style.display = 'none'; });
-        overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.style.display = 'none'; });
+        skipBtn.addEventListener('click', function() { overlay.classList.remove('show'); });
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.classList.remove('show'); });
 
         saveBtn.addEventListener('click', function() {
             saveBtn.disabled = true; saveBtn.textContent = 'Enregistrement...';
             var dfToken = localStorage.getItem('df_token') || '';
             var headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken };
 
-            // Save account info
             fetch('/api/auth?action=me', {
                 method: 'PUT', headers: headers,
                 body: JSON.stringify({
@@ -1113,7 +1110,6 @@
                     tva_intra: document.getElementById('obTva').value.trim()
                 })
             }).then(function() {
-                // Save address
                 return fetch('/api/account?entity=addresses', {
                     method: 'POST', headers: headers,
                     body: JSON.stringify({
@@ -1126,12 +1122,12 @@
                     })
                 });
             }).then(function() {
-                overlay.style.display = 'none';
+                overlay.classList.remove('show');
                 saveBtn.textContent = 'Valider'; saveBtn.disabled = false;
             });
         });
 
-        window.showOnboarding = function() { overlay.style.display = 'flex'; };
+        window.showOnboarding = function() { overlay.classList.add('show'); };
     })();
 
     // ===== USER PROFILE (sidebar) =====
@@ -1965,22 +1961,15 @@
         banner.style.display = 'none'; banner.className = 'status-banner';
         bar.style.display = 'none'; buttons.innerHTML = '';
 
-        console.log('[SETUP]', 'status:', status, 'isFreelance:', isFreelance, 'isClient:', isClient, 'USER_ACCOUNT_ID:', USER_ACCOUNT_ID, 'freelance_account_id:', PROJECT_DATA.freelance_account_id);
         if (status === 'draft' && isFreelance) {
             bar.style.display = 'block';
             text.textContent = 'Votre proposition est prête ?';
             buttons.innerHTML = '<button class="action-btn primary" id="btnPropose">Proposer le devis</button>';
-            var btnP = document.getElementById('btnPropose');
-            console.log('[SETUP] btnPropose found:', !!btnP, 'disabled:', btnP ? btnP.disabled : 'N/A');
-            btnP.addEventListener('click', function(e) {
-                console.log('[CLICK] Propose clicked', e);
-                var propOverlay = document.getElementById('proposeOverlay');
-                console.log('[CLICK] proposeOverlay found:', !!propOverlay);
-                var propEmail = document.getElementById('proposeEmail');
-                var propSubmit = document.getElementById('proposeSubmit');
-                propEmail.value = ''; propSubmit.disabled = true;
-                propOverlay.style.display = 'flex';
-                propEmail.focus();
+            document.getElementById('btnPropose').addEventListener('click', function() {
+                document.getElementById('proposeOverlay').classList.add('show');
+                document.getElementById('proposeEmail').value = '';
+                document.getElementById('proposeSubmit').disabled = true;
+                document.getElementById('proposeEmail').focus();
             });
             trackScroll('btnPropose');
         }
