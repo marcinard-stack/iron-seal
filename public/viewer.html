@@ -2030,6 +2030,7 @@
     }
 
     function generateSignedPDF(sigData) {
+        if (!window.jspdf) return null;
         var jsPDF = window.jspdf.jsPDF;
         var doc = new jsPDF();
         var y = 20;
@@ -2113,8 +2114,8 @@
             signOverlay.classList.remove('show');
             signSubmit.textContent = 'Signer le devis';
 
-            // Generate PDF
-            var pdfData = generateSignedPDF({ name: name, city: city, date: dateStr, hash: hash, sigImage: sigImage, ip: result.ip_address });
+            // Generate PDF (optional — if jsPDF loaded)
+            try { generateSignedPDF({ name: name, city: city, date: dateStr, hash: hash, sigImage: sigImage, ip: result.ip_address }); } catch(e) {}
 
             // Show success modal
             document.getElementById('successOverlay').classList.add('show');
