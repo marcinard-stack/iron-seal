@@ -375,6 +375,33 @@
         .notes h2 { font-size: 18px; font-weight: 700; margin-bottom: 14px; color: #2d2b35; }
         .notes ul { margin-left: 18px; }
         .notes li { font-size: 13px; margin-bottom: 5px; color: #4a4850; }
+        /* ---- EMAIL GATE ---- */
+        .email-gate {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: #f4f3ee; z-index: 600;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .email-gate-card {
+            background: white; border-radius: 10px; padding: 32px;
+            width: 380px; max-width: 90vw; box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .email-gate-card h2 { font-size: 18px; font-weight: 700; color: #2d2b35; margin-bottom: 4px; }
+        .email-gate-card p { font-size: 13px; color: #8a8780; margin-bottom: 20px; }
+        .email-gate-card input {
+            width: 100%; padding: 10px 14px; border: 1px solid #e8e6e0; border-radius: 8px;
+            font-size: 13px; font-family: inherit; color: #2d2b35; outline: none;
+            margin-bottom: 10px;
+        }
+        .email-gate-card input:focus { border-color: #c15f3c; box-shadow: 0 0 0 2px rgba(193,95,60,0.15); }
+        .email-gate-card button {
+            width: 100%; padding: 10px; background: #2d2b35; color: white;
+            border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
+            cursor: pointer; transition: background 0.15s; margin-top: 4px;
+        }
+        .email-gate-card button:hover { background: #3d3b45; }
+        .email-gate-card button:disabled { opacity: 0.4; cursor: default; }
+
         /* ---- SHARE MODAL ---- */
         .share-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -449,6 +476,17 @@
             </div>
             <p id="shareCopied" style="font-size:11px; color:#166534; margin-top:6px; display:none;">Lien copié !</p>
         </div>
+    </div>
+</div>
+
+<!-- EMAIL GATE (shared view) -->
+<div class="email-gate" id="emailGate" style="display:none;">
+    <div class="email-gate-card">
+        <h2 id="gateTitle">Accéder au projet</h2>
+        <p>Renseignez vos coordonnées pour consulter ce document.</p>
+        <input type="text" id="gateName" placeholder="Votre prénom">
+        <input type="email" id="gateEmail" placeholder="Votre email">
+        <button id="gateSubmit">Accéder au document</button>
     </div>
 </div>
 
@@ -1439,17 +1477,54 @@
         });
     }
 
-    // Shared view: resolve token → slug, then load
+    // ===== EMAIL GATE =====
+    function showEmailGate(share) {
+        var gate = document.getElementById('emailGate');
+        var title = document.getElementById('gateTitle');
+        title.textContent = share.title || 'Accéder au projet';
+        gate.style.display = 'flex';
+
+        document.getElementById('gateSubmit').addEventListener('click', function() {
+            var email = document.getElementById('gateEmail').value.trim();
+            var name = document.getElementById('gateName').value.trim();
+            if (!email || !email.includes('@')) return;
+
+            this.disabled = true;
+            this.textContent = 'Chargement...';
+
+            fetch('/api/guests', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ project_id: share.project_id, email: email, name: name })
+            }).then(function() {
+                gate.style.display = 'none';
+                loadProject(share.slug);
+            }).catch(function() {
+                gate.style.display = 'none';
+                loadProject(share.slug);
+            });
+        });
+
+        // Enter key submits
+        document.getElementById('gateEmail').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') document.getElementById('gateSubmit').click();
+        });
+    }
+
+    // Shared view: resolve token → slug, then load (or show gate)
     if (IS_SHARED && SHARE_TOKEN) {
         fetch('/api/shares?token=' + encodeURIComponent(SHARE_TOKEN))
             .then(function(r) { if (!r.ok) throw new Error('Invalid link'); return r.json(); })
             .then(function(share) {
                 SHARE_PERMISSION = share.permission;
-                // Hide edit controls in view-only mode
                 if (share.permission === 'view') {
                     document.getElementById('commentToggle').style.display = 'none';
                 }
-                loadProject(share.slug);
+                if (share.require_email) {
+                    showEmailGate(share);
+                } else {
+                    loadProject(share.slug);
+                }
             })
             .catch(function() {
                 document.getElementById('mainContent').innerHTML = '<div style="text-align:center; padding:80px 20px; color:#8a8780;"><h2 style="color:#2d2b35; margin-bottom:8px;">Lien invalide ou expiré</h2><p>Ce lien de partage n\'est plus disponible.</p></div>';
