@@ -1,19 +1,21 @@
 import { neon } from '@neondatabase/serverless';
 import crypto from 'crypto';
 
-async function sendEmail(to, subject, html) {
+async function sendEmail(to, subject, html, attachments) {
+  var payload = {
+    from: 'deal-forge <notifications@mail.blueheronlab.com>',
+    to: to,
+    subject: subject,
+    html: html
+  };
+  if (attachments) payload.attachments = attachments;
   await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer ' + process.env.RESEND_KEY
     },
-    body: JSON.stringify({
-      from: 'deal-forge <notifications@mail.blueheronlab.com>',
-      to: to,
-      subject: subject,
-      html: html
-    })
+    body: JSON.stringify(payload)
   });
 }
 
@@ -58,7 +60,7 @@ export default async function handler(req, res) {
 
     // POST: sign the devis
     if (req.method === 'POST') {
-      var { slug, signer_name, devis_hash, city } = req.body;
+      var { slug, signer_name, devis_hash, city, pdf_base64 } = req.body;
       if (!slug || !signer_name || !devis_hash) return res.status(400).json({ error: 'slug, signer_name, devis_hash required' });
 
       // Resolve signer from auth
@@ -97,16 +99,25 @@ export default async function handler(req, res) {
       // Format date
       var signedAt = new Date().toLocaleString('fr-FR', { dateStyle: 'full', timeStyle: 'short', timeZone: 'Europe/Paris' });
 
+      // PDF attachment
+      var attachments = null;
+      if (pdf_base64) {
+        attachments = [{
+          filename: 'devis-signe-' + project.slug + '.pdf',
+          content: pdf_base64
+        }];
+      }
+
       // Notify freelance
       if (project.freelance_account_id) {
         var freelancers = await sql`SELECT email FROM users WHERE account_id = ${project.freelance_account_id}`;
         if (freelancers.length) {
-          await sendEmail(freelancers[0].email, 'Devis signé : ' + project.title, signedEmail(project.title, signer_name, signedAt, devis_hash));
+          await sendEmail(freelancers[0].email, 'Devis signé : ' + project.title, signedEmail(project.title, signer_name, signedAt, devis_hash), attachments);
         }
       }
 
       // Notify signer (client)
-      await sendEmail(signer.email, 'Confirmation de signature : ' + project.title, signedEmail(project.title, signer_name, signedAt, devis_hash));
+      await sendEmail(signer.email, 'Confirmation de signature : ' + project.title, signedEmail(project.title, signer_name, signedAt, devis_hash), attachments);
 
       return res.status(201).json(rows[0]);
     }

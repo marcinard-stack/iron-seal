@@ -674,7 +674,7 @@
         </div>
         <h3>Document signé</h3>
         <p>La proposition a été signée avec succès. Un email de confirmation avec le document signé a été envoyé aux deux parties.</p>
-        <button class="confirm-ok" id="successClose" style="width:100%;">Fermer</button>
+        <button class="confirm-ok" id="successClose" style="padding:10px 32px;">Fermer</button>
     </div>
 </div>
 
@@ -682,6 +682,7 @@
 <div class="confirm-overlay" id="confirmOverlay">
     <div class="confirm-modal">
         <p id="confirmText"></p>
+        <textarea id="confirmTextarea" style="display:none; width:100%; padding:10px 12px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none; resize:none; min-height:80px; margin-bottom:16px; line-height:1.5;" placeholder=""></textarea>
         <div class="confirm-actions">
             <button class="confirm-cancel" id="confirmCancel">Annuler</button>
             <button class="confirm-ok" id="confirmOk">Confirmer</button>
@@ -980,17 +981,27 @@
     var confirmCancel = document.getElementById('confirmCancel');
     var confirmCallback = null;
 
-    function showConfirm(message, okLabel, style, onConfirm) {
+    var confirmTextarea = document.getElementById('confirmTextarea');
+
+    function showConfirm(message, okLabel, style, onConfirm, opts) {
         confirmText.textContent = message;
         confirmOk.textContent = okLabel || 'Confirmer';
         confirmOk.className = 'confirm-ok' + (style ? ' ' + style : '');
         confirmCallback = onConfirm;
+        if (opts && opts.textarea) {
+            confirmTextarea.style.display = 'block';
+            confirmTextarea.value = opts.defaultText || '';
+            confirmTextarea.placeholder = opts.placeholder || '';
+        } else {
+            confirmTextarea.style.display = 'none';
+        }
         confirmOverlay.classList.add('show');
+        if (opts && opts.textarea) confirmTextarea.focus();
     }
 
     confirmCancel.addEventListener('click', function() { confirmOverlay.classList.remove('show'); confirmCallback = null; });
     confirmOverlay.addEventListener('click', function(e) { if (e.target === confirmOverlay) { confirmOverlay.classList.remove('show'); confirmCallback = null; } });
-    confirmOk.addEventListener('click', function() { confirmOverlay.classList.remove('show'); if (confirmCallback) confirmCallback(); confirmCallback = null; });
+    confirmOk.addEventListener('click', function() { confirmOverlay.classList.remove('show'); if (confirmCallback) confirmCallback(confirmTextarea.value); confirmCallback = null; });
 
     // ===== USER PROFILE (sidebar) =====
     var dfUser = null;
@@ -1879,16 +1890,16 @@
                 buttons.innerHTML = '<button class="action-btn secondary" id="btnRequestEdit">Demander des modifications</button>'
                     + '<button class="action-btn primary" id="btnSign">Accepter et signer</button>';
                 document.getElementById('btnRequestEdit').addEventListener('click', function() {
-                    showConfirm('Demander au freelance de modifier sa proposition ? Il sera notifié par email.', 'Demander des modifications', '', function() {
+                    showConfirm('Décrivez les modifications souhaitées :', 'Envoyer la demande', '', function(message) {
                         var dfToken = localStorage.getItem('df_token') || '';
                         changeStatus('draft').then(function() {
                             fetch('/api/notify', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
-                                body: JSON.stringify({ type: 'back_to_draft', slug: SLUG })
+                                body: JSON.stringify({ type: 'back_to_draft', slug: SLUG, message: message })
                             });
                         });
-                    });
+                    }, { textarea: true, defaultText: 'Voir les commentaires dans le devis.', placeholder: 'Décrivez vos demandes de modification...' });
                 });
                 document.getElementById('btnSign').addEventListener('click', function() {
                     openSignModal();
@@ -2103,19 +2114,23 @@
         var sigImage = getSignatureImage();
         var dfToken = localStorage.getItem('df_token') || '';
 
+        // Generate PDF first
+        var pdfBase64 = null;
+        try {
+            var pdfData = generateSignedPDF({ name: name, city: city, date: dateStr, hash: hash, sigImage: sigImage });
+            if (pdfData) pdfBase64 = pdfData.split(',')[1]; // remove data:application/pdf;base64, prefix
+        } catch(e) {}
+
         fetch('/api/signature', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
-            body: JSON.stringify({ slug: SLUG, signer_name: name, devis_hash: hash, city: city, signature_image: sigImage })
+            body: JSON.stringify({ slug: SLUG, signer_name: name, devis_hash: hash, city: city, pdf_base64: pdfBase64 })
         }).then(function(r) {
             if (!r.ok) return r.json().then(function(d) { throw new Error(d.error); });
             return r.json();
         }).then(function(result) {
             signOverlay.classList.remove('show');
             signSubmit.textContent = 'Signer le devis';
-
-            // Generate PDF (optional — if jsPDF loaded)
-            try { generateSignedPDF({ name: name, city: city, date: dateStr, hash: hash, sigImage: sigImage, ip: result.ip_address }); } catch(e) {}
 
             // Show success modal
             document.getElementById('successOverlay').classList.add('show');

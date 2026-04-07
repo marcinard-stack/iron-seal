@@ -38,14 +38,16 @@ function proposalEmail(projectTitle, freelanceName, viewLink) {
     + '</div>';
 }
 
-function backToDraftEmail(projectTitle, requesterName, isClient, link) {
+function backToDraftEmail(projectTitle, requesterName, isClient, link, message) {
   var action = isClient ? 'a demandé des modifications sur' : 'a repassé en brouillon';
+  var msgBlock = message ? '<div style="background:#f9f8f6; border-left:3px solid #c15f3c; border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0; font-size:13px; color:#4a4850; line-height:1.6; white-space:pre-wrap;">' + message.replace(/</g, '&lt;') + '</div>' : '';
   return '<div style="font-family:-apple-system,system-ui,sans-serif; max-width:520px; margin:0 auto; padding:32px 0;">'
     + '<p style="font-size:14px; color:#6b6560; margin-bottom:4px;">deal-forge</p>'
     + '<h2 style="font-size:20px; color:#2d2b35; margin-bottom:16px;">Retour en brouillon</h2>'
-    + '<p style="font-size:14px; color:#4a4850; line-height:1.6; margin-bottom:24px;">'
+    + '<p style="font-size:14px; color:#4a4850; line-height:1.6; margin-bottom:8px;">'
     + '<strong>' + requesterName + '</strong> ' + action + ' le projet <strong>' + projectTitle + '</strong>.</p>'
-    + '<a href="' + link + '" style="display:inline-block; padding:12px 28px; background:#2d2b35; color:white; text-decoration:none; border-radius:8px; font-size:14px; font-weight:600;">Voir le projet</a>'
+    + msgBlock
+    + '<a href="' + link + '" style="display:inline-block; padding:12px 28px; background:#2d2b35; color:white; text-decoration:none; border-radius:8px; font-size:14px; font-weight:600; margin-top:16px;">Voir le projet</a>'
     + '<p style="font-size:12px; color:#8a8780; margin-top:32px;">Cet email a été envoyé via deal-forge.</p>'
     + '</div>';
 }
@@ -59,7 +61,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   var sql = neon(process.env.DATABASE_URL);
-  var { type, slug, view_link } = req.body;
+  var { type, slug, view_link, message } = req.body;
 
   // Resolve sender from session
   var auth = (req.headers.authorization || '').replace('Bearer ', '');
@@ -119,7 +121,7 @@ export default async function handler(req, res) {
       var result = await sendEmail(
         recipients[0].email,
         'Retour en brouillon : ' + project.title,
-        backToDraftEmail(project.title, requesterName, isClient, directLink)
+        backToDraftEmail(project.title, requesterName, isClient, directLink, message)
       );
       return res.json({ ok: true, email: result, sent_to: recipients[0].email });
     }
