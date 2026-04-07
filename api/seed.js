@@ -1,6 +1,11 @@
 import { neon } from '@neondatabase/serverless';
 
 export default async function handler(req, res) {
+  if (req.method === 'GET') {
+    var sql2 = neon(process.env.DATABASE_URL);
+    var accounts = await sql2`SELECT a.id, a.name, u.email, u.account_id FROM accounts a LEFT JOIN users u ON u.account_id = a.id ORDER BY a.id`;
+    return res.json(accounts);
+  }
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
   const sql = neon(process.env.DATABASE_URL);
