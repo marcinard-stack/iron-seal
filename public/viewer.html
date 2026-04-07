@@ -2218,19 +2218,16 @@
         doc.setFontSize(12); doc.setFont(undefined, 'bold'); doc.setTextColor(193, 95, 60);
         doc.text('Annexe B — Planning de livraison', mx, y); y += 8; doc.setFont(undefined, 'normal');
         document.querySelectorAll('#planningBody tr').forEach(function(tr) {
-            checkPage(8);
             var cells = tr.querySelectorAll('td');
             if (cells.length < 4) return;
             var week = pdfSafe(cells[0].textContent.trim());
             var custom = pdfSafe(cells[3].textContent.trim());
-            if (!week) return;
+            if (!week || !custom) return;
+            checkPage(8);
             doc.setFontSize(8); doc.setFont(undefined, 'bold'); doc.setTextColor(30, 30, 30);
             doc.text(week, mx, y);
-            if (custom) {
-                doc.setFont(undefined, 'normal'); doc.setFontSize(7.5); doc.setTextColor(193, 95, 60);
-                doc.text(custom, mx + 75, y);
-            }
-            doc.setFont(undefined, 'normal');
+            doc.setFont(undefined, 'normal'); doc.setFontSize(7.5); doc.setTextColor(193, 95, 60);
+            doc.text(custom, mx + 75, y);
             y += 5;
         });
 
