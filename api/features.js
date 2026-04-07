@@ -61,15 +61,14 @@ export default async function handler(req, res) {
       jobs: jobs.filter(j => j.feature_id === f.id)
     }));
 
-    // Clean stale presence (>15s) and get online users
+    // Clean stale presence (>15s) and get all online users (including self)
     await sql`DELETE FROM presence WHERE last_seen < NOW() - INTERVAL '15 seconds'`;
     var online = await sql`
       SELECT p.user_id, u.name FROM presence p
       JOIN users u ON u.id = p.user_id
       WHERE p.project_slug = ${slug} AND p.user_id IS NOT NULL
     `;
-    // Filter out current user
-    var others = online.filter(function(o) { return o.user_id !== currentUserId; });
+    var others = online;
 
     return res.json({ features: result, presence: others });
   } catch (err) {
