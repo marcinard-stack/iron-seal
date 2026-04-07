@@ -261,7 +261,8 @@
         .feature h3 { font-size: 14px; font-weight: 600; color: #4a4850; margin: 14px 0 6px 0; }
         .feature ul { margin-left: 18px; margin-bottom: 10px; }
         .feature li { font-size: 13px; margin-bottom: 4px; color: #2d2b35; }
-        .feature li[data-job-pos] { list-style: none; margin-left: -18px; margin-bottom: 6px; }
+        .feature li[data-job-pos] { list-style: none; margin-left: -18px; margin-bottom: 8px; }
+        .feature li.job-subtask { color: #6b6560; font-size: 12px; margin-left: 6px; }
         .job-row {
             display: flex; align-items: baseline; gap: 0;
         }
@@ -585,23 +586,23 @@
     <div class="section" id="detail">
         <h2>Proposition commerciale — Détail</h2>
         <table class="detail-table">
-            <thead><tr><th style="width:48%">Description</th><th style="width:13%" class="r">Type</th><th style="width:12%" class="r">Priorité</th><th style="width:12%" class="r">J/H</th><th style="width:15%" class="r">Inclus ?</th></tr></thead>
+            <thead><tr><th style="width:55%">Description</th><th style="width:10%" class="r">Type</th><th style="width:10%" class="r">Priorité</th><th style="width:10%" class="r">J/H</th><th style="width:15%" class="r">Inclus ?</th></tr></thead>
             <!-- Dynamically rendered from API -->
         </table>
     </div>
 
     <div class="section" id="packages">
-        <h2>Packages</h2>
+        <h2>Packages — J/H</h2>
         <table id="packagesTable">
-            <thead><tr><th>Catégorie</th><th class="r">Must Have</th><th class="r">Nice to Have</th><th class="r">Total</th><th class="r">%</th></tr></thead>
+            <thead><tr><th style="width:55%">Catégorie</th><th style="width:10%" class="r">Must Have</th><th style="width:10%" class="r">Nice to Have</th><th style="width:10%" class="r">Total</th><th style="width:15%" class="r" style="color:#c15f3c;">Sur mesure</th></tr></thead>
             <tbody></tbody>
         </table>
     </div>
 
     <div class="section" id="devis">
-        <h2>Devis</h2>
+        <h2>Devis — Montants</h2>
         <table id="devisTable">
-            <thead><tr><th>Catégorie</th><th class="r">Must Have</th><th class="r">Nice to Have</th><th class="r">Total</th><th class="r" style="color:#c15f3c;">Sur mesure</th></tr></thead>
+            <thead><tr><th style="width:55%">Catégorie</th><th style="width:10%" class="r">Must Have</th><th style="width:10%" class="r">Nice to Have</th><th style="width:10%" class="r">Total</th><th style="width:15%" class="r" style="color:#c15f3c;">Sur mesure</th></tr></thead>
             <tbody></tbody>
         </table>
         <p style="margin-top:10px; font-size:11px; color:#8a8780;">Base tarifaire : 500 &euro; HT / jour-homme. La colonne "Sur mesure" se calcule automatiquement selon les jobs cochés dans le détail ci-dessus.</p>
@@ -610,13 +611,13 @@
     <div class="section" id="planning">
         <h2>Planning de livraison</h2>
         <table>
-            <thead><tr><th style="width:12%">Semaine</th><th style="width:22%">Dates</th><th style="width:10%" class="r">Capacité</th><th style="width:28%">Package Must Have</th><th style="width:28%">Package complet</th></tr></thead>
+            <thead><tr><th style="width:30%">Semaine</th><th style="width:23%">Must Have</th><th style="width:23%">Complet</th><th style="width:24%" style="color:#c15f3c;">Sur mesure</th></tr></thead>
             <tbody>
-                <tr><td><strong>S1</strong></td><td>Lun. 6 — Ven. 10 avril</td><td class="r"><strong>3 J/H</strong></td><td style="color:#c15f3c; font-weight:600;">Démo mi-parcours (ven. 10, 30 min)</td><td style="color:#c15f3c; font-weight:600;">Démo mi-parcours (ven. 10, 30 min)</td></tr>
-                <tr><td><strong>S2</strong></td><td>Lun. 13 — Ven. 17 avril</td><td class="r"><strong>3 J/H</strong></td><td style="color:#c15f3c; font-weight:600;">Démo finale + recette (ven. 17, 1h)</td><td></td></tr>
-                <tr style="background: #f0fdf4;"><td></td><td>Lun. 20 avril</td><td class="r"></td><td style="color:#166534; font-weight:700;">MEP production</td><td></td></tr>
-                <tr><td><strong>S3</strong></td><td>Lun. 20 — Ven. 24 avril</td><td class="r"><strong>3 J/H</strong></td><td></td><td style="color:#c15f3c; font-weight:600;">Démo finale + recette (ven. 24, 1h)</td></tr>
-                <tr style="background: #f0fdf4;"><td></td><td>Lun. 27 avril</td><td class="r"></td><td></td><td style="color:#166534; font-weight:700;">MEP production</td></tr>
+                <tr><td><strong>S1</strong> — 6 au 10 avril <span style="color:#8a8780; font-weight:400;">(3 J/H)</span></td><td style="color:#c15f3c; font-weight:600;">Démo mi-parcours</td><td style="color:#c15f3c; font-weight:600;">Démo mi-parcours</td><td style="color:#c15f3c; font-weight:600;">Démo mi-parcours</td></tr>
+                <tr><td><strong>S2</strong> — 13 au 17 avril <span style="color:#8a8780; font-weight:400;">(3 J/H)</span></td><td style="color:#c15f3c; font-weight:600;">Démo finale + recette</td><td></td><td></td></tr>
+                <tr style="background: #f0fdf4;"><td>Lun. 20 avril</td><td style="color:#166534; font-weight:700;">MEP production</td><td></td><td></td></tr>
+                <tr><td><strong>S3</strong> — 20 au 24 avril <span style="color:#8a8780; font-weight:400;">(3 J/H)</span></td><td></td><td style="color:#c15f3c; font-weight:600;">Démo finale + recette</td><td style="color:#c15f3c; font-weight:600;">Démo finale + recette</td></tr>
+                <tr style="background: #f0fdf4;"><td>Lun. 27 avril</td><td></td><td style="color:#166534; font-weight:700;">MEP production</td><td style="color:#166534; font-weight:700;">MEP production</td></tr>
             </tbody>
         </table>
     </div>
@@ -938,6 +939,11 @@
             table.appendChild(tbody);
         });
 
+        // Totals row for J/H and selected J/H
+        var totalTbody = document.createElement('tbody');
+        totalTbody.id = 'detailTotals';
+        table.appendChild(totalTbody);
+
         // Spacer
         var spacer = document.createElement('tbody');
         spacer.innerHTML = '<tr><td colspan="5" style="padding:4px; border:none;"></td></tr>';
@@ -977,43 +983,24 @@
 
     function initExpandCollapse() {
         var featGroups = document.querySelectorAll('.detail-table .feat-group:not(.no-collapse)');
-        var clickLocked = null;
 
         featGroups.forEach(function(group) {
             var featRow = group.querySelector('tr.feat');
 
+            // Click toggles open/close
             featRow.addEventListener('click', function(e) {
                 if (e.target.closest('.job-check')) return;
-                if (clickLocked === group) {
+                if (group.classList.contains('expanded')) {
                     group.classList.remove('expanded');
-                    clickLocked = null;
                 } else {
-                    featGroups.forEach(function(g) { g.classList.remove('expanded'); });
                     group.classList.add('expanded');
-                    clickLocked = group;
                 }
             });
 
+            // Hover opens (but does not close)
             featRow.addEventListener('mouseenter', function() {
-                if (clickLocked && clickLocked !== group) {
-                    clickLocked.classList.remove('expanded');
-                    clickLocked = null;
-                }
                 if (!group.classList.contains('expanded')) {
-                    featGroups.forEach(function(g) { if (g !== group && g !== clickLocked) g.classList.remove('expanded'); });
                     group.classList.add('expanded');
-                }
-            });
-
-            group.addEventListener('mouseleave', function(e) {
-                var to = e.relatedTarget;
-                var toGroup = to ? to.closest('.feat-group') : null;
-                if (toGroup && toGroup !== group) {
-                    if (clickLocked !== group) group.classList.remove('expanded');
-                    return;
-                }
-                if (group.classList.contains('expanded') && clickLocked !== group) {
-                    clickLocked = group;
                 }
             });
         });
@@ -1032,37 +1019,42 @@
             });
         });
 
-        // Packages
+        // Compute all aggregates
         var newMust = 0, newNice = 0, refMust = 0, refNice = 0;
+        var customNew = 0, customRef = 0;
         jobs.forEach(function(j) {
             if (j.type === 'new' && j.priority === 'must') newMust += j.jh;
             else if (j.type === 'new' && j.priority === 'nice') newNice += j.jh;
             else if (j.type === 'refacto' && j.priority === 'must') refMust += j.jh;
             else if (j.type === 'refacto' && j.priority === 'nice') refNice += j.jh;
+            if (j.checked) {
+                if (j.type === 'new') customNew += j.jh;
+                else customRef += j.jh;
+            }
         });
         var newTotal = newMust + newNice;
         var refTotal = refMust + refNice;
         var allTotal = newTotal + refTotal;
         var mustTotal = newMust + refMust;
         var niceTotal = newNice + refNice;
-        var newPct = allTotal > 0 ? Math.round(newTotal / allTotal * 100) : 0;
-        var refPct = allTotal > 0 ? Math.round(refTotal / allTotal * 100) : 0;
-
-        document.querySelector('#packagesTable tbody').innerHTML =
-            '<tr><td><span class="tag new">NEW FEATURE</span></td><td class="r">' + fmtJh(newMust) + '</td><td class="r">' + (newNice > 0 ? fmtJh(newNice) : '\u2014') + '</td><td class="r"><strong>' + fmtJh(newTotal) + '</strong></td><td class="r">' + newPct + '%</td></tr>'
-            + '<tr><td><span class="tag refacto">REFACTO</span></td><td class="r">' + (refMust > 0 ? fmtJh(refMust) : '\u2014') + '</td><td class="r">' + (refNice > 0 ? fmtJh(refNice) : '\u2014') + '</td><td class="r"><strong>' + fmtJh(refTotal) + '</strong></td><td class="r">' + refPct + '%</td></tr>'
-            + '<tr class="total"><td>Package Must Have</td><td class="r" style="color:#166534;"><strong>' + fmtJh(mustTotal) + ' J/H</strong></td><td class="r">\u2014</td><td class="r">' + fmtJh(mustTotal) + ' J/H</td><td class="r"></td></tr>'
-            + '<tr class="total" style="border-top:none;"><td>Package complet</td><td class="r">' + fmtJh(mustTotal) + '</td><td class="r">' + fmtJh(niceTotal) + '</td><td class="r" style="color:#166534;"><strong>' + fmtJh(allTotal) + ' J/H</strong></td><td class="r"></td></tr>';
-
-        // Devis
-        var customNew = 0, customRef = 0;
-        jobs.forEach(function(j) {
-            if (!j.checked) return;
-            if (j.type === 'new') customNew += j.jh;
-            else customRef += j.jh;
-        });
         var customTotal = customNew + customRef;
 
+        // Detail table totals
+        var dt = document.getElementById('detailTotals');
+        if (dt) {
+            dt.innerHTML =
+                '<tr class="total"><td colspan="3">Total</td><td class="r"><strong>' + fmtJh(allTotal) + ' J/H</strong></td><td class="r"><strong>' + fmtJh(customTotal) + ' J/H</strong></td></tr>';
+        }
+
+        // Packages — 4 columns: Must Have | Nice to Have | Total | Sur mesure
+        document.querySelector('#packagesTable tbody').innerHTML =
+            '<tr><td><span class="tag new">NEW FEATURE</span></td><td class="r">' + fmtJh(newMust) + '</td><td class="r">' + (newNice > 0 ? fmtJh(newNice) : '\u2014') + '</td><td class="r"><strong>' + fmtJh(newTotal) + '</strong></td><td class="r" style="color:#c15f3c; font-weight:600;">' + (customNew > 0 ? fmtJh(customNew) : '\u2014') + '</td></tr>'
+            + '<tr><td><span class="tag refacto">REFACTO</span></td><td class="r">' + (refMust > 0 ? fmtJh(refMust) : '\u2014') + '</td><td class="r">' + (refNice > 0 ? fmtJh(refNice) : '\u2014') + '</td><td class="r"><strong>' + fmtJh(refTotal) + '</strong></td><td class="r" style="color:#c15f3c; font-weight:600;">' + (customRef > 0 ? fmtJh(customRef) : '\u2014') + '</td></tr>'
+            + '<tr class="total"><td>Package Must Have</td><td class="r" style="color:#166534;"><strong>' + fmtJh(mustTotal) + ' J/H</strong></td><td class="r">\u2014</td><td class="r">' + fmtJh(mustTotal) + ' J/H</td><td class="r"></td></tr>'
+            + '<tr class="total" style="border-top:none;"><td>Package complet</td><td class="r">' + fmtJh(mustTotal) + '</td><td class="r">' + fmtJh(niceTotal) + '</td><td class="r" style="color:#166534;"><strong>' + fmtJh(allTotal) + ' J/H</strong></td><td class="r"></td></tr>'
+            + '<tr class="total" style="border-top:none;"><td style="color:#c15f3c;">Sur mesure</td><td class="r"></td><td class="r"></td><td class="r"></td><td class="r" style="color:#c15f3c;"><strong>' + (customTotal > 0 ? fmtJh(customTotal) + ' J/H' : '\u2014') + '</strong></td></tr>';
+
+        // Devis — same 4 columns but in EUR
         document.querySelector('#devisTable tbody').innerHTML =
             '<tr><td><span class="tag new">NEW FEATURE</span></td><td class="r">' + fmtEur(newMust) + '</td><td class="r">' + (newNice > 0 ? fmtEur(newNice) : '\u2014') + '</td><td class="r"><strong>' + fmtEur(newTotal) + '</strong></td><td class="r" style="color:#c15f3c; font-weight:600;">' + (customNew > 0 ? fmtEur(customNew) : '\u2014') + '</td></tr>'
             + '<tr><td><span class="tag refacto">REFACTO</span></td><td class="r">' + (refMust > 0 ? fmtEur(refMust) : '\u2014') + '</td><td class="r">' + (refNice > 0 ? fmtEur(refNice) : '\u2014') + '</td><td class="r"><strong>' + fmtEur(refTotal) + '</strong></td><td class="r" style="color:#c15f3c; font-weight:600;">' + (customRef > 0 ? fmtEur(customRef) : '\u2014') + '</td></tr>'
