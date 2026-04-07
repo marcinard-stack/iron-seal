@@ -58,9 +58,32 @@ export default async function handler(req, res) {
       return res.json(sigs.length ? sigs[0] : null);
     }
 
-    // POST: sign the devis
+    // POST: sign the devis OR upload PDF
     if (req.method === 'POST') {
-      var { slug, signer_name, devis_hash, city, pdf_base64 } = req.body;
+      // PDF upload (after signing — sends email with attachment)
+      if (req.query.action === 'pdf') {
+        var { slug: pdfSlug, pdf_base64 } = req.body;
+        if (!pdfSlug || !pdf_base64) return res.status(400).json({ error: 'slug and pdf_base64 required' });
+        var pProjects = await sql`SELECT * FROM projects WHERE slug = ${pdfSlug}`;
+        if (!pProjects.length) return res.status(404).json({ error: 'project not found' });
+        var pProject = pProjects[0];
+        var pSig = await sql`SELECT * FROM devis_signatures WHERE project_id = ${pProject.id} ORDER BY signed_at DESC LIMIT 1`;
+        if (!pSig.length) return res.status(400).json({ error: 'no signature found' });
+        var attachments = [{ filename: 'devis-signe-' + pdfSlug + '.pdf', content: pdf_base64 }];
+        var pSignedAt = new Date(pSig[0].signed_at).toLocaleString('fr-FR', { dateStyle: 'full', timeStyle: 'short', timeZone: 'Europe/Paris' });
+        // Send to freelance
+        if (pProject.freelance_account_id) {
+          var pf = await sql`SELECT email FROM users WHERE account_id = ${pProject.freelance_account_id}`;
+          if (pf.length) await sendEmail(pf[0].email, 'Devis signé : ' + pProject.title, signedEmail(pProject.title, pSig[0].signer_name, pSignedAt, pSig[0].devis_hash), attachments);
+        }
+        // Send to client
+        if (pProject.client_account_id) {
+          var pc = await sql`SELECT email FROM users WHERE account_id = ${pProject.client_account_id}`;
+          if (pc.length) await sendEmail(pc[0].email, 'Confirmation de signature : ' + pProject.title, signedEmail(pProject.title, pSig[0].signer_name, pSignedAt, pSig[0].devis_hash), attachments);
+        }
+        return res.json({ ok: true });
+      }
+      var { slug, signer_name, devis_hash, city } = req.body;
       if (!slug || !signer_name || !devis_hash) return res.status(400).json({ error: 'slug, signer_name, devis_hash required' });
 
       // Resolve signer from auth
@@ -83,8 +106,8 @@ export default async function handler(req, res) {
       if (project.status !== 'proposed') return res.status(400).json({ error: 'Project must be in proposed status to sign' });
 
       // Get IP
-      var ip = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown';
-      if (ip.includes(',')) ip = ip.split(',')[0].trim();
+      var ip = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.connection?.remoteAddress || 'unknown';
+      if (typeof ip === 'string' && ip.includes(',')) ip = ip.split(',')[0].trim();
 
       // Save signature
       var rows = await sql`
@@ -96,30 +119,23 @@ export default async function handler(req, res) {
       // Update project status to signed
       await sql`UPDATE projects SET status = 'signed', updated_at = NOW() WHERE id = ${project.id}`;
 
-      // Format date
-      var signedAt = new Date().toLocaleString('fr-FR', { dateStyle: 'full', timeStyle: 'short', timeZone: 'Europe/Paris' });
-
-      // PDF attachment
-      var attachments = null;
-      if (pdf_base64) {
-        attachments = [{
-          filename: 'devis-signe-' + project.slug + '.pdf',
-          content: pdf_base64
-        }];
-      }
-
-      // Notify freelance
+      // Get account info for PDF
+      var freelanceInfo = null, clientInfo = null;
       if (project.freelance_account_id) {
-        var freelancers = await sql`SELECT email FROM users WHERE account_id = ${project.freelance_account_id}`;
-        if (freelancers.length) {
-          await sendEmail(freelancers[0].email, 'Devis signé : ' + project.title, signedEmail(project.title, signer_name, signedAt, devis_hash), attachments);
-        }
+        var fi = await sql`SELECT a.name, a.legal_name, a.siren, u.name as user_name, u.email as user_email FROM accounts a LEFT JOIN users u ON u.account_id = a.id WHERE a.id = ${project.freelance_account_id} LIMIT 1`;
+        if (fi.length) freelanceInfo = fi[0];
+      }
+      if (project.client_account_id) {
+        var ci = await sql`SELECT a.name, a.legal_name, a.siren, u.name as user_name, u.email as user_email FROM accounts a LEFT JOIN users u ON u.account_id = a.id WHERE a.id = ${project.client_account_id} LIMIT 1`;
+        if (ci.length) clientInfo = ci[0];
       }
 
-      // Notify signer (client)
-      await sendEmail(signer.email, 'Confirmation de signature : ' + project.title, signedEmail(project.title, signer_name, signedAt, devis_hash), attachments);
+      // Format date with time
+      var signedAt = new Date().toLocaleString('fr-FR', { dateStyle: 'full', timeStyle: 'medium', timeZone: 'Europe/Paris' });
 
-      return res.status(201).json(rows[0]);
+      // Emails with PDF will be sent in a separate call after client-side PDF generation
+
+      return res.status(201).json({ ...rows[0], freelance_info: freelanceInfo, client_info: clientInfo });
     }
 
     return res.status(405).json({ error: 'method not allowed' });
