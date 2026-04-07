@@ -32,6 +32,15 @@ export default async function handler(req, res) {
       }
     }
 
+    // Assign project to first account if unassigned
+    const proj = await sql`SELECT freelance_account_id FROM projects WHERE id = ${projectId}`;
+    if (proj.length && !proj[0].freelance_account_id) {
+      const firstAccount = await sql`SELECT id FROM accounts ORDER BY id LIMIT 1`;
+      if (firstAccount.length) {
+        await sql`UPDATE projects SET owner_account_id = ${firstAccount[0].id}, freelance_account_id = ${firstAccount[0].id} WHERE id = ${projectId}`;
+      }
+    }
+
     // Check if already seeded
     const existing = await sql`SELECT COUNT(*) as c FROM features WHERE project_id = ${projectId}`;
     if (parseInt(existing[0].c) > 0) return res.json({ ok: true, message: 'Migrations applied' });
