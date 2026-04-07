@@ -1515,8 +1515,33 @@
             text.textContent = 'Votre proposition est prête ?';
             buttons.innerHTML = '<button class="action-btn primary" id="btnPropose" disabled>Proposer le devis</button>';
             document.getElementById('btnPropose').addEventListener('click', function() {
-                if (!confirm('Proposer ce devis au client ? Le projet passera en statut "Proposé".')) return;
-                changeStatus('proposed');
+                var email = prompt('Email du client pour envoyer la proposition :');
+                if (!email || !email.includes('@')) return;
+                var btn = this; btn.disabled = true; btn.textContent = 'Envoi...';
+
+                // 1. Create share link
+                var dfToken = localStorage.getItem('df_token') || '';
+                fetch('/api/shares', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ slug: SLUG, permission: 'comment', require_email: true })
+                }).then(function(r) { return r.json(); }).then(function(share) {
+                    var viewLink = window.location.origin + '/view/' + share.token;
+
+                    // 2. Change status
+                    return changeStatus('proposed').then(function() {
+                        // 3. Send email
+                        return fetch('/api/notify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
+                            body: JSON.stringify({ type: 'proposed', slug: SLUG, client_email: email, view_link: viewLink })
+                        });
+                    });
+                }).then(function() {
+                    btn.textContent = 'Envoyé';
+                }).catch(function() {
+                    btn.disabled = false; btn.textContent = 'Proposer le devis';
+                });
             });
             trackScroll('btnPropose');
         }
@@ -1542,7 +1567,14 @@
                 buttons.innerHTML = '<button class="action-btn secondary" id="btnRequestEdit">Demander des modifications</button>';
                 document.getElementById('btnRequestEdit').addEventListener('click', function() {
                     if (!confirm('Demander au freelance de modifier sa proposition ?')) return;
-                    changeStatus('draft');
+                    var dfToken = localStorage.getItem('df_token') || '';
+                    changeStatus('draft').then(function() {
+                        fetch('/api/notify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
+                            body: JSON.stringify({ type: 'back_to_draft', slug: SLUG })
+                        });
+                    });
                 });
             }
         }
@@ -1560,7 +1592,7 @@
     }
 
     function changeStatus(newStatus) {
-        fetch('/api/projects', {
+        return fetch('/api/projects', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('df_token') || '') },
             body: JSON.stringify({ slug: SLUG, status: newStatus })
