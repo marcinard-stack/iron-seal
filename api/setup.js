@@ -242,6 +242,23 @@ export default async function handler(req, res) {
     await sql`CREATE INDEX IF NOT EXISTS idx_project_guests_project ON project_guests(project_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_project_guests_email ON project_guests(email)`;
 
+    // ── DEVIS SIGNATURES ──
+    await sql`
+      CREATE TABLE IF NOT EXISTS devis_signatures (
+        id SERIAL PRIMARY KEY,
+        project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        signer_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        signer_name VARCHAR(300) NOT NULL,
+        signer_email VARCHAR(300) NOT NULL,
+        devis_hash VARCHAR(128) NOT NULL,
+        ip_address VARCHAR(50),
+        signed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        pdf_url TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_signatures_project ON devis_signatures(project_id)`;
+
     // ── PRESENCE ──
     await sql`
       CREATE TABLE IF NOT EXISTS presence (

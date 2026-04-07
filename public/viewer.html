@@ -445,6 +445,35 @@
         .confirm-ok.primary { background: #c15f3c; }
         .confirm-ok.primary:hover { background: #a84e30; }
 
+        /* ---- SIGNATURE MODAL ---- */
+        .sign-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.3); z-index: 700;
+            display: none; align-items: center; justify-content: center;
+        }
+        .sign-overlay.show { display: flex; }
+        .sign-modal {
+            background: white; border-radius: 10px; padding: 32px;
+            width: 440px; max-width: 90vw; box-shadow: 0 16px 48px rgba(0,0,0,0.12);
+        }
+        .sign-modal h3 { font-size: 18px; font-weight: 700; color: #2d2b35; margin-bottom: 6px; }
+        .sign-modal .sign-subtitle { font-size: 13px; color: #8a8780; margin-bottom: 20px; }
+        .sign-modal .sign-field { margin-bottom: 14px; }
+        .sign-modal .sign-field label { font-size: 12px; font-weight: 600; color: #4a4850; display: block; margin-bottom: 4px; }
+        .sign-modal .sign-field input[type="text"] {
+            width: 100%; padding: 10px 14px; border: 1px solid #e8e6e0; border-radius: 8px;
+            font-size: 14px; font-family: inherit; color: #2d2b35; outline: none;
+        }
+        .sign-modal .sign-field input[type="text"]:focus { border-color: #c15f3c; box-shadow: 0 0 0 2px rgba(193,95,60,0.15); }
+        .sign-modal .sign-legal {
+            display: flex; align-items: flex-start; gap: 8px; margin: 18px 0 22px;
+            font-size: 13px; color: #4a4850; line-height: 1.5; cursor: pointer;
+        }
+        .sign-modal .sign-legal input { margin-top: 3px; accent-color: #c15f3c; width: 16px; height: 16px; flex-shrink: 0; }
+        .sign-hash { font-size: 10px; color: #b1ada1; margin-top: 12px; word-break: break-all; font-family: monospace; }
+        .status-banner.signed { background: #dcfce7; color: #166534; display: block; }
+        .signed-info { font-size: 12px; color: #8a8780; margin-top: 4px; }
+
         /* ---- EMAIL GATE ---- */
         .email-gate {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -547,6 +576,27 @@
             </div>
             <p id="shareCopied" style="font-size:11px; color:#166534; margin-top:6px; display:none;">Lien copié !</p>
         </div>
+    </div>
+</div>
+
+<!-- SIGNATURE MODAL -->
+<div class="sign-overlay" id="signOverlay">
+    <div class="sign-modal">
+        <h3>Signer cette proposition</h3>
+        <p class="sign-subtitle">En signant, vous acceptez les termes de cette proposition commerciale.</p>
+        <div class="sign-field">
+            <label>Nom complet du signataire</label>
+            <input type="text" id="signName" placeholder="Prénom Nom">
+        </div>
+        <label class="sign-legal">
+            <input type="checkbox" id="signAccept">
+            <span>Je confirme avoir lu l'intégralité de cette proposition et j'accepte les termes, le périmètre et les conditions tarifaires présentés dans ce document.</span>
+        </label>
+        <div class="confirm-actions">
+            <button class="confirm-cancel" id="signCancel">Annuler</button>
+            <button class="confirm-ok primary" id="signSubmit" disabled>Signer le devis</button>
+        </div>
+        <div class="sign-hash" id="signHash"></div>
     </div>
 </div>
 
@@ -1747,7 +1797,8 @@
             }
             if (isClient) {
                 text.textContent = '';
-                buttons.innerHTML = '<button class="action-btn secondary" id="btnRequestEdit">Demander des modifications</button>';
+                buttons.innerHTML = '<button class="action-btn secondary" id="btnRequestEdit">Demander des modifications</button>'
+                    + '<button class="action-btn primary" id="btnSign">Accepter et signer</button>';
                 document.getElementById('btnRequestEdit').addEventListener('click', function() {
                     showConfirm('Demander au freelance de modifier sa proposition ? Il sera notifié par email.', 'Demander des modifications', '', function() {
                         var dfToken = localStorage.getItem('df_token') || '';
@@ -1760,7 +1811,25 @@
                         });
                     });
                 });
+                document.getElementById('btnSign').addEventListener('click', function() {
+                    openSignModal();
+                });
             }
+        }
+
+        if (status === 'signed' || status === 'active' || status === 'delivered' || status === 'completed') {
+            // Show signed banner
+            fetch('/api/signature?slug=' + encodeURIComponent(SLUG))
+                .then(function(r) { return r.json(); })
+                .then(function(sig) {
+                    if (!sig) return;
+                    var d = new Date(sig.signed_at);
+                    var dateStr = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+                    banner.className = 'status-banner signed';
+                    banner.style.display = 'block';
+                    banner.innerHTML = 'Devis signé par <strong>' + sig.signer_name + '</strong> le ' + dateStr
+                        + '<div class="signed-info">Hash : ' + sig.devis_hash.substring(0, 16) + '...</div>';
+                });
         }
     }
 
@@ -1786,6 +1855,79 @@
             showSaved();
         }).catch(function() { showSaveError(); });
     }
+
+    // ===== SIGNATURE MODAL =====
+    var signOverlay = document.getElementById('signOverlay');
+    var signName = document.getElementById('signName');
+    var signAccept = document.getElementById('signAccept');
+    var signSubmit = document.getElementById('signSubmit');
+    var signHashEl = document.getElementById('signHash');
+
+    document.getElementById('signCancel').addEventListener('click', function() { signOverlay.classList.remove('show'); });
+    signOverlay.addEventListener('click', function(e) { if (e.target === signOverlay) signOverlay.classList.remove('show'); });
+
+    // Enable submit only when name filled + checkbox checked
+    function checkSignForm() {
+        signSubmit.disabled = !(signName.value.trim() && signAccept.checked);
+    }
+    signName.addEventListener('input', checkSignForm);
+    signAccept.addEventListener('change', checkSignForm);
+
+    async function computeDevisHash() {
+        // Hash the visible devis content (detail table + packages + devis sections)
+        var content = '';
+        ['detail', 'packages', 'devis', 'planning'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) content += el.textContent;
+        });
+        var encoder = new TextEncoder();
+        var data = encoder.encode(content);
+        var hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        var hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+    }
+
+    async function openSignModal() {
+        signName.value = dfUser ? dfUser.name : '';
+        signAccept.checked = false;
+        signSubmit.disabled = true;
+
+        var hash = await computeDevisHash();
+        signHashEl.textContent = 'Empreinte du document : ' + hash;
+        signOverlay.dataset.hash = hash;
+        signOverlay.classList.add('show');
+        signName.focus();
+    }
+
+    signSubmit.addEventListener('click', function() {
+        var name = signName.value.trim();
+        var hash = signOverlay.dataset.hash;
+        if (!name || !hash) return;
+
+        signSubmit.disabled = true;
+        signSubmit.textContent = 'Signature en cours...';
+
+        var dfToken = localStorage.getItem('df_token') || '';
+        fetch('/api/signature', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
+            body: JSON.stringify({ slug: SLUG, signer_name: name, devis_hash: hash })
+        }).then(function(r) {
+            if (!r.ok) return r.json().then(function(d) { throw new Error(d.error); });
+            return r.json();
+        }).then(function() {
+            signOverlay.classList.remove('show');
+            signSubmit.textContent = 'Signer le devis';
+            // Reload to show signed state
+            PROJECT_DATA.status = 'signed';
+            setupStatusActions();
+            showSaved();
+        }).catch(function(err) {
+            signSubmit.disabled = false;
+            signSubmit.textContent = 'Signer le devis';
+            alert('Erreur : ' + (err.message || 'Échec de la signature'));
+        });
+    });
 
     // ===== SHARE BUTTON + MODAL =====
     var shareBtn = document.getElementById('shareBtn');
