@@ -375,6 +375,18 @@
         .notes h2 { font-size: 18px; font-weight: 700; margin-bottom: 14px; color: #2d2b35; }
         .notes ul { margin-left: 18px; }
         .notes li { font-size: 13px; margin-bottom: 5px; color: #4a4850; }
+        /* ---- SHARE MODAL ---- */
+        .share-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4); z-index: 500; display: none;
+            align-items: center; justify-content: center;
+        }
+        .share-overlay.show { display: flex; }
+        .share-modal {
+            background: white; border-radius: 10px; padding: 24px 28px;
+            width: 420px; max-width: 90vw; box-shadow: 0 16px 48px rgba(0,0,0,0.15);
+        }
+
         @media print {
             body { background: white; padding: 20px; }
             .topbar, .left-sidebar, .left-overlay, .sidenav, .comment-panel, .comment-pin, .comment-bubble { display: none !important; }
@@ -399,11 +411,44 @@
         <span id="saveText">Enregistré</span>
     </div>
     <div class="topbar-right">
+        <button class="topbar-btn" id="shareBtn" title="Partager" style="display:none;">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="4" r="2.5"/><circle cx="4" cy="9" r="2.5"/><circle cx="14" cy="14" r="2.5"/><line x1="6.2" y1="10.1" x2="11.8" y2="12.9"/><line x1="6.2" y1="7.9" x2="11.8" y2="5.1"/></svg>
+        </button>
         <button class="topbar-btn notes-btn" id="commentToggle" title="Notes">
             <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="14" height="11" rx="2.5"/><polygon points="5,13 8,17 11,13"/></svg>
             <span>Notes</span>
             <span class="count" id="commentCount">0</span>
         </button>
+    </div>
+</div>
+
+<!-- SHARE MODAL -->
+<div class="share-overlay" id="shareOverlay">
+    <div class="share-modal">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 style="font-size:16px; font-weight:700; color:#2d2b35;">Partager ce projet</h3>
+            <button id="shareClose" style="background:none; border:none; font-size:20px; color:#8a8780; cursor:pointer; padding:2px 6px; border-radius:4px;">&times;</button>
+        </div>
+        <div style="margin-bottom:12px;">
+            <label style="font-size:12px; font-weight:600; color:#4a4850; display:block; margin-bottom:4px;">Permission</label>
+            <select id="sharePerm" style="width:100%; padding:8px 12px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none;">
+                <option value="view">Lecture seule</option>
+                <option value="comment" selected>Lecture + commentaires</option>
+            </select>
+        </div>
+        <div style="margin-bottom:16px;">
+            <label style="font-size:12px; font-weight:600; color:#4a4850; display:flex; align-items:center; gap:6px; cursor:pointer;">
+                <input type="checkbox" id="shareEmail" style="accent-color:#c15f3c;"> Demander l'email avant accès
+            </label>
+        </div>
+        <button id="shareGenerate" style="width:100%; padding:10px; background:#2d2b35; color:white; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; transition:background 0.15s;">Générer le lien</button>
+        <div id="shareLinkBox" style="display:none; margin-top:12px;">
+            <div style="display:flex; gap:8px;">
+                <input id="shareLinkInput" readonly style="flex:1; padding:8px 12px; border:1px solid #e8e6e0; border-radius:8px; font-size:12px; font-family:monospace; color:#2d2b35; background:#f9f8f6; outline:none;">
+                <button id="shareCopy" style="padding:8px 14px; background:#c15f3c; color:white; border:none; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap;">Copier</button>
+            </div>
+            <p id="shareCopied" style="font-size:11px; color:#166534; margin-top:6px; display:none;">Lien copié !</p>
+        </div>
     </div>
 </div>
 
@@ -646,7 +691,9 @@
 <script>
 (function() {
     var pathParts = window.location.pathname.split('/').filter(Boolean);
-    var DOC_ID = (pathParts.length >= 3 && pathParts[0] === 'deals') ? pathParts[2] : 'default';
+    var IS_SHARED = (pathParts[0] === 'view');
+    var SHARE_TOKEN = IS_SHARED ? pathParts[1] : null;
+    var DOC_ID = IS_SHARED ? '' : ((pathParts.length >= 3 && pathParts[0] === 'deals') ? pathParts[2] : 'default');
     var API = '/api/comments?doc=' + encodeURIComponent(DOC_ID);
 
     // ===== TOP BAR & SIDEBARS =====
@@ -719,14 +766,7 @@
     function apiPut(d) { return fetch(API, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) }).then(function(r) { return r.json(); }); }
     function apiDel(id) { return fetch(API, { method:'DELETE', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:id}) }); }
 
-    apiGet().then(function(rows) {
-        rows.forEach(function(row) {
-            var c = { id:row.id, x:row.x, y:row.y, text:row.text, closed:row.closed, created:new Date(row.created_at) };
-            comments.push(c);
-            spawnPin(c);
-        });
-        updateCount(); renderCards();
-    }).catch(function() { console.warn('API unavailable, working offline'); });
+    // Comments are loaded in loadProject() after slug resolution
 
     toggle.addEventListener('click', function() { panel.classList.toggle('open'); });
     closeBtn.addEventListener('click', function() { panel.classList.remove('open'); });
@@ -915,9 +955,10 @@
     function fmt(d) { return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); }
 
     // ===== LOAD DATA FROM API =====
-    var SLUG = pathParts[2] || '';
+    var SLUG = IS_SHARED ? '' : (pathParts[2] || '');
     var RATE = 500;
     var allFeatures = [];
+    var SHARE_PERMISSION = null; // set after resolving token
 
     function fmtJh(v) { return v.toFixed(2).replace('.', ','); }
     function fmtEur(v) { return Math.round(v * RATE).toLocaleString('fr-FR') + ' \u20ac'; }
@@ -1321,11 +1362,60 @@
         }).catch(function() { showSaveError(); });
     }
 
-    // Load features + exclusions from API
-    if (SLUG) {
+    // ===== SHARE BUTTON + MODAL =====
+    var shareBtn = document.getElementById('shareBtn');
+    var shareOverlay = document.getElementById('shareOverlay');
+    var shareClose = document.getElementById('shareClose');
+    var shareGenerate = document.getElementById('shareGenerate');
+    var shareLinkBox = document.getElementById('shareLinkBox');
+    var shareLinkInput = document.getElementById('shareLinkInput');
+    var shareCopy = document.getElementById('shareCopy');
+    var shareCopied = document.getElementById('shareCopied');
+
+    if (!IS_SHARED) shareBtn.style.display = '';
+
+    shareBtn.addEventListener('click', function() { shareOverlay.classList.add('show'); });
+    shareClose.addEventListener('click', function() { shareOverlay.classList.remove('show'); });
+    shareOverlay.addEventListener('click', function(e) { if (e.target === shareOverlay) shareOverlay.classList.remove('show'); });
+
+    shareGenerate.addEventListener('click', function() {
+        shareGenerate.disabled = true;
+        shareGenerate.textContent = 'Génération...';
+        fetch('/api/shares', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                slug: SLUG,
+                permission: document.getElementById('sharePerm').value,
+                require_email: document.getElementById('shareEmail').checked
+            })
+        }).then(function(r) { return r.json(); }).then(function(data) {
+            var link = window.location.origin + '/view/' + data.token;
+            shareLinkInput.value = link;
+            shareLinkBox.style.display = 'block';
+            shareGenerate.disabled = false;
+            shareGenerate.textContent = 'Générer un nouveau lien';
+        }).catch(function() {
+            shareGenerate.disabled = false;
+            shareGenerate.textContent = 'Erreur, réessayer';
+        });
+    });
+
+    shareCopy.addEventListener('click', function() {
+        navigator.clipboard.writeText(shareLinkInput.value);
+        shareCopied.style.display = 'block';
+        setTimeout(function() { shareCopied.style.display = 'none'; }, 2000);
+    });
+
+    // ===== LOAD DATA =====
+    function loadProject(slug) {
+        SLUG = slug;
+        DOC_ID = slug;
+        API = '/api/comments?doc=' + encodeURIComponent(slug);
+
         Promise.all([
-            fetch('/api/features?slug=' + encodeURIComponent(SLUG)).then(function(r) { return r.json(); }),
-            fetch('/api/exclusions?slug=' + encodeURIComponent(SLUG)).then(function(r) { return r.json(); })
+            fetch('/api/features?slug=' + encodeURIComponent(slug)).then(function(r) { return r.json(); }),
+            fetch('/api/exclusions?slug=' + encodeURIComponent(slug)).then(function(r) { return r.json(); })
         ]).then(function(results) {
             allFeatures = results[0];
             renderDetailTable(allFeatures);
@@ -1333,11 +1423,39 @@
             setupCdcCheckboxes(allFeatures);
             bindMatrixSync();
             renderExclusions(results[1]);
-            // Start polling every 5 seconds
             setInterval(pollFeatures, 5000);
+
+            // Load comments
+            fetch(API).then(function(r) { return r.json(); }).then(function(rows) {
+                rows.forEach(function(row) {
+                    var c = { id:row.id, x:row.x, y:row.y, text:row.text, closed:row.closed, created:new Date(row.created_at) };
+                    comments.push(c);
+                    spawnPin(c);
+                });
+                updateCount(); renderCards();
+            }).catch(function() {});
         }).catch(function(err) {
             console.warn('API load failed:', err);
         });
+    }
+
+    // Shared view: resolve token → slug, then load
+    if (IS_SHARED && SHARE_TOKEN) {
+        fetch('/api/shares?token=' + encodeURIComponent(SHARE_TOKEN))
+            .then(function(r) { if (!r.ok) throw new Error('Invalid link'); return r.json(); })
+            .then(function(share) {
+                SHARE_PERMISSION = share.permission;
+                // Hide edit controls in view-only mode
+                if (share.permission === 'view') {
+                    document.getElementById('commentToggle').style.display = 'none';
+                }
+                loadProject(share.slug);
+            })
+            .catch(function() {
+                document.getElementById('mainContent').innerHTML = '<div style="text-align:center; padding:80px 20px; color:#8a8780;"><h2 style="color:#2d2b35; margin-bottom:8px;">Lien invalide ou expiré</h2><p>Ce lien de partage n\'est plus disponible.</p></div>';
+            });
+    } else if (SLUG) {
+        loadProject(SLUG);
     }
 })();
 </script>
