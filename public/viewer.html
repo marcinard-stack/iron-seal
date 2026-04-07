@@ -481,6 +481,12 @@
             <span>Notes</span>
             <span class="count" id="commentCount">0</span>
         </button>
+        <div id="topbarUser" style="display:none; margin-left:4px;">
+            <a href="/settings" style="display:flex; align-items:center; gap:6px; text-decoration:none; padding:4px 8px; border-radius:6px; transition:background 0.15s;" onmouseover="this.style.background='#edecea'" onmouseout="this.style.background='none'">
+                <span id="topbarAvatar" style="width:26px; height:26px; border-radius:50%; background:#c15f3c; color:white; font-size:10px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0;"></span>
+                <span id="topbarUserName" style="font-size:12px; color:#6b6560; font-weight:500;"></span>
+            </a>
+        </div>
     </div>
 </div>
 
@@ -797,13 +803,18 @@
     var DOC_ID = IS_SHARED ? '' : ((pathParts.length >= 3 && pathParts[0] === 'deals') ? pathParts[2] : 'default');
     var API = '/api/comments?doc=' + encodeURIComponent(DOC_ID);
 
-    // ===== USER PROFILE (sidebar) =====
+    // ===== USER PROFILE (sidebar + topbar) =====
     var dfUser = null;
     try { dfUser = JSON.parse(localStorage.getItem('df_user')); } catch(e) {}
-    if (dfUser && !IS_SHARED) {
+    if (dfUser) {
         var initials = dfUser.name ? dfUser.name.split(' ').map(function(w) { return w[0]; }).join('').toUpperCase().substring(0,2) : '?';
-        document.getElementById('sidebarAvatar').textContent = initials;
-        document.getElementById('sidebarUserName').textContent = dfUser.name || 'Utilisateur';
+        if (!IS_SHARED) {
+            document.getElementById('sidebarAvatar').textContent = initials;
+            document.getElementById('sidebarUserName').textContent = dfUser.name || 'Utilisateur';
+        }
+        document.getElementById('topbarAvatar').textContent = initials;
+        document.getElementById('topbarUserName').textContent = dfUser.name || 'Utilisateur';
+        document.getElementById('topbarUser').style.display = 'block';
     }
 
     // ===== TOP BAR & SIDEBARS =====
