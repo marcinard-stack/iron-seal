@@ -58,7 +58,7 @@ export default async function handler(req, res) {
 
     // POST: sign the devis
     if (req.method === 'POST') {
-      var { slug, signer_name, devis_hash } = req.body;
+      var { slug, signer_name, devis_hash, city } = req.body;
       if (!slug || !signer_name || !devis_hash) return res.status(400).json({ error: 'slug, signer_name, devis_hash required' });
 
       // Resolve signer from auth
@@ -86,8 +86,8 @@ export default async function handler(req, res) {
 
       // Save signature
       var rows = await sql`
-        INSERT INTO devis_signatures (project_id, signer_user_id, signer_name, signer_email, devis_hash, ip_address)
-        VALUES (${project.id}, ${signer.id}, ${signer_name}, ${signer.email}, ${devis_hash}, ${ip})
+        INSERT INTO devis_signatures (project_id, signer_user_id, signer_name, signer_email, devis_hash, ip_address, city)
+        VALUES (${project.id}, ${signer.id}, ${signer_name}, ${signer.email}, ${devis_hash}, ${ip}, ${city || null})
         RETURNING *
       `;
 

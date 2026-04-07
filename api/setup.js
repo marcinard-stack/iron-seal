@@ -252,6 +252,7 @@ export default async function handler(req, res) {
         signer_email VARCHAR(300) NOT NULL,
         devis_hash VARCHAR(128) NOT NULL,
         ip_address VARCHAR(50),
+        city VARCHAR(200),
         signed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         pdf_url TEXT,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
