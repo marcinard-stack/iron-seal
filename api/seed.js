@@ -37,6 +37,18 @@ export default async function handler(req, res) {
       }
     }
 
+    // Assign existing comments to freelance owner
+    var freelanceUser = await sql`
+      SELECT u.id FROM users u
+      JOIN projects p ON p.freelance_account_id = u.account_id
+      WHERE p.id = ${projectId} LIMIT 1
+    `;
+    if (freelanceUser.length) {
+      await sql`UPDATE comments SET user_id = ${freelanceUser[0].id} WHERE user_id IS NULL AND doc_id IN (
+        SELECT slug FROM projects WHERE id = ${projectId}
+      )`;
+    }
+
     // FEAT 5 — Split single job into 2: LWC backlog (must) + notif (nice)
     const feat5m = await sql`SELECT id FROM features WHERE project_id = ${projectId} AND code = 'FEAT 5'`;
     if (feat5m.length) {

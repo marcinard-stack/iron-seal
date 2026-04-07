@@ -209,6 +209,7 @@ export default async function handler(req, res) {
     // Migrate existing comments table
     await sql`ALTER TABLE comments ADD COLUMN IF NOT EXISTS project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE`;
     await sql`ALTER TABLE comments ADD COLUMN IF NOT EXISTS guest_id INTEGER`;
+    await sql`ALTER TABLE comments ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL`;
     await sql`CREATE INDEX IF NOT EXISTS idx_comments_doc ON comments(doc_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_comments_project ON comments(project_id)`;
 

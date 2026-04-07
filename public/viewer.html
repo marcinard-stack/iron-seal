@@ -871,10 +871,16 @@
 
     var PIN_SVG = '<svg viewBox="0 0 30 26" fill="none"><rect x="1" y="1" width="28" height="18" rx="4" fill="#93c5fd"/><polygon points="9,19 14,25 19,19" fill="#93c5fd"/></svg>';
 
-    function apiGet() { return fetch(API).then(function(r) { return r.json(); }); }
-    function apiPost(d) { return fetch(API, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) }).then(function(r) { return r.json(); }); }
-    function apiPut(d) { return fetch(API, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) }).then(function(r) { return r.json(); }); }
-    function apiDel(id) { return fetch(API, { method:'DELETE', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:id}) }); }
+    function commentHeaders() {
+        var h = { 'Content-Type': 'application/json' };
+        var t = localStorage.getItem('df_token');
+        if (t) h['Authorization'] = 'Bearer ' + t;
+        return h;
+    }
+    function apiGet() { return fetch(API, { headers: commentHeaders() }).then(function(r) { return r.json(); }); }
+    function apiPost(d) { return fetch(API, { method:'POST', headers:commentHeaders(), body:JSON.stringify(d) }).then(function(r) { return r.json(); }); }
+    function apiPut(d) { return fetch(API, { method:'PUT', headers:commentHeaders(), body:JSON.stringify(d) }).then(function(r) { return r.json(); }); }
+    function apiDel(id) { return fetch(API, { method:'DELETE', headers:commentHeaders(), body:JSON.stringify({id:id}) }); }
 
     // Comments are loaded in loadProject() after slug resolution
 
@@ -958,7 +964,7 @@
 
     function createComment(rx, ay) {
         apiPost({x:rx,y:ay,text:''}).then(function(row) {
-            var c = {id:row.id,x:row.x,y:row.y,text:'',closed:false,created:new Date(row.created_at)};
+            var c = {id:row.id,x:row.x,y:row.y,text:'',closed:false,created:new Date(row.created_at),user_id:row.user_id,user_name:row.user_name||(dfUser?dfUser.name:null)};
             comments.push(c); spawnPin(c); closeAllBubbles();
             var bub = container.querySelector('.comment-bubble[data-id="'+c.id+'"]');
             bub.classList.add('show'); activeBubble = bub;
@@ -1081,12 +1087,28 @@
         sorted.forEach(function(c) {
             var card = document.createElement('div');
             card.className = 'comment-card'+(c.closed?' closed':''); card.dataset.id = c.id;
-            var actionsHtml = isReadOnly() ? '' : '<div class="card-actions"><button class="card-btn close-btn">Cloturer</button><button class="card-btn reopen">Réouvrir</button></div>';
+            var currentUserId = dfUser ? dfUser.id : null;
+            var isAuthor = currentUserId && c.user_id === currentUserId;
+            var authorName = c.user_name || 'Anonyme';
+            var authorInitials = authorName.split(' ').map(function(w) { return w[0]; }).join('').toUpperCase().substring(0,2);
+
+            var actionsHtml = '';
+            if (!isReadOnly()) {
+                actionsHtml = '<div class="card-actions">';
+                if (isAuthor) actionsHtml += '<button class="card-btn delete-btn" style="color:#dc2626;">Supprimer</button>';
+                actionsHtml += '<button class="card-btn close-btn">Cloturer</button><button class="card-btn reopen">Réouvrir</button></div>';
+            }
+
             card.innerHTML = actionsHtml
-                +'<div class="card-num"># '+c.id+'</div><div class="card-text">'+esc(c.text)+'</div><div class="card-meta">'+fmt(c.created)+'</div>';
+                +'<div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">'
+                +'<span style="width:20px; height:20px; border-radius:50%; background:#c15f3c; color:white; font-size:9px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0;">'+authorInitials+'</span>'
+                +'<span class="card-num" style="margin-bottom:0;">'+authorName+'</span></div>'
+                +'<div class="card-text">'+esc(c.text)+'</div><div class="card-meta">'+fmt(c.created)+'</div>';
             if (!isReadOnly()) {
                 card.querySelector('.close-btn').addEventListener('click', function(ev) { ev.stopPropagation(); toggleClosed(c.id); });
                 card.querySelector('.reopen').addEventListener('click', function(ev) { ev.stopPropagation(); toggleClosed(c.id); });
+                var delBtn = card.querySelector('.delete-btn');
+                if (delBtn) delBtn.addEventListener('click', function(ev) { ev.stopPropagation(); if (confirm('Supprimer ce commentaire ?')) removeComment(c.id); });
             }
             card.addEventListener('click', function() {
                 if (c.closed) return; openBubble(c.id);
@@ -1689,9 +1711,9 @@
             setInterval(pollFeatures, 5000);
 
             // Load comments
-            fetch(API).then(function(r) { return r.json(); }).then(function(rows) {
+            fetch(API, { headers: commentHeaders() }).then(function(r) { return r.json(); }).then(function(rows) {
                 rows.forEach(function(row) {
-                    var c = { id:row.id, x:row.x, y:row.y, text:row.text, closed:row.closed, created:new Date(row.created_at) };
+                    var c = { id:row.id, x:row.x, y:row.y, text:row.text, closed:row.closed, created:new Date(row.created_at), user_id:row.user_id, user_name:row.user_name };
                     comments.push(c);
                     spawnPin(c);
                 });
