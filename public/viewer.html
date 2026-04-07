@@ -261,6 +261,24 @@
         .feature h3 { font-size: 14px; font-weight: 600; color: #4a4850; margin: 14px 0 6px 0; }
         .feature ul { margin-left: 18px; margin-bottom: 10px; }
         .feature li { font-size: 13px; margin-bottom: 4px; color: #2d2b35; }
+        .feature li[data-job-pos] { list-style: none; margin-left: -18px; margin-bottom: 6px; }
+        .job-row {
+            display: flex; align-items: baseline; gap: 0;
+        }
+        .job-row::before {
+            content: '\2022'; color: #b1ada1; margin-right: 10px; flex-shrink: 0;
+            font-size: 14px; line-height: 1;
+        }
+        .job-row .job-desc { flex: 1; min-width: 0; }
+        .job-row .job-tags {
+            flex-shrink: 0; margin-left: 16px; white-space: nowrap;
+            display: flex; align-items: center; gap: 4px;
+            min-width: 130px; justify-content: flex-end;
+        }
+        .job-row .job-incl {
+            flex-shrink: 0; width: 36px; text-align: center; margin-left: 8px;
+        }
+        .job-row .job-incl input { accent-color: #c15f3c; cursor: pointer; width: 14px; height: 14px; }
         .tag {
             display: inline-block; font-size: 10px; font-weight: 600;
             padding: 2px 7px; border-radius: 6px; margin-left: 4px; vertical-align: middle;
@@ -291,6 +309,9 @@
         tbody tr.offert-row td { color: #2d2b35; }
 
         .job-check { accent-color: #c15f3c; cursor: pointer; width: 15px; height: 15px; }
+        .detail-table tr.job td:first-child {
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 0;
+        }
 
         /* Expand/collapse feat groups — JS-driven via .expanded class */
         .detail-table .feat-group:not(.no-collapse) tr.job {
@@ -458,102 +479,101 @@
         <div class="meta"><span>Version 1.0 — 30 mars 2026</span><span>Org cible : Production</span><span>Record Types : Sell, Buy, Ecommerce</span></div>
     </div>
 
-    <div class="feature" id="feat1">
+    <div class="feature" id="feat1" data-feat-code="FEAT 1">
         <h2>FEAT 1 — Alerte nouveau lead attribué</h2>
         <div class="feat-desc">Notifier le sales en temps réel quand un nouveau lead lui est attribué, quelle que soit l'origine.</div>
         <h3>Objectif métier</h3>
         <ul><li>Traiter 100% des nouveaux leads en &lt;2h</li></ul>
         <h3>Charge d'exécution</h3>
         <ul>
-            <li>Custom Notification Type + Flow record-triggered sur Opportunity : quand <code>OwnerId</code> change au stade "Nouvelle opportunité" → notif native SF au nouveau owner <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li>
+            <li data-job-pos="1">Custom Notification Type + Flow record-triggered sur Opportunity : quand <code>OwnerId</code> change au stade "Nouvelle opportunité" → notif native SF au nouveau owner <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li>
             <li>Compatible desktop et mobile SF — Nommage : <code>OPP_Notif_Nouveau_Lead_Attribue</code></li>
         </ul>
     </div>
 
-    <div class="feature" id="feat2">
+    <div class="feature" id="feat2" data-feat-code="FEAT 2">
         <h2>FEAT 2 — Backlog Tentative de contact</h2>
         <div class="feat-desc">Afficher sur la Home Page les opps au stade "Tentative de contact", priorisées par ancienneté de dernière relance.</div>
         <h3>Objectif métier</h3>
         <ul><li>Traitement prioritaire après les nouveaux leads — relancer les prospects les plus anciens en premier</li></ul>
         <h3>Charge d'exécution</h3>
         <ul>
-            <li>Développement LWC "Backlog Cockpit" réutilisable + configuration backlog "Tentative de contact" <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li>
+            <li data-job-pos="1">Développement LWC "Backlog Cockpit" réutilisable + configuration backlog "Tentative de contact", champ <code>Date_derniere_relance__c</code> + flow MAJ auto <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li>
             <li>Colonnes : nom opp, account, sous-stade, date dernière relance, lien rapide</li>
-            <li>Champ <code>Date_derniere_relance__c</code> (DateTime) + flow MAJ auto au changement de sous-stade <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li>
             <li>Nettoyage sous-stades : conservation Relance 1/2/3, suppression Relance 4/5 <span class="tag nice">NICE TO HAVE</span> <span class="tag refacto">REFACTO</span></li>
         </ul>
         <div class="callout"><strong>Dépendance hors scope SF :</strong> déclenchement d'un email Brevo via le backend quand le sales effectue une relance.</div>
     </div>
 
-    <div class="feature" id="feat3">
+    <div class="feature" id="feat3" data-feat-code="FEAT 3">
         <h2>FEAT 3 — Backlog Demande de lancement</h2>
         <div class="feat-desc">Afficher sur la Home Page les opps au stade "Demande de lancement", triées par ancienneté.</div>
         <h3>Charge d'exécution</h3>
         <ul>
-            <li>Réutilisation du LWC Backlog Cockpit avec configuration "Demande de lancement" <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li>
-            <li>Harmonisation des stades achat : ajout "Demande de lancement" / "Mission lancée" au Business Process Brokers <span class="tag nice">NICE TO HAVE</span> <span class="tag refacto">REFACTO</span></li>
+            <li data-job-pos="1">Réutilisation du LWC Backlog Cockpit avec configuration "Demande de lancement" <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li>
+            <li data-job-pos="2">Harmonisation des stades achat : ajout "Demande de lancement" / "Mission lancée" au Business Process Brokers <span class="tag nice">NICE TO HAVE</span> <span class="tag refacto">REFACTO</span></li>
         </ul>
     </div>
 
-    <div class="feature" id="feat4">
+    <div class="feature" id="feat4" data-feat-code="FEAT 4">
         <h2>FEAT 4 — Backlog Intérêts & refonte objet</h2>
         <div class="feat-desc">Faire remonter les intérêts dans la Home Page Sales pour traitement systématique. Deux options proposées.</div>
         <h3>Objectif métier</h3>
         <ul><li>Tracer et traiter 100% des intérêts — ne plus laisser d'intérêts "off the book"</li></ul>
         <h3>Option A — MVP : Backlog intérêts basique <span class="tag must">MUST HAVE</span></h3>
         <ul>
-            <li>LWC Backlog Cockpit configuré pour afficher les intérêts liés aux opps du sales connecté <span class="tag new">NEW</span></li>
+            <li data-job-pos="1">LWC Backlog Cockpit configuré pour afficher les intérêts liés aux opps du sales connecté <span class="tag new">NEW</span></li>
             <li>Stades existants conservés en l'état (Nouveau, Hot, Perdu)</li>
             <li>Affichage : nom intérêt, account, opp liée, stade, source, date d'intérêt</li>
             <li>Filtre : intérêts non "Perdu" liés aux opps du sales connecté</li>
         </ul>
         <h3>Option B — Refonte complète intérêts <span class="tag nice">NICE TO HAVE</span></h3>
         <ul>
-            <li><strong>Refonte objet :</strong> nouveau pipeline (Nouveau → Tentative de contact → RDV fixé → Intéressé → Gagné / Perdu), champs <code>Raison_perte__c</code>, <code>LeadSource__c</code> (Global Value Set + "Plateforme tierce"), renommage <code>Source__c</code> → <code>Plateforme__c</code>, logique de validation croisée <span class="tag refacto">REFACTO</span></li>
-            <li><strong>Saisie rapide :</strong> Quick Action sur Opportunity + Global Quick Action, formulaire compact (Opp, LeadSource/Plateforme, Prénom, Nom, Email, Téléphone, Notes), flow backend avec match email exact → liaison ou création Person Account <span class="tag new">NEW</span></li>
-            <li><strong>Automations :</strong> sync owner intérêt = owner opp, auto-create intérêt "Gagné" quand Counterparty_Account posé, auto-close tous les intérêts en "Perdu" quand un passe en "Gagné", notif native au sales, copie origine vers Account <span class="tag new">NEW</span></li>
+            <li data-job-pos="2"><strong>Refonte objet :</strong> nouveau pipeline (Nouveau → Tentative de contact → RDV fixé → Intéressé → Gagné / Perdu), champs <code>Raison_perte__c</code>, <code>LeadSource__c</code> (Global Value Set + "Plateforme tierce"), renommage <code>Source__c</code> → <code>Plateforme__c</code>, logique de validation croisée <span class="tag refacto">REFACTO</span></li>
+            <li data-job-pos="3"><strong>Saisie rapide :</strong> Quick Action sur Opportunity + Global Quick Action, formulaire compact (Opp, LeadSource/Plateforme, Prénom, Nom, Email, Téléphone, Notes), flow backend avec match email exact → liaison ou création Person Account <span class="tag new">NEW</span></li>
+            <li data-job-pos="4"><strong>Automations :</strong> sync owner intérêt = owner opp, auto-create intérêt "Gagné" quand Counterparty_Account posé, auto-close tous les intérêts en "Perdu" quand un passe en "Gagné", notif native au sales, copie origine vers Account <span class="tag new">NEW</span></li>
             <li><strong>Backlog avancé :</strong> tri par priorité (1. RDV imminents, 2. Nouveaux, 3. Tentatives par ancienneté de relance) <span class="tag new">NEW</span></li>
         </ul>
     </div>
 
-    <div class="feature" id="feat5">
+    <div class="feature" id="feat5" data-feat-code="FEAT 5">
         <h2>FEAT 5 — Backlog Relance après-vente</h2>
         <div class="feat-desc">Rappeler le client à M+1 du closing pour prendre des leads en referral.</div>
         <h3>Charge d'exécution</h3>
         <ul>
-            <li>Flow scheduled path opp gagnée → notif native à M+1 + remontée dans backlog HP <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li>
+            <li data-job-pos="1">Flow scheduled path opp gagnée → notif native à M+1 + remontée dans backlog HP <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li>
             <li>Basé sur <code>CloseDate</code> — sortie du backlog quand le sales marque la relance effectuée</li>
         </ul>
     </div>
 
-    <div class="feature" id="feat6">
+    <div class="feature" id="feat6" data-feat-code="FEAT 6">
         <h2>FEAT 6 — Backlog RDV fixés</h2>
         <div class="feat-desc">Afficher les RDV planifiés du sales, du plus imminent au plus lointain.</div>
         <h3>Charge d'exécution</h3>
         <ul>
-            <li>Champ <code>Date_RDV__c</code> (DateTime) + validation rule obligatoire au passage "RDV fixé" + Flow Event SF + LWC Backlog <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li>
-            <li>Renommage sous-stades : "Precise" → "RDV défini", "Relance" → "Rappel planifié" <span class="tag nice">NICE TO HAVE</span> <span class="tag refacto">REFACTO</span></li>
-            <li>Intégration Google Calendar : Connected App, Apex callout OAuth, création meeting + invitation + lien Meet <span class="tag nice">NICE TO HAVE</span> <span class="tag new">NEW</span></li>
+            <li data-job-pos="1">Champ <code>Date_RDV__c</code> (DateTime) + validation rule obligatoire au passage "RDV fixé" + Flow Event SF + LWC Backlog <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li>
+            <li data-job-pos="2">Renommage sous-stades : "Precise" → "RDV défini", "Relance" → "Rappel planifié" <span class="tag nice">NICE TO HAVE</span> <span class="tag refacto">REFACTO</span></li>
+            <li data-job-pos="3">Intégration Google Calendar : Connected App, Apex callout OAuth, création meeting + invitation + lien Meet <span class="tag nice">NICE TO HAVE</span> <span class="tag new">NEW</span></li>
         </ul>
         <div class="callout"><strong>Note :</strong> L'intégration Google Calendar est un sous-projet à part entière (Apex custom, authentification OAuth, maintenance). Recommandé en chantier dédié si le besoin est confirmé.</div>
     </div>
 
-    <div class="feature" id="feat7">
+    <div class="feature" id="feat7" data-feat-code="FEAT 7">
         <h2>FEAT 7 — KPIs Sales</h2>
         <div class="feat-desc">Indicateurs clés du sales connecté, mois calendaire en cours, temps réel.</div>
         <h3>Charge d'exécution</h3>
         <ul>
-            <li>LWC Scorecard : taux de non-trash, # ventes, CA HT (<code>CA_HT__c</code>), marge nette (<code>Marge_nette__c</code>) <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li>
+            <li data-job-pos="1">LWC Scorecard : taux de non-trash, # ventes, CA HT (<code>CA_HT__c</code>), marge nette (<code>Marge_nette__c</code>) <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li>
             <li>Filtrage <code>OwnerId = $User.Id</code>, reset auto au 1er du mois (calcul dynamique)</li>
         </ul>
     </div>
 
-    <div class="feature transverse" id="transverse">
+    <div class="feature transverse" id="transverse" data-feat-code="TRANSVERSE">
         <h2>Transverse — Nettoyage & Home Page</h2>
         <h3>Nettoyage technique</h3>
-        <ul><li>Convention de nommage flows <code>{OBJET}_{Type}_{Description}</code> + renommage + suppression VR <code>Marketing_Lost</code> + flows obsolètes <span class="tag nice">NICE TO HAVE</span> <span class="tag refacto">REFACTO</span></li></ul>
+        <ul><li data-job-pos="1">Convention de nommage flows <code>{OBJET}_{Type}_{Description}</code> + renommage + suppression VR <code>Marketing_Lost</code> + flows obsolètes <span class="tag nice">NICE TO HAVE</span> <span class="tag refacto">REFACTO</span></li></ul>
         <h3>Configuration Home Page</h3>
-        <ul><li>Assemblage Lightning Home Page Sales : KPIs (haut) + 5 backlogs + assignation profil Sales <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li></ul>
+        <ul><li data-job-pos="2">Assemblage Lightning Home Page Sales : KPIs (haut) + 5 backlogs + assignation profil Sales <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li></ul>
     </div>
 
     <div class="header" id="propale" style="margin-top: 40px;">
@@ -565,7 +585,7 @@
     <div class="section" id="detail">
         <h2>Proposition commerciale — Détail</h2>
         <table class="detail-table">
-            <thead><tr><th style="width:48%">Description</th><th style="width:15%" class="r">Type</th><th style="width:12%" class="r">Priorité</th><th style="width:13%" class="r">J/H</th><th style="width:12%" class="r"></th></tr></thead>
+            <thead><tr><th style="width:48%">Description</th><th style="width:13%" class="r">Type</th><th style="width:12%" class="r">Priorité</th><th style="width:12%" class="r">J/H</th><th style="width:15%" class="r">Inclus ?</th></tr></thead>
             <!-- Dynamically rendered from API -->
         </table>
     </div>
@@ -1058,6 +1078,79 @@
         }).join('');
     }
 
+    // ===== CDC CHECKBOX RESTRUCTURE =====
+    function setupCdcCheckboxes(features) {
+        // Build a lookup: featCode → { pos → job }
+        var jobMap = {};
+        features.forEach(function(feat) {
+            var code = feat.code || (feat.is_transverse ? 'TRANSVERSE' : '');
+            if (!code) return;
+            jobMap[code] = {};
+            feat.jobs.forEach(function(j) {
+                if (!j.is_offered) jobMap[code][j.position] = j;
+            });
+        });
+
+        // Find all feature blocks with data-feat-code
+        document.querySelectorAll('.feature[data-feat-code]').forEach(function(featEl) {
+            var code = featEl.dataset.featCode;
+            var jobs = jobMap[code];
+            if (!jobs) return;
+
+            featEl.querySelectorAll('li[data-job-pos]').forEach(function(li) {
+                var pos = parseInt(li.dataset.jobPos);
+                var job = jobs[pos];
+                if (!job) return;
+
+                // Store job id
+                li.dataset.jobId = job.id;
+
+                // Extract tags from text
+                var tags = li.querySelectorAll('.tag');
+                var tagHtml = '';
+                tags.forEach(function(t) { tagHtml += t.outerHTML; t.remove(); });
+
+                // Wrap content
+                var descHtml = li.innerHTML;
+                li.innerHTML = '<div class="job-row">'
+                    + '<span class="job-desc">' + descHtml.trim() + '</span>'
+                    + '<span class="job-tags">' + tagHtml + '</span>'
+                    + '<span class="job-incl"><input type="checkbox" class="job-check-cdc" data-job-id="' + job.id + '"' + (job.included ? ' checked' : '') + '></span>'
+                    + '</div>';
+            });
+        });
+
+        // Bind CDC checkbox events
+        document.querySelectorAll('.job-check-cdc').forEach(function(cb) {
+            cb.addEventListener('change', function() {
+                var jobId = parseInt(cb.dataset.jobId);
+                // Sync to matrix checkbox
+                var matrixCb = document.querySelector('.detail-table tr[data-job-id="' + jobId + '"] .job-check');
+                if (matrixCb) matrixCb.checked = cb.checked;
+                // Save to API
+                fetch('/api/features?slug=' + encodeURIComponent(SLUG), {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ job_id: jobId, included: cb.checked })
+                });
+                recalcAll();
+            });
+        });
+    }
+
+    // Patch matrix checkbox binding to also sync back to CDC
+    function bindMatrixSync() {
+        document.querySelectorAll('.detail-table .job-check').forEach(function(cb) {
+            cb.addEventListener('change', function() {
+                var row = cb.closest('tr');
+                var jobId = parseInt(row.dataset.jobId);
+                // Sync to CDC checkbox
+                var cdcCb = document.querySelector('.job-check-cdc[data-job-id="' + jobId + '"]');
+                if (cdcCb) cdcCb.checked = cb.checked;
+            });
+        });
+    }
+
     // Load features + exclusions from API
     if (SLUG) {
         Promise.all([
@@ -1067,6 +1160,8 @@
             allFeatures = results[0];
             renderDetailTable(allFeatures);
             recalcAll();
+            setupCdcCheckboxes(allFeatures);
+            bindMatrixSync();
             renderExclusions(results[1]);
         }).catch(function(err) {
             console.warn('API load failed:', err);
