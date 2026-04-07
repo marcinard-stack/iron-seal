@@ -1968,7 +1968,7 @@
         if (status === 'draft' && isFreelance) {
             bar.style.display = 'block';
             text.textContent = 'Votre proposition est prête ?';
-            buttons.innerHTML = '<button class="action-btn primary" id="btnPropose" disabled>Proposer le devis</button>';
+            buttons.innerHTML = '<button class="action-btn primary" id="btnPropose">Proposer le devis</button>';
             document.getElementById('btnPropose').addEventListener('click', function() {
                 var propOverlay = document.getElementById('proposeOverlay');
                 var propEmail = document.getElementById('proposeEmail');
