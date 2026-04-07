@@ -239,6 +239,22 @@ export default async function handler(req, res) {
     await sql`CREATE INDEX IF NOT EXISTS idx_project_guests_project ON project_guests(project_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_project_guests_email ON project_guests(email)`;
 
+    // ── SESSIONS ──
+    await sql`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token VARCHAR(100) NOT NULL UNIQUE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '30 days')
+      )
+    `;
+    await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id)`;
+
+    // Migrate users: add password_hash
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`;
+
     return res.json({ ok: true, message: 'All tables created successfully' });
   } catch (err) {
     console.error(err);
