@@ -518,7 +518,7 @@
         <ul>
             <li data-job-pos="1">Développement LWC "Backlog Cockpit" réutilisable + configuration backlog "Tentative de contact", champ <code>Date_derniere_relance__c</code> + flow MAJ auto <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li>
             <li>Colonnes : nom opp, account, sous-stade, date dernière relance, lien rapide</li>
-            <li>Nettoyage sous-stades : conservation Relance 1/2/3, suppression Relance 4/5 <span class="tag nice">NICE TO HAVE</span> <span class="tag refacto">REFACTO</span></li>
+            <li data-job-pos="2">Nettoyage sous-stades : conservation Relance 1/2/3, suppression Relance 4/5 <span class="tag nice">NICE TO HAVE</span> <span class="tag refacto">REFACTO</span></li>
         </ul>
         <div class="callout"><strong>Dépendance hors scope SF :</strong> déclenchement d'un email Brevo via le backend quand le sales effectue une relance.</div>
     </div>
@@ -550,7 +550,7 @@
             <li data-job-pos="2"><strong>Refonte objet :</strong> nouveau pipeline (Nouveau → Tentative de contact → RDV fixé → Intéressé → Gagné / Perdu), champs <code>Raison_perte__c</code>, <code>LeadSource__c</code> (Global Value Set + "Plateforme tierce"), renommage <code>Source__c</code> → <code>Plateforme__c</code>, logique de validation croisée <span class="tag refacto">REFACTO</span></li>
             <li data-job-pos="3"><strong>Saisie rapide :</strong> Quick Action sur Opportunity + Global Quick Action, formulaire compact (Opp, LeadSource/Plateforme, Prénom, Nom, Email, Téléphone, Notes), flow backend avec match email exact → liaison ou création Person Account <span class="tag new">NEW</span></li>
             <li data-job-pos="4"><strong>Automations :</strong> sync owner intérêt = owner opp, auto-create intérêt "Gagné" quand Counterparty_Account posé, auto-close tous les intérêts en "Perdu" quand un passe en "Gagné", notif native au sales, copie origine vers Account <span class="tag new">NEW</span></li>
-            <li><strong>Backlog avancé :</strong> tri par priorité (1. RDV imminents, 2. Nouveaux, 3. Tentatives par ancienneté de relance) <span class="tag new">NEW</span></li>
+            <li data-job-pos="5"><strong>Backlog avancé :</strong> tri par priorité (1. RDV imminents, 2. Nouveaux, 3. Tentatives par ancienneté de relance) <span class="tag new">NEW</span></li>
         </ul>
     </div>
 
@@ -1070,7 +1070,7 @@
         document.querySelector('#devisTable tbody').innerHTML =
             '<tr><td><span class="tag new">NEW FEATURE</span></td><td class="r">' + fmtEur(newMust) + '</td><td class="r">' + (newNice > 0 ? fmtEur(newNice) : '\u2014') + '</td><td class="r"><strong>' + fmtEur(newTotal) + '</strong></td><td class="r" style="color:#c15f3c; font-weight:600;">' + (customNew > 0 ? fmtEur(customNew) : '\u2014') + '</td></tr>'
             + '<tr><td><span class="tag refacto">REFACTO</span></td><td class="r">' + (refMust > 0 ? fmtEur(refMust) : '\u2014') + '</td><td class="r">' + (refNice > 0 ? fmtEur(refNice) : '\u2014') + '</td><td class="r"><strong>' + fmtEur(refTotal) + '</strong></td><td class="r" style="color:#c15f3c; font-weight:600;">' + (customRef > 0 ? fmtEur(customRef) : '\u2014') + '</td></tr>'
-            + '<tr class="total"><td>Total</td><td class="r">' + fmtEur(mustTotal) + ' HT</td><td class="r">' + fmtEur(niceTotal) + ' HT</td><td class="r"><strong>' + fmtEur(allTotal) + ' HT</strong></td><td class="r" style="color:#c15f3c;"><strong>' + (customTotal > 0 ? fmtEur(customTotal) + ' HT' : '\u2014') + '</strong></td></tr>';
+            + '<tr class="total"><td>Total</td><td class="r">' + fmtEur(mustTotal) + '</td><td class="r">' + fmtEur(niceTotal) + '</td><td class="r"><strong>' + fmtEur(allTotal) + ' HT</strong></td><td class="r" style="color:#c15f3c;"><strong>' + (customTotal > 0 ? fmtEur(customTotal) + ' HT' : '\u2014') + '</strong></td></tr>';
     }
 
     function renderExclusions(exclusions) {

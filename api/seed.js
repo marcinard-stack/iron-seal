@@ -138,6 +138,27 @@ export default async function handler(req, res) {
       `;
     }
 
+    // ── MIGRATIONS: add missing jobs ──
+    // FEAT 2 — Nettoyage sous-stades (position 2)
+    const feat2 = await sql`SELECT id FROM features WHERE project_id = ${projectId} AND code = 'FEAT 2'`;
+    if (feat2.length) {
+      const existing2 = await sql`SELECT id FROM jobs WHERE feature_id = ${feat2[0].id} AND position = 2`;
+      if (!existing2.length) {
+        await sql`INSERT INTO jobs (feature_id, position, description, jh, type, priority, is_offered, included)
+          VALUES (${feat2[0].id}, 2, ${'Nettoyage sous-stades : conservation Relance 1/2/3, suppression Relance 4/5'}, 0.25, 'refacto', 'nice', false, false)`;
+      }
+    }
+
+    // FEAT 4 — Backlog avancé (position 5)
+    const feat4 = await sql`SELECT id FROM features WHERE project_id = ${projectId} AND code = 'FEAT 4'`;
+    if (feat4.length) {
+      const existing4 = await sql`SELECT id FROM jobs WHERE feature_id = ${feat4[0].id} AND position = 5`;
+      if (!existing4.length) {
+        await sql`INSERT INTO jobs (feature_id, position, description, jh, type, priority, is_offered, included)
+          VALUES (${feat4[0].id}, 5, ${'Backlog avancé : tri par priorité (RDV imminents, Nouveaux, Tentatives par ancienneté)'}, 0.25, 'new', 'nice', false, false)`;
+      }
+    }
+
     return res.json({ ok: true, message: 'Seeded features, jobs & exclusions for project ' + projectSlug });
   } catch (err) {
     console.error(err);
