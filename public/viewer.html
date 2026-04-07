@@ -410,6 +410,41 @@
             background: #dbeafe; color: #1e40af; display: block;
         }
 
+        /* ---- CONFIRM MODAL ---- */
+        .confirm-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.3); z-index: 700;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.15s ease;
+        }
+        .confirm-overlay.show { opacity: 1; }
+        .confirm-modal {
+            background: white; border-radius: 10px; padding: 28px 32px;
+            width: 380px; max-width: 90vw; box-shadow: 0 16px 48px rgba(0,0,0,0.12);
+            transform: scale(0.95); transition: transform 0.15s ease;
+        }
+        .confirm-overlay.show .confirm-modal { transform: scale(1); }
+        .confirm-modal p {
+            font-size: 14px; color: #2d2b35; line-height: 1.6; margin-bottom: 24px;
+        }
+        .confirm-actions {
+            display: flex; justify-content: flex-end; gap: 8px;
+        }
+        .confirm-actions button {
+            padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 500;
+            cursor: pointer; transition: all 0.15s; font-family: inherit; border: none;
+        }
+        .confirm-cancel {
+            background: none; color: #6b6560; border: 1px solid #e8e6e0 !important;
+        }
+        .confirm-cancel:hover { background: #f4f3ee; color: #2d2b35; }
+        .confirm-ok { background: #2d2b35; color: white; }
+        .confirm-ok:hover { background: #3d3b45; }
+        .confirm-ok.danger { background: #dc2626; }
+        .confirm-ok.danger:hover { background: #b91c1c; }
+        .confirm-ok.primary { background: #c15f3c; }
+        .confirm-ok.primary:hover { background: #a84e30; }
+
         /* ---- EMAIL GATE ---- */
         .email-gate {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -511,6 +546,17 @@
                 <button id="shareCopy" style="padding:8px 14px; background:#c15f3c; color:white; border:none; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap;">Copier</button>
             </div>
             <p id="shareCopied" style="font-size:11px; color:#166534; margin-top:6px; display:none;">Lien copié !</p>
+        </div>
+    </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="confirm-overlay" id="confirmOverlay">
+    <div class="confirm-modal">
+        <p id="confirmText"></p>
+        <div class="confirm-actions">
+            <button class="confirm-cancel" id="confirmCancel">Annuler</button>
+            <button class="confirm-ok" id="confirmOk">Confirmer</button>
         </div>
     </div>
 </div>
@@ -797,6 +843,25 @@
     var SHARE_TOKEN = IS_SHARED ? pathParts[1] : null;
     var DOC_ID = IS_SHARED ? '' : ((pathParts.length >= 3 && pathParts[0] === 'deals') ? pathParts[2] : 'default');
     var API = '/api/comments?doc=' + encodeURIComponent(DOC_ID);
+
+    // ===== CUSTOM CONFIRM MODAL =====
+    var confirmOverlay = document.getElementById('confirmOverlay');
+    var confirmText = document.getElementById('confirmText');
+    var confirmOk = document.getElementById('confirmOk');
+    var confirmCancel = document.getElementById('confirmCancel');
+    var confirmCallback = null;
+
+    function showConfirm(message, okLabel, style, onConfirm) {
+        confirmText.textContent = message;
+        confirmOk.textContent = okLabel || 'Confirmer';
+        confirmOk.className = 'confirm-ok' + (style ? ' ' + style : '');
+        confirmCallback = onConfirm;
+        confirmOverlay.classList.add('show');
+    }
+
+    confirmCancel.addEventListener('click', function() { confirmOverlay.classList.remove('show'); confirmCallback = null; });
+    confirmOverlay.addEventListener('click', function(e) { if (e.target === confirmOverlay) { confirmOverlay.classList.remove('show'); confirmCallback = null; } });
+    confirmOk.addEventListener('click', function() { confirmOverlay.classList.remove('show'); if (confirmCallback) confirmCallback(); confirmCallback = null; });
 
     // ===== USER PROFILE (sidebar) =====
     var dfUser = null;
@@ -1175,7 +1240,7 @@
                 card.querySelector('.close-btn').addEventListener('click', function(ev) { ev.stopPropagation(); toggleClosed(c.id); });
                 card.querySelector('.reopen').addEventListener('click', function(ev) { ev.stopPropagation(); toggleClosed(c.id); });
                 var delBtn = card.querySelector('.delete-btn');
-                if (delBtn) delBtn.addEventListener('click', function(ev) { ev.stopPropagation(); if (confirm('Supprimer ce commentaire ?')) removeComment(c.id); });
+                if (delBtn) delBtn.addEventListener('click', function(ev) { ev.stopPropagation(); showConfirm('Supprimer ce commentaire ?', 'Supprimer', 'danger', function() { removeComment(c.id); }); });
             }
             card.addEventListener('click', function() {
                 if (c.closed) return; openBubble(c.id);
@@ -1634,8 +1699,9 @@
             text.textContent = 'Votre proposition est prête ?';
             buttons.innerHTML = '<button class="action-btn primary" id="btnPropose" disabled>Proposer le devis</button>';
             document.getElementById('btnPropose').addEventListener('click', function() {
-                if (!confirm('Proposer ce devis au client ?')) return;
-                var btn = this; btn.disabled = true; btn.textContent = 'Envoi...';
+                var btn = this;
+                showConfirm('Proposer ce devis au client ? Le projet passera en statut "Proposé" et le client sera notifié par email.', 'Proposer', 'primary', function() {
+                btn.disabled = true; btn.textContent = 'Envoi...';
                 var dfToken = localStorage.getItem('df_token') || '';
 
                 // 1. Change status + 2. Notify (API creates magic link + sends email)
@@ -1649,6 +1715,7 @@
                     btn.textContent = 'Envoyé';
                 }).catch(function() {
                     btn.disabled = false; btn.textContent = 'Proposer le devis';
+                });
                 });
             });
             trackScroll('btnPropose');
@@ -1666,13 +1733,14 @@
                 text.textContent = '';
                 buttons.innerHTML = '<button class="action-btn secondary" id="btnBackDraft">Retour en brouillon</button>';
                 document.getElementById('btnBackDraft').addEventListener('click', function() {
-                    if (!confirm('Retirer la proposition et repasser en brouillon ?')) return;
-                    var dfToken = localStorage.getItem('df_token') || '';
-                    changeStatus('draft').then(function() {
-                        fetch('/api/notify', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
-                            body: JSON.stringify({ type: 'back_to_draft', slug: SLUG })
+                    showConfirm('Retirer la proposition et repasser en brouillon ?', 'Retirer', '', function() {
+                        var dfToken = localStorage.getItem('df_token') || '';
+                        changeStatus('draft').then(function() {
+                            fetch('/api/notify', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
+                                body: JSON.stringify({ type: 'back_to_draft', slug: SLUG })
+                            });
                         });
                     });
                 });
@@ -1681,13 +1749,14 @@
                 text.textContent = '';
                 buttons.innerHTML = '<button class="action-btn secondary" id="btnRequestEdit">Demander des modifications</button>';
                 document.getElementById('btnRequestEdit').addEventListener('click', function() {
-                    if (!confirm('Demander au freelance de modifier sa proposition ?')) return;
-                    var dfToken = localStorage.getItem('df_token') || '';
-                    changeStatus('draft').then(function() {
-                        fetch('/api/notify', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
-                            body: JSON.stringify({ type: 'back_to_draft', slug: SLUG })
+                    showConfirm('Demander au freelance de modifier sa proposition ? Il sera notifié par email.', 'Demander des modifications', '', function() {
+                        var dfToken = localStorage.getItem('df_token') || '';
+                        changeStatus('draft').then(function() {
+                            fetch('/api/notify', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
+                                body: JSON.stringify({ type: 'back_to_draft', slug: SLUG })
+                            });
                         });
                     });
                 });
