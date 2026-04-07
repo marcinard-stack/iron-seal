@@ -128,9 +128,72 @@
         </div>
     </div>
 
-    <div style="display:flex; align-items:center;">
+    <div style="display:flex; align-items:center; margin-bottom:20px;">
         <button class="save-btn" id="saveBtn">Enregistrer</button>
         <span class="save-status" id="saveStatus">Enregistré</span>
+    </div>
+
+    <div class="section-card">
+        <h2>Adresse de facturation</h2>
+        <div id="addressList"></div>
+        <div id="addressForm" style="display:none;">
+            <div class="field">
+                <label>Libellé</label>
+                <input type="text" id="addrLabel" placeholder="Siège social">
+            </div>
+            <div class="field">
+                <label>Adresse</label>
+                <input type="text" id="addrLine1" placeholder="12 rue de la Paix">
+            </div>
+            <div class="field">
+                <label>Complément</label>
+                <input type="text" id="addrLine2" placeholder="Bâtiment B, 3e étage">
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label>Code postal</label>
+                    <input type="text" id="addrZip" placeholder="75002">
+                </div>
+                <div class="field">
+                    <label>Ville</label>
+                    <input type="text" id="addrCity" placeholder="Paris">
+                </div>
+            </div>
+            <div class="field">
+                <label>Pays</label>
+                <input type="text" id="addrCountry" placeholder="France" value="France">
+            </div>
+            <div style="display:flex; gap:8px; margin-top:8px;">
+                <button class="save-btn" id="addrSave">Enregistrer l'adresse</button>
+                <button class="logout-btn" id="addrCancel">Annuler</button>
+            </div>
+        </div>
+        <button class="logout-btn" id="addrAdd" style="margin-top:12px;">+ Ajouter une adresse</button>
+    </div>
+
+    <div class="section-card">
+        <h2>Coordonnées bancaires</h2>
+        <div id="ibanList"></div>
+        <div id="ibanForm" style="display:none;">
+            <div class="field">
+                <label>Libellé</label>
+                <input type="text" id="ibanLabel" placeholder="Compte principal">
+            </div>
+            <div class="field">
+                <label>IBAN</label>
+                <input type="text" id="ibanValue" placeholder="FR76 3000 1007 9412 3456 7890 185">
+                <div class="hint">Chiffré en AES-256 avant stockage. Jamais visible en clair dans la base de données.</div>
+            </div>
+            <div class="field">
+                <label>BIC / SWIFT</label>
+                <input type="text" id="ibanBic" placeholder="BNPAFRPP">
+            </div>
+            <div style="display:flex; gap:8px; margin-top:8px;">
+                <button class="save-btn" id="ibanSave">Enregistrer l'IBAN</button>
+                <button class="logout-btn" id="ibanCancel">Annuler</button>
+            </div>
+        </div>
+        <button class="logout-btn" id="ibanAdd" style="margin-top:12px;">+ Ajouter un IBAN</button>
     </div>
 </div>
 
@@ -181,6 +244,89 @@
             btn.disabled = false; btn.textContent = 'Enregistrer';
             if (r.ok) { status.style.display = 'inline'; setTimeout(function() { status.style.display = 'none'; }, 2500); }
         }).catch(function() { btn.disabled = false; btn.textContent = 'Enregistrer'; });
+    });
+
+    // ===== ADDRESSES =====
+    var addrList = document.getElementById('addressList');
+    var addrForm = document.getElementById('addressForm');
+
+    function loadAddresses() {
+        fetch('/api/account?entity=addresses', { headers: headers }).then(function(r) { return r.json(); }).then(function(rows) {
+            if (!rows.length) { addrList.innerHTML = '<p style="font-size:13px; color:#8a8780;">Aucune adresse enregistrée.</p>'; return; }
+            addrList.innerHTML = rows.map(function(a) {
+                return '<div style="padding:10px 0; border-bottom:1px solid #f4f3ee; display:flex; justify-content:space-between; align-items:flex-start;">'
+                    + '<div><div style="font-size:13px; font-weight:600; color:#2d2b35;">' + (a.label || 'Adresse') + (a.is_default ? ' <span style="font-size:10px; color:#8a8780;">(par défaut)</span>' : '') + '</div>'
+                    + '<div style="font-size:12px; color:#6b6560;">' + [a.line1, a.line2, a.zip + ' ' + a.city, a.country].filter(Boolean).join(', ') + '</div></div>'
+                    + '<button onclick="deleteAddr(' + a.id + ')" style="background:none; border:none; color:#8a8780; cursor:pointer; font-size:16px; padding:0 4px;">&times;</button></div>';
+            }).join('');
+        });
+    }
+    loadAddresses();
+
+    window.deleteAddr = function(id) {
+        fetch('/api/account?entity=addresses', { method: 'DELETE', headers: headers, body: JSON.stringify({ id: id }) }).then(loadAddresses);
+    };
+
+    document.getElementById('addrAdd').addEventListener('click', function() { addrForm.style.display = 'block'; this.style.display = 'none'; });
+    document.getElementById('addrCancel').addEventListener('click', function() { addrForm.style.display = 'none'; document.getElementById('addrAdd').style.display = ''; });
+    document.getElementById('addrSave').addEventListener('click', function() {
+        fetch('/api/account?entity=addresses', {
+            method: 'POST', headers: headers,
+            body: JSON.stringify({
+                label: document.getElementById('addrLabel').value.trim(),
+                line1: document.getElementById('addrLine1').value.trim(),
+                line2: document.getElementById('addrLine2').value.trim(),
+                zip: document.getElementById('addrZip').value.trim(),
+                city: document.getElementById('addrCity').value.trim(),
+                country: document.getElementById('addrCountry').value.trim(),
+                is_default: true
+            })
+        }).then(function() {
+            addrForm.style.display = 'none'; document.getElementById('addrAdd').style.display = '';
+            ['addrLabel','addrLine1','addrLine2','addrZip','addrCity'].forEach(function(id) { document.getElementById(id).value = ''; });
+            loadAddresses();
+        });
+    });
+
+    // ===== IBAN =====
+    var ibanList = document.getElementById('ibanList');
+    var ibanForm = document.getElementById('ibanForm');
+
+    function loadIbans() {
+        fetch('/api/account?entity=payment_methods', { headers: headers }).then(function(r) { return r.json(); }).then(function(rows) {
+            if (!rows.length) { ibanList.innerHTML = '<p style="font-size:13px; color:#8a8780;">Aucun IBAN enregistré.</p>'; return; }
+            ibanList.innerHTML = rows.map(function(pm) {
+                return '<div style="padding:10px 0; border-bottom:1px solid #f4f3ee; display:flex; justify-content:space-between; align-items:center;">'
+                    + '<div><div style="font-size:13px; font-weight:600; color:#2d2b35;">' + (pm.label || 'IBAN') + '</div>'
+                    + '<div style="font-size:12px; color:#6b6560; font-family:monospace;">' + (pm.iban_masked || '****' + pm.iban_last4) + (pm.bic ? ' — BIC: ' + pm.bic : '') + '</div></div>'
+                    + '<button onclick="deleteIban(' + pm.id + ')" style="background:none; border:none; color:#8a8780; cursor:pointer; font-size:16px; padding:0 4px;">&times;</button></div>';
+            }).join('');
+        });
+    }
+    loadIbans();
+
+    window.deleteIban = function(id) {
+        fetch('/api/account?entity=payment_methods', { method: 'DELETE', headers: headers, body: JSON.stringify({ id: id }) }).then(loadIbans);
+    };
+
+    document.getElementById('ibanAdd').addEventListener('click', function() { ibanForm.style.display = 'block'; this.style.display = 'none'; });
+    document.getElementById('ibanCancel').addEventListener('click', function() { ibanForm.style.display = 'none'; document.getElementById('ibanAdd').style.display = ''; });
+    document.getElementById('ibanSave').addEventListener('click', function() {
+        var iban = document.getElementById('ibanValue').value.trim();
+        if (!iban) return;
+        fetch('/api/account?entity=payment_methods', {
+            method: 'POST', headers: headers,
+            body: JSON.stringify({
+                label: document.getElementById('ibanLabel').value.trim(),
+                iban: iban,
+                bic: document.getElementById('ibanBic').value.trim(),
+                is_default: true
+            })
+        }).then(function() {
+            ibanForm.style.display = 'none'; document.getElementById('ibanAdd').style.display = '';
+            ['ibanLabel','ibanValue','ibanBic'].forEach(function(id) { document.getElementById(id).value = ''; });
+            loadIbans();
+        });
     });
 
     // Logout

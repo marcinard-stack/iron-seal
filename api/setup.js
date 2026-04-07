@@ -69,6 +69,8 @@ export default async function handler(req, res) {
       )
     `;
     await sql`CREATE INDEX IF NOT EXISTS idx_payment_methods_account ON payment_methods(account_id)`;
+    await sql`ALTER TABLE payment_methods ADD COLUMN IF NOT EXISTS iban_encrypted TEXT`;
+    await sql`ALTER TABLE payment_methods ADD COLUMN IF NOT EXISTS bic VARCHAR(20)`;
 
     // ── PROJECTS ──
     await sql`
