@@ -37,13 +37,12 @@ export default async function handler(req, res) {
       }
     }
 
-    // Assign project to first account if unassigned
+    // Assign project to the account that has a user (not orphan accounts)
     const proj = await sql`SELECT freelance_account_id FROM projects WHERE id = ${projectId}`;
-    if (proj.length && !proj[0].freelance_account_id) {
-      const firstAccount = await sql`SELECT id FROM accounts ORDER BY id LIMIT 1`;
-      if (firstAccount.length) {
-        await sql`UPDATE projects SET owner_account_id = ${firstAccount[0].id}, freelance_account_id = ${firstAccount[0].id} WHERE id = ${projectId}`;
-      }
+    const realAccount = await sql`SELECT a.id FROM accounts a JOIN users u ON u.account_id = a.id ORDER BY a.id LIMIT 1`;
+    if (proj.length && realAccount.length) {
+      var aid = realAccount[0].id;
+      await sql`UPDATE projects SET owner_account_id = ${aid}, freelance_account_id = ${aid} WHERE id = ${projectId}`;
     }
 
     // Check if already seeded
