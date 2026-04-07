@@ -2040,7 +2040,8 @@
         return c.toDataURL('image/png');
     }
 
-    function fmtEurPdf(v) { return v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ').replace('.', ',') + ' \u20ac'; }
+    function fmtEurPdf(v) { return v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ').replace('.', ',') + ' EUR'; }
+    function pdfSafe(s) { return (s||'').replace(/[\u2014\u2013]/g, '-').replace(/\u2192/g, '>').replace(/\u2022/g, '-').replace(/\u20ac/g, 'EUR').replace(/[^\x00-\x7F\u00C0-\u00FF]/g, ' '); }
 
     function generateSignedPDF(sigData) {
         if (!window.jspdf) return null;
@@ -2071,7 +2072,7 @@
         // Top bar
         doc.setFontSize(9); doc.setTextColor(138, 135, 128);
         doc.text('deal-forge', mx, y);
-        doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
+        doc.setFont(undefined, 'bold'); doc.setTextColor(193, 95, 60);
         doc.text(refNum, rx, y, { align: 'right' }); y += 14;
         doc.setFont(undefined, 'normal');
 
@@ -2082,7 +2083,7 @@
         // Left: Prestataire
         doc.setFontSize(7); doc.setTextColor(138, 135, 128);
         doc.text('PRESTATAIRE', leftX, y); y += 5;
-        doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
+        doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.setTextColor(30, 30, 30);
         doc.text(fi.legal_name || fi.name || fi.user_name || '', leftX, y); y += 5;
         doc.setFont(undefined, 'normal'); doc.setFontSize(8); doc.setTextColor(106, 101, 96);
         if (fi.user_email) { doc.text(fi.user_email, leftX, y); y += 3.5; }
@@ -2095,7 +2096,7 @@
         y = partyY;
         doc.setFontSize(7); doc.setTextColor(138, 135, 128);
         doc.text('CLIENT', rightX, y); y += 5;
-        doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
+        doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.setTextColor(30, 30, 30);
         doc.text(ci.legal_name || ci.name || ci.user_name || '', rightX, y); y += 5;
         doc.setFont(undefined, 'normal'); doc.setFontSize(8); doc.setTextColor(106, 101, 96);
         if (ci.user_email) { doc.text(ci.user_email, rightX, y); y += 3.5; }
@@ -2107,8 +2108,8 @@
         hr();
 
         // Title
-        doc.setFontSize(16); doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
-        doc.text(PROJECT_DATA ? PROJECT_DATA.title : 'Devis', mx, y); y += 8;
+        doc.setFontSize(16); doc.setFont(undefined, 'bold'); doc.setTextColor(30, 30, 30);
+        doc.text(pdfSafe(PROJECT_DATA ? PROJECT_DATA.title : 'Devis'), mx, y); y += 8;
         doc.setFont(undefined, 'normal'); doc.setFontSize(9); doc.setTextColor(106, 101, 96);
         doc.text('Ref. ' + refNum + '  |  Version ' + (PROJECT_DATA ? PROJECT_DATA.version || '1.0' : '1.0') + '  |  ' + sigData.date + ' ' + sigData.time, mx, y); y += 12;
 
@@ -2119,7 +2120,7 @@
             if (!cb || !cb.checked) return;
             var desc = row.querySelector('td').textContent.trim();
             if (desc.length > 60) desc = desc.substring(0, 57) + '...';
-            jobs.push({ desc: desc, jh: parseFloat(row.dataset.jh), type: row.dataset.type, prio: row.dataset.prio });
+            jobs.push({ desc: pdfSafe(desc), jh: parseFloat(row.dataset.jh), type: row.dataset.type, prio: row.dataset.prio });
         });
 
         // Table columns: Description | Type | Prio | J/H | Montant HT
@@ -2137,7 +2138,7 @@
         var totalJh = 0;
         jobs.forEach(function(j) {
             checkPage(6);
-            doc.setFontSize(7); doc.setTextColor(45, 43, 53);
+            doc.setFontSize(7); doc.setTextColor(30, 30, 30);
             doc.text(j.desc, cDesc, y);
             doc.setTextColor(106, 101, 96);
             doc.text(j.type.toUpperCase(), cType, y);
@@ -2159,7 +2160,7 @@
         doc.text('Total HT', mx + 100, y); doc.setFont(undefined, 'bold'); doc.text(fmtEurPdf(totalHT), rx, y, { align: 'right' }); y += 5;
         doc.setFont(undefined, 'normal');
         doc.text('TVA 20%', mx + 100, y); doc.text(fmtEurPdf(tva), rx, y, { align: 'right' }); y += 5;
-        doc.setFontSize(11); doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
+        doc.setFontSize(11); doc.setFont(undefined, 'bold'); doc.setTextColor(193, 95, 60);
         doc.text('Total TTC', mx + 100, y); doc.text(fmtEurPdf(totalTTC), rx, y, { align: 'right' }); y += 6;
 
         doc.setFont(undefined, 'normal'); doc.setFontSize(7); doc.setTextColor(138, 135, 128);
@@ -2169,7 +2170,7 @@
         hr();
         doc.setFontSize(9); doc.setTextColor(106, 101, 96);
         doc.text('Fait a ' + sigData.city + ', le ' + sigData.date + ' a ' + sigData.time, mx, y); y += 8;
-        doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
+        doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.setTextColor(30, 30, 30);
         doc.text(sigData.name, mx, y); y += 5;
         doc.setFont(undefined, 'normal');
         try { doc.addImage(sigData.sigImage, 'PNG', mx, y, 50, 12); } catch(e) {}
@@ -2179,26 +2180,26 @@
         doc.addPage(); y = 20;
         doc.setFontSize(9); doc.setTextColor(138, 135, 128);
         doc.text('deal-forge  |  ' + refNum, mx, y); y += 10;
-        doc.setFontSize(14); doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
+        doc.setFontSize(14); doc.setFont(undefined, 'bold'); doc.setTextColor(193, 95, 60);
         doc.text('Annexe A — Cahier des charges', mx, y); y += 12;
         doc.setFont(undefined, 'normal');
 
         allFeatures.forEach(function(feat) {
             if (feat.jobs.every(function(j) { return j.is_offered; })) return;
             checkPage(20);
-            var title = feat.code ? feat.code + ' — ' + feat.title : feat.title;
-            doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
-            doc.text(title, mx, y); y += 5; doc.setFont(undefined, 'normal');
+            var title = feat.code ? feat.code + ' - ' + feat.title : feat.title;
+            doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.setTextColor(30, 30, 30);
+            doc.text(pdfSafe(title), mx, y); y += 5; doc.setFont(undefined, 'normal');
             if (feat.description) {
                 doc.setFontSize(8); doc.setTextColor(106, 101, 96);
-                var dl = doc.splitTextToSize(feat.description, mw);
+                var dl = doc.splitTextToSize(pdfSafe(feat.description), mw);
                 doc.text(dl, mx, y); y += dl.length * 3.8 + 2;
             }
             feat.jobs.forEach(function(j) {
                 if (j.is_offered) return;
                 checkPage(8);
                 doc.setFontSize(7.5); doc.setTextColor(74, 72, 80);
-                var jl = doc.splitTextToSize('- ' + j.description, mw - 6);
+                var jl = doc.splitTextToSize('- ' + pdfSafe(j.description), mw - 6);
                 doc.text(jl, mx + 4, y); y += jl.length * 3.5 + 1.5;
             });
             y += 5;
@@ -2206,32 +2207,37 @@
 
         // Planning
         checkPage(30); y += 4;
-        doc.setFontSize(12); doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
+        doc.setFontSize(12); doc.setFont(undefined, 'bold'); doc.setTextColor(193, 95, 60);
         doc.text('Annexe B — Planning de livraison', mx, y); y += 8; doc.setFont(undefined, 'normal');
         document.querySelectorAll('#planningBody tr').forEach(function(tr) {
-            checkPage(6);
+            checkPage(10);
             var cells = tr.querySelectorAll('td');
             if (cells.length < 2) return;
-            doc.setFontSize(7.5); doc.setTextColor(74, 72, 80);
-            var c0 = cells[0].textContent.trim(); if (c0.length > 30) c0 = c0.substring(0, 27) + '...';
-            doc.text(c0, mx, y);
+            var week = pdfSafe(cells[0].textContent.trim());
+            if (!week) return;
+            doc.setFontSize(8); doc.setFont(undefined, 'bold'); doc.setTextColor(30, 30, 30);
+            doc.text(week, mx, y); y += 4; doc.setFont(undefined, 'normal');
             for (var i = 1; i < cells.length && i < 4; i++) {
-                var ct = cells[i].textContent.trim(); if (ct.length > 25) ct = ct.substring(0, 22) + '...';
-                if (ct) doc.text(ct, mx + 55 + (i - 1) * 40, y);
+                var ct = pdfSafe(cells[i].textContent.trim());
+                if (ct) {
+                    doc.setFontSize(7.5); doc.setTextColor(106, 101, 96);
+                    var colLabel = i === 1 ? 'Must Have: ' : i === 2 ? 'Complet: ' : 'Sur mesure: ';
+                    doc.text('  - ' + colLabel + ct, mx + 4, y); y += 3.5;
+                }
             }
-            y += 5;
+            y += 2;
         });
 
         // Hors scope
         var exList = document.getElementById('exclusionsList');
         if (exList && exList.children.length) {
             checkPage(20); y += 8;
-            doc.setFontSize(12); doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
+            doc.setFontSize(12); doc.setFont(undefined, 'bold'); doc.setTextColor(193, 95, 60);
             doc.text('Annexe C — Hors scope', mx, y); y += 8; doc.setFont(undefined, 'normal');
             Array.from(exList.children).forEach(function(li) {
                 checkPage(8);
                 doc.setFontSize(7.5); doc.setTextColor(74, 72, 80);
-                var lines = doc.splitTextToSize('- ' + li.textContent.trim(), mw - 6);
+                var lines = doc.splitTextToSize('- ' + pdfSafe(li.textContent.trim()), mw - 6);
                 doc.text(lines, mx + 4, y); y += lines.length * 3.5 + 1.5;
             });
         }
@@ -2240,14 +2246,14 @@
         doc.addPage(); y = 20;
         doc.setFontSize(9); doc.setTextColor(138, 135, 128);
         doc.text('deal-forge  |  ' + refNum, mx, y); y += 10;
-        doc.setFontSize(14); doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
+        doc.setFontSize(14); doc.setFont(undefined, 'bold'); doc.setTextColor(193, 95, 60);
         doc.text('Certificat de signature electronique', 105, y, { align: 'center' }); y += 12; hr();
 
-        doc.setFontSize(9); doc.setTextColor(45, 43, 53);
+        doc.setFontSize(9); doc.setTextColor(30, 30, 30);
         var certFields = [
             ['Reference', refNum],
-            ['Projet', PROJECT_DATA ? PROJECT_DATA.title : ''],
-            ['Signataire', sigData.name],
+            ['Projet', pdfSafe(PROJECT_DATA ? PROJECT_DATA.title : '')],
+            ['Signataire', pdfSafe(sigData.name)],
             ['Email', dfUser ? dfUser.email : ''],
             ['Fait a', sigData.city],
             ['Date et heure', sigData.date + ' a ' + sigData.time],
@@ -2272,7 +2278,7 @@
         for (var i = 1; i <= pc; i++) {
             doc.setPage(i);
             doc.setFontSize(6); doc.setTextColor(180, 180, 180);
-            doc.text(refNum + '  |  ' + (PROJECT_DATA ? PROJECT_DATA.title : '') + '  |  Page ' + i + '/' + pc, 105, ph - 10, { align: 'center' });
+            doc.text(refNum + '  |  ' + pdfSafe(PROJECT_DATA ? PROJECT_DATA.title : '') + '  |  Page ' + i + '/' + pc, 105, ph - 10, { align: 'center' });
         }
 
         return doc.output('datauristring');
