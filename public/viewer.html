@@ -566,85 +566,23 @@
         <h2>Proposition commerciale — Détail</h2>
         <table class="detail-table">
             <thead><tr><th style="width:48%">Description</th><th style="width:15%" class="r">Type</th><th style="width:12%" class="r">Priorité</th><th style="width:13%" class="r">J/H</th><th style="width:12%" class="r"></th></tr></thead>
-            <tbody class="feat-group">
-                <tr class="feat"><td colspan="3">FEAT 1 — Alerte nouveau lead</td><td class="r"><strong>0,25</strong></td><td class="r"></td></tr>
-                <tr class="job" data-jh="0.25" data-type="new" data-prio="must"><td>Custom Notification Type + Flow notif nouveau lead attribué</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,25</td><td class="r"><input type="checkbox" class="job-check" checked></td></tr>
-            </tbody>
-            <tbody class="feat-group">
-                <tr class="feat"><td colspan="3">FEAT 2 — Backlog Tentative de contact</td><td class="r"><strong>1,25</strong></td><td class="r"></td></tr>
-                <tr class="job" data-jh="1.25" data-type="new" data-prio="must"><td>LWC Backlog Cockpit réutilisable + config "Tentative de contact" + champ Date_derniere_relance + flow MAJ</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">1,25</td><td class="r"><input type="checkbox" class="job-check" checked></td></tr>
-            </tbody>
-            <tbody class="feat-group">
-                <tr class="feat"><td colspan="3">FEAT 3 — Backlog Demande de lancement</td><td class="r"><strong>0,50</strong></td><td class="r"></td></tr>
-                <tr class="job" data-jh="0.25" data-type="new" data-prio="must"><td>Config LWC Backlog "Demande de lancement" (réutilisation)</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,25</td><td class="r"><input type="checkbox" class="job-check" checked></td></tr>
-                <tr class="job nice-row" data-jh="0.25" data-type="refacto" data-prio="nice"><td>Harmonisation stades achat : ajout stades au Business Process Brokers</td><td class="r"><span class="tag refacto">REFACTO</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">0,25</td><td class="r"><input type="checkbox" class="job-check"></td></tr>
-            </tbody>
-            <tbody class="feat-group">
-                <tr class="feat"><td colspan="3">FEAT 4 — Intérêts</td><td class="r"><strong>3,00</strong></td><td class="r"></td></tr>
-                <tr class="job" data-jh="0.50" data-type="new" data-prio="must"><td>Option A — LWC Backlog intérêts basique (stades existants, pas de tri avancé)</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,50</td><td class="r"><input type="checkbox" class="job-check" checked></td></tr>
-                <tr class="job nice-row" data-jh="0.50" data-type="refacto" data-prio="nice"><td>Option B — Refonte objet : pipeline stades, champs LeadSource/Plateforme/Raison_perte, validation</td><td class="r"><span class="tag refacto">REFACTO</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">0,50</td><td class="r"><input type="checkbox" class="job-check"></td></tr>
-                <tr class="job nice-row" data-jh="1.00" data-type="new" data-prio="nice"><td>Option B — Quick Actions (Opp + Global) + Flow création account/intérêt (match email, Person Account, sync owner)</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">1,00</td><td class="r"><input type="checkbox" class="job-check"></td></tr>
-                <tr class="job nice-row" data-jh="1.00" data-type="new" data-prio="nice"><td>Option B — Flows : sync owner, auto-create intérêt counterparty, auto-close, notif, copie origine</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">1,00</td><td class="r"><input type="checkbox" class="job-check"></td></tr>
-            </tbody>
-            <tbody class="feat-group">
-                <tr class="feat"><td colspan="3">FEAT 5 — Relance après-vente</td><td class="r"><strong>0,50</strong></td><td class="r"></td></tr>
-                <tr class="job" data-jh="0.50" data-type="new" data-prio="must"><td>Flow scheduled M+1 + notif native + LWC Backlog relance après-vente</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,50</td><td class="r"><input type="checkbox" class="job-check" checked></td></tr>
-            </tbody>
-            <tbody class="feat-group">
-                <tr class="feat"><td colspan="3">FEAT 6 — Backlog RDV fixés</td><td class="r"><strong>2,25</strong></td><td class="r"></td></tr>
-                <tr class="job" data-jh="0.75" data-type="new" data-prio="must"><td>Champ Date_RDV__c + validation rule + Flow Event SF + LWC Backlog tri date</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,75</td><td class="r"><input type="checkbox" class="job-check" checked></td></tr>
-                <tr class="job nice-row" data-jh="0.25" data-type="refacto" data-prio="nice"><td>Renommage sous-stades RDV fixé</td><td class="r"><span class="tag refacto">REFACTO</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">0,25</td><td class="r"><input type="checkbox" class="job-check"></td></tr>
-                <tr class="job nice-row" data-jh="1.25" data-type="new" data-prio="nice"><td>Intégration Google Calendar (Connected App, Apex OAuth, meeting + invite + Meet)</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">1,25</td><td class="r"><input type="checkbox" class="job-check"></td></tr>
-            </tbody>
-            <tbody class="feat-group">
-                <tr class="feat"><td colspan="3">FEAT 7 — KPIs Sales</td><td class="r"><strong>0,25</strong></td><td class="r"></td></tr>
-                <tr class="job" data-jh="0.25" data-type="new" data-prio="must"><td>LWC Scorecard KPIs : non-trash, # ventes, CA HT, marge nette</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,25</td><td class="r"><input type="checkbox" class="job-check" checked></td></tr>
-            </tbody>
-            <tbody class="feat-group">
-                <tr class="feat"><td colspan="3">Transverse — Nettoyage & Home Page</td><td class="r"><strong>0,75</strong></td><td class="r"></td></tr>
-                <tr class="job nice-row" data-jh="0.50" data-type="refacto" data-prio="nice"><td>Convention nommage + renommage flows + suppression VR/flows obsolètes + suppression Relance 4/5</td><td class="r"><span class="tag refacto">REFACTO</span></td><td class="r"><span class="tag nice">NICE</span></td><td class="r">0,50</td><td class="r"><input type="checkbox" class="job-check"></td></tr>
-                <tr class="job" data-jh="0.25" data-type="new" data-prio="must"><td>Configuration Lightning Home Page Sales : assemblage composants + assignation profil</td><td class="r"><span class="tag new">NEW</span></td><td class="r"><span class="tag must">MUST</span></td><td class="r">0,25</td><td class="r"><input type="checkbox" class="job-check" checked></td></tr>
-            </tbody>
-            <tbody>
-                <tr><td colspan="5" style="padding:4px; border:none;"></td></tr>
-            </tbody>
-            <tbody class="feat-group no-collapse">
-                <tr class="feat"><td colspan="4">Prestations incluses</td><td class="r"></td></tr>
-                <tr class="offert-row"><td>Tests fonctionnels sur Petit Poney (staging)</td><td class="r"></td><td class="r"></td><td class="r"><span class="tag offert">Offert</span></td><td></td></tr>
-                <tr class="offert-row"><td>Production du cahier de recette</td><td class="r"></td><td class="r"></td><td class="r"><span class="tag offert">Offert</span></td><td></td></tr>
-                <tr class="offert-row"><td>Validation du cahier de recette avec le client</td><td class="r"></td><td class="r"></td><td class="r"><span class="tag offert">Offert</span></td><td></td></tr>
-                <tr class="offert-row"><td>Démo de mi-parcours (30 min)</td><td class="r"></td><td class="r"></td><td class="r"><span class="tag offert">Offert</span></td><td></td></tr>
-                <tr class="offert-row"><td>Démo finale de livrable + recette (1h)</td><td class="r"></td><td class="r"></td><td class="r"><span class="tag offert">Offert</span></td><td></td></tr>
-                <tr class="offert-row"><td>Déploiement en production (MEP)</td><td class="r"></td><td class="r"></td><td class="r"><span class="tag offert">Offert</span></td><td></td></tr>
-                <tr class="offert-row"><td>Accompagnement au changement auprès de l'équipe sales</td><td class="r"></td><td class="r"></td><td class="r"><span class="tag offert">Offert</span></td><td></td></tr>
-            </tbody>
+            <!-- Dynamically rendered from API -->
         </table>
     </div>
 
     <div class="section" id="packages">
         <h2>Packages</h2>
-        <table>
+        <table id="packagesTable">
             <thead><tr><th>Catégorie</th><th class="r">Must Have</th><th class="r">Nice to Have</th><th class="r">Total</th><th class="r">%</th></tr></thead>
-            <tbody>
-                <tr><td><span class="tag new">NEW FEATURE</span></td><td class="r">4,00</td><td class="r">3,25</td><td class="r"><strong>7,25</strong></td><td class="r">84%</td></tr>
-                <tr><td><span class="tag refacto">REFACTO</span></td><td class="r">—</td><td class="r">1,50</td><td class="r"><strong>1,50</strong></td><td class="r">16%</td></tr>
-                <tr class="total"><td>Package Must Have</td><td class="r" style="color:#166534;"><strong>4,00 J/H</strong></td><td class="r">—</td><td class="r">4,00 J/H</td><td class="r"></td></tr>
-                <tr class="total" style="border-top:none;"><td>Package complet</td><td class="r">4,00</td><td class="r">4,75</td><td class="r" style="color:#166534;"><strong>8,75 J/H</strong></td><td class="r"></td></tr>
-            </tbody>
+            <tbody></tbody>
         </table>
     </div>
 
     <div class="section" id="devis">
         <h2>Devis</h2>
-        <table>
+        <table id="devisTable">
             <thead><tr><th>Catégorie</th><th class="r">Must Have</th><th class="r">Nice to Have</th><th class="r">Total</th><th class="r" style="color:#c15f3c;">Sur mesure</th></tr></thead>
-            <tbody>
-                <tr><td><span class="tag new">NEW FEATURE</span></td><td class="r">2 000 &euro;</td><td class="r">1 625 &euro;</td><td class="r"><strong>3 625 &euro;</strong></td><td class="r" id="customNew" style="color:#c15f3c; font-weight:600;">—</td></tr>
-                <tr><td><span class="tag refacto">REFACTO</span></td><td class="r">&mdash;</td><td class="r">750 &euro;</td><td class="r"><strong>750 &euro;</strong></td><td class="r" id="customRefacto" style="color:#c15f3c; font-weight:600;">—</td></tr>
-                <tr class="total"><td>Package Must Have</td><td class="r" style="color:#166534;"><strong>2 000 &euro; HT</strong></td><td class="r">&mdash;</td><td class="r">2 000 &euro; HT</td><td class="r"></td></tr>
-                <tr class="total" style="border-top:none;"><td>Package complet</td><td class="r">2 000 &euro;</td><td class="r">2 375 &euro;</td><td class="r" style="color:#166534;"><strong>4 375 &euro; HT</strong></td><td class="r"></td></tr>
-                <tr class="total" style="border-top:none;"><td style="color:#c15f3c;">Devis sur mesure</td><td class="r"></td><td class="r"></td><td class="r"></td><td class="r" style="color:#c15f3c;"><strong id="customTotal">—</strong></td></tr>
-            </tbody>
+            <tbody></tbody>
         </table>
         <p style="margin-top:10px; font-size:11px; color:#8a8780;">Base tarifaire : 500 &euro; HT / jour-homme. La colonne "Sur mesure" se calcule automatiquement selon les jobs cochés dans le détail ci-dessus.</p>
     </div>
@@ -665,13 +603,8 @@
 
     <div class="notes" id="horsscope">
         <h2>Hors scope et dépendances</h2>
-        <ul>
-            <li><strong>Emails Brevo (FEAT 2)</strong> : le déclenchement d'emails automatiques Brevo lors d'une relance sales nécessite un développement backend hors scope</li>
-            <li><strong>Ateliers de validation métier (FEAT 3)</strong> : les ateliers de validation métier et les décisions de chefferie de projet qui en découlent sont à la responsabilité du chef de projet chez CarJager</li>
-            <li><strong>Cockpit manager</strong> : vue consolidée avec analytics sur le traitement sales et filtres par équipe — prévu en lot 2</li>
-            <li><strong>Gestion des doublons</strong> : détection et fusion des leads/intérêts en doublon — sujet identifié, hors scope de ce lot</li>
-            <li><strong>App mobile SF</strong> : les composants seront conçus compatibles mobile, mais le déploiement de l'app mobile SF est hors scope</li>
-            <li><strong>Schéma de données intérêts / backend (FEAT 4)</strong> : le backend devra être mis à jour pour alimenter les nouveaux champs <code>LeadSource</code>, <code>Plateforme</code> et les UTM lors de la création automatique d'intérêts depuis le site CarJager</li>
+        <ul id="exclusionsList">
+            <!-- Dynamically rendered from API -->
         </ul>
     </div>
 
@@ -948,81 +881,197 @@
     function esc(s) { var d=document.createElement('div'); d.textContent=s; return d.innerHTML.replace(/\n/g,'<br>'); }
     function fmt(d) { return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); }
 
-    // ===== EXPAND/COLLAPSE FEAT GROUPS =====
-    var featGroups = document.querySelectorAll('.detail-table .feat-group:not(.no-collapse)');
-    var clickLocked = null; // the group that was opened by click and stays open
-
-    featGroups.forEach(function(group) {
-        var featRow = group.querySelector('tr.feat');
-
-        // Click on feat row → toggle expand, lock open
-        featRow.addEventListener('click', function(e) {
-            if (e.target.closest('.job-check')) return; // don't interfere with checkboxes
-            if (clickLocked === group) {
-                // clicking the same locked group → close it
-                group.classList.remove('expanded');
-                clickLocked = null;
-            } else {
-                // close all, expand this one, lock it
-                featGroups.forEach(function(g) { g.classList.remove('expanded'); });
-                group.classList.add('expanded');
-                clickLocked = group;
-            }
-        });
-
-        // Hover on a feat row → if it's a different group, expand it and close the locked one
-        featRow.addEventListener('mouseenter', function() {
-            if (clickLocked && clickLocked !== group) {
-                clickLocked.classList.remove('expanded');
-                clickLocked = null;
-            }
-            if (!group.classList.contains('expanded')) {
-                featGroups.forEach(function(g) { if (g !== group && g !== clickLocked) g.classList.remove('expanded'); });
-                group.classList.add('expanded');
-            }
-        });
-
-        // Mouse leaves the whole group (feat + jobs) → close only if not click-locked
-        group.addEventListener('mouseleave', function(e) {
-            // Check if we're moving to another feat-group
-            var to = e.relatedTarget;
-            var toGroup = to ? to.closest('.feat-group') : null;
-            if (toGroup && toGroup !== group) {
-                // moving to another feat group → that group's mouseenter will handle it
-                if (clickLocked !== group) {
-                    group.classList.remove('expanded');
-                }
-                return;
-            }
-            // leaving sideways or to non-feat area → keep open (click-locked behavior)
-            if (group.classList.contains('expanded') && clickLocked !== group) {
-                clickLocked = group; // promote to locked so it stays open
-            }
-        });
-    });
-
-    // ===== DEVIS SUR MESURE =====
+    // ===== LOAD DATA FROM API =====
+    var SLUG = pathParts[2] || '';
     var RATE = 500;
-    function recalcDevis() {
-        var newTotal = 0, refactoTotal = 0;
-        document.querySelectorAll('.job-check').forEach(function(cb) {
-            if (!cb.checked) return;
-            var row = cb.closest('tr');
-            var jh = parseFloat(row.dataset.jh) || 0;
-            var type = row.dataset.type;
-            if (type === 'new') newTotal += jh;
-            else refactoTotal += jh;
+    var allFeatures = [];
+
+    function fmtJh(v) { return v.toFixed(2).replace('.', ','); }
+    function fmtEur(v) { return Math.round(v * RATE).toLocaleString('fr-FR') + ' \u20ac'; }
+
+    function renderDetailTable(features) {
+        var table = document.querySelector('.detail-table');
+        var regularFeats = features.filter(function(f) { return !f.jobs.some(function(j) { return j.is_offered; }); });
+        var offeredFeats = features.filter(function(f) { return f.jobs.some(function(j) { return j.is_offered; }); });
+
+        regularFeats.forEach(function(feat) {
+            var tbody = document.createElement('tbody');
+            tbody.className = 'feat-group';
+            var totalJh = feat.jobs.reduce(function(s, j) { return s + parseFloat(j.jh); }, 0);
+            var label = feat.code ? feat.code + ' \u2014 ' + feat.title : feat.title;
+            var featRow = '<tr class="feat"><td colspan="3">' + label + '</td><td class="r"><strong>' + fmtJh(totalJh) + '</strong></td><td class="r"></td></tr>';
+
+            var jobRows = feat.jobs.map(function(job) {
+                var niceClass = job.priority === 'nice' ? ' nice-row' : '';
+                var checked = job.included ? ' checked' : '';
+                var typeTag = '<span class="tag ' + job.type + '">' + job.type.toUpperCase() + '</span>';
+                var prioTag = '<span class="tag ' + job.priority + '">' + job.priority.toUpperCase() + '</span>';
+                return '<tr class="job' + niceClass + '" data-jh="' + job.jh + '" data-type="' + job.type + '" data-prio="' + job.priority + '" data-job-id="' + job.id + '">'
+                    + '<td>' + job.description + '</td>'
+                    + '<td class="r">' + typeTag + '</td>'
+                    + '<td class="r">' + prioTag + '</td>'
+                    + '<td class="r">' + fmtJh(parseFloat(job.jh)) + '</td>'
+                    + '<td class="r"><input type="checkbox" class="job-check"' + checked + '></td></tr>';
+            }).join('');
+
+            tbody.innerHTML = featRow + jobRows;
+            table.appendChild(tbody);
         });
-        var total = newTotal + refactoTotal;
-        var fmtEur = function(v) { return Math.round(v * RATE).toLocaleString('fr-FR') + ' \u20ac'; };
-        document.getElementById('customNew').textContent = newTotal > 0 ? fmtEur(newTotal) : '\u2014';
-        document.getElementById('customRefacto').textContent = refactoTotal > 0 ? fmtEur(refactoTotal) : '\u2014';
-        document.getElementById('customTotal').textContent = total > 0 ? fmtEur(total) + ' HT' : '\u2014';
+
+        // Spacer
+        var spacer = document.createElement('tbody');
+        spacer.innerHTML = '<tr><td colspan="5" style="padding:4px; border:none;"></td></tr>';
+        table.appendChild(spacer);
+
+        // Offered items
+        if (offeredFeats.length) {
+            offeredFeats.forEach(function(feat) {
+                var tbody = document.createElement('tbody');
+                tbody.className = 'feat-group no-collapse';
+                var featRow = '<tr class="feat"><td colspan="4">' + feat.title + '</td><td class="r"></td></tr>';
+                var rows = feat.jobs.map(function(job) {
+                    return '<tr class="offert-row"><td>' + job.description + '</td><td class="r"></td><td class="r"></td><td class="r"><span class="tag offert">Offert</span></td><td></td></tr>';
+                }).join('');
+                tbody.innerHTML = featRow + rows;
+                table.appendChild(tbody);
+            });
+        }
+
+        // Bind checkboxes
+        table.querySelectorAll('.job-check').forEach(function(cb) {
+            cb.addEventListener('change', function() {
+                var row = cb.closest('tr');
+                var jobId = parseInt(row.dataset.jobId);
+                fetch('/api/features?slug=' + encodeURIComponent(SLUG), {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ job_id: jobId, included: cb.checked })
+                });
+                recalcAll();
+            });
+        });
+
+        // Expand/collapse
+        initExpandCollapse();
     }
-    document.querySelectorAll('.job-check').forEach(function(cb) {
-        cb.addEventListener('change', recalcDevis);
-    });
-    recalcDevis();
+
+    function initExpandCollapse() {
+        var featGroups = document.querySelectorAll('.detail-table .feat-group:not(.no-collapse)');
+        var clickLocked = null;
+
+        featGroups.forEach(function(group) {
+            var featRow = group.querySelector('tr.feat');
+
+            featRow.addEventListener('click', function(e) {
+                if (e.target.closest('.job-check')) return;
+                if (clickLocked === group) {
+                    group.classList.remove('expanded');
+                    clickLocked = null;
+                } else {
+                    featGroups.forEach(function(g) { g.classList.remove('expanded'); });
+                    group.classList.add('expanded');
+                    clickLocked = group;
+                }
+            });
+
+            featRow.addEventListener('mouseenter', function() {
+                if (clickLocked && clickLocked !== group) {
+                    clickLocked.classList.remove('expanded');
+                    clickLocked = null;
+                }
+                if (!group.classList.contains('expanded')) {
+                    featGroups.forEach(function(g) { if (g !== group && g !== clickLocked) g.classList.remove('expanded'); });
+                    group.classList.add('expanded');
+                }
+            });
+
+            group.addEventListener('mouseleave', function(e) {
+                var to = e.relatedTarget;
+                var toGroup = to ? to.closest('.feat-group') : null;
+                if (toGroup && toGroup !== group) {
+                    if (clickLocked !== group) group.classList.remove('expanded');
+                    return;
+                }
+                if (group.classList.contains('expanded') && clickLocked !== group) {
+                    clickLocked = group;
+                }
+            });
+        });
+    }
+
+    function recalcAll() {
+        var jobs = [];
+        document.querySelectorAll('.detail-table tr.job').forEach(function(row) {
+            var cb = row.querySelector('.job-check');
+            if (!cb) return;
+            jobs.push({
+                jh: parseFloat(row.dataset.jh) || 0,
+                type: row.dataset.type,
+                priority: row.dataset.prio,
+                checked: cb.checked
+            });
+        });
+
+        // Packages
+        var newMust = 0, newNice = 0, refMust = 0, refNice = 0;
+        jobs.forEach(function(j) {
+            if (j.type === 'new' && j.priority === 'must') newMust += j.jh;
+            else if (j.type === 'new' && j.priority === 'nice') newNice += j.jh;
+            else if (j.type === 'refacto' && j.priority === 'must') refMust += j.jh;
+            else if (j.type === 'refacto' && j.priority === 'nice') refNice += j.jh;
+        });
+        var newTotal = newMust + newNice;
+        var refTotal = refMust + refNice;
+        var allTotal = newTotal + refTotal;
+        var mustTotal = newMust + refMust;
+        var niceTotal = newNice + refNice;
+        var newPct = allTotal > 0 ? Math.round(newTotal / allTotal * 100) : 0;
+        var refPct = allTotal > 0 ? Math.round(refTotal / allTotal * 100) : 0;
+
+        document.querySelector('#packagesTable tbody').innerHTML =
+            '<tr><td><span class="tag new">NEW FEATURE</span></td><td class="r">' + fmtJh(newMust) + '</td><td class="r">' + (newNice > 0 ? fmtJh(newNice) : '\u2014') + '</td><td class="r"><strong>' + fmtJh(newTotal) + '</strong></td><td class="r">' + newPct + '%</td></tr>'
+            + '<tr><td><span class="tag refacto">REFACTO</span></td><td class="r">' + (refMust > 0 ? fmtJh(refMust) : '\u2014') + '</td><td class="r">' + (refNice > 0 ? fmtJh(refNice) : '\u2014') + '</td><td class="r"><strong>' + fmtJh(refTotal) + '</strong></td><td class="r">' + refPct + '%</td></tr>'
+            + '<tr class="total"><td>Package Must Have</td><td class="r" style="color:#166534;"><strong>' + fmtJh(mustTotal) + ' J/H</strong></td><td class="r">\u2014</td><td class="r">' + fmtJh(mustTotal) + ' J/H</td><td class="r"></td></tr>'
+            + '<tr class="total" style="border-top:none;"><td>Package complet</td><td class="r">' + fmtJh(mustTotal) + '</td><td class="r">' + fmtJh(niceTotal) + '</td><td class="r" style="color:#166534;"><strong>' + fmtJh(allTotal) + ' J/H</strong></td><td class="r"></td></tr>';
+
+        // Devis
+        var customNew = 0, customRef = 0;
+        jobs.forEach(function(j) {
+            if (!j.checked) return;
+            if (j.type === 'new') customNew += j.jh;
+            else customRef += j.jh;
+        });
+        var customTotal = customNew + customRef;
+
+        document.querySelector('#devisTable tbody').innerHTML =
+            '<tr><td><span class="tag new">NEW FEATURE</span></td><td class="r">' + fmtEur(newMust) + '</td><td class="r">' + (newNice > 0 ? fmtEur(newNice) : '\u2014') + '</td><td class="r"><strong>' + fmtEur(newTotal) + '</strong></td><td class="r" style="color:#c15f3c; font-weight:600;">' + (customNew > 0 ? fmtEur(customNew) : '\u2014') + '</td></tr>'
+            + '<tr><td><span class="tag refacto">REFACTO</span></td><td class="r">' + (refMust > 0 ? fmtEur(refMust) : '\u2014') + '</td><td class="r">' + (refNice > 0 ? fmtEur(refNice) : '\u2014') + '</td><td class="r"><strong>' + fmtEur(refTotal) + '</strong></td><td class="r" style="color:#c15f3c; font-weight:600;">' + (customRef > 0 ? fmtEur(customRef) : '\u2014') + '</td></tr>'
+            + '<tr class="total"><td>Package Must Have</td><td class="r" style="color:#166534;"><strong>' + fmtEur(mustTotal) + ' HT</strong></td><td class="r">\u2014</td><td class="r">' + fmtEur(mustTotal) + ' HT</td><td class="r"></td></tr>'
+            + '<tr class="total" style="border-top:none;"><td>Package complet</td><td class="r">' + fmtEur(mustTotal) + '</td><td class="r">' + fmtEur(niceTotal) + '</td><td class="r" style="color:#166534;"><strong>' + fmtEur(allTotal) + ' HT</strong></td><td class="r"></td></tr>'
+            + '<tr class="total" style="border-top:none;"><td style="color:#c15f3c;">Devis sur mesure</td><td class="r"></td><td class="r"></td><td class="r"></td><td class="r" style="color:#c15f3c;"><strong>' + (customTotal > 0 ? fmtEur(customTotal) + ' HT' : '\u2014') + '</strong></td></tr>';
+    }
+
+    function renderExclusions(exclusions) {
+        var ul = document.getElementById('exclusionsList');
+        ul.innerHTML = exclusions.map(function(ex) {
+            return '<li><strong>' + ex.title + '</strong> : ' + ex.description + '</li>';
+        }).join('');
+    }
+
+    // Load features + exclusions from API
+    if (SLUG) {
+        Promise.all([
+            fetch('/api/features?slug=' + encodeURIComponent(SLUG)).then(function(r) { return r.json(); }),
+            fetch('/api/exclusions?slug=' + encodeURIComponent(SLUG)).then(function(r) { return r.json(); })
+        ]).then(function(results) {
+            allFeatures = results[0];
+            renderDetailTable(allFeatures);
+            recalcAll();
+            renderExclusions(results[1]);
+        }).catch(function(err) {
+            console.warn('API load failed:', err);
+        });
+    }
 })();
 </script>
 
