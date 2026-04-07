@@ -951,6 +951,28 @@
         activeBubble = null;
     }
 
+    // Click outside any bubble → close it
+    document.addEventListener('click', function(e) {
+        if (!activeBubble) return;
+        if (e.target.closest('.comment-bubble') || e.target.closest('.comment-pin') || e.target.closest('.comment-card')) return;
+        if (placingMode) return;
+        // For editable bubbles, save text before closing
+        if (!isReadOnly()) {
+            var openBubs = container.querySelectorAll('.comment-bubble.show');
+            openBubs.forEach(function(bub) {
+                var id = parseInt(bub.dataset.id);
+                var c = comments.find(function(x) { return x.id === id; });
+                var ta = bub.querySelector('textarea');
+                if (c && ta) {
+                    c.text = ta.value.trim();
+                    if (c.text) apiPut({id:c.id, text:c.text});
+                }
+            });
+            renderCards();
+        }
+        closeAllBubbles();
+    });
+
     function removeComment(id) {
         apiDel(id); comments = comments.filter(function(c) { return c.id!==id; });
         var p = container.querySelector('.comment-pin[data-id="'+id+'"]');
@@ -1204,12 +1226,13 @@
             + '<td style="color:#166534; font-weight:600;">Kick-off dev</td>'
             + '<td style="color:#c15f3c; font-weight:600;">Kick-off dev</td></tr>';
 
-        // Dev weeks
+        // Dev weeks — aligned to Monday-Friday
+        var firstMonday = new Date(KICKOFF);
+        firstMonday.setDate(firstMonday.getDate() - firstMonday.getDay() + 1); // back to Monday
         for (var w = 1; w <= maxWeek; w++) {
-            var wStart = new Date(KICKOFF); wStart.setDate(wStart.getDate() + (w - 1) * 7);
-            var wEnd = new Date(wStart); wEnd.setDate(wEnd.getDate() + 4);
-            var wFri = new Date(wStart); wFri.setDate(wFri.getDate() + 4);
-            var label = '<strong>S' + w + '</strong> \u2014 ' + fmtDate(wStart) + ' au ' + fmtDate(wEnd) + ' <span style="color:#8a8780; font-weight:400;">(' + CAP + ' J/H)</span>';
+            var wMon = new Date(firstMonday); wMon.setDate(wMon.getDate() + (w - 1) * 7);
+            var wFri = new Date(wMon); wFri.setDate(wFri.getDate() + 4);
+            var label = '<strong>S' + w + '</strong> \u2014 ' + fmtDate(wMon) + ' au ' + fmtDate(wFri);
 
             var mustCell = cellFor(pMust, w, wFri);
             var completCell = cellFor(pComplet, w, wFri);
@@ -1218,11 +1241,11 @@
             rows += '<tr><td>' + label + '</td><td>' + mustCell + '</td><td>' + completCell + '</td><td>' + customCell + '</td></tr>';
 
             // MEP row after this week if needed
-            var mepMust = (w === pMust.demoFin) ? mepCell(wStart) : '';
-            var mepComplet = (w === pComplet.demoFin) ? mepCell(wStart) : '';
-            var mepCustom = (customJh > 0 && w === pCustom.demoFin) ? mepCellCustom(wStart) : '';
+            var mepMust = (w === pMust.demoFin) ? mepCell() : '';
+            var mepComplet = (w === pComplet.demoFin) ? mepCell() : '';
+            var mepCustom = (customJh > 0 && w === pCustom.demoFin) ? mepCellCustom() : '';
             if (mepMust || mepComplet || mepCustom) {
-                var mepDate = new Date(wStart); mepDate.setDate(mepDate.getDate() + 7);
+                var mepDate = new Date(wMon); mepDate.setDate(mepDate.getDate() + 7);
                 rows += '<tr style="background:#f0fdf4;"><td>' + fmtDate(mepDate) + '</td><td>' + mepMust + '</td><td>' + mepComplet + '</td><td>' + mepCustom + '</td></tr>';
             }
         }
@@ -1246,11 +1269,11 @@
         return '';
     }
 
-    function mepCell(weekStart) {
+    function mepCell() {
         return '<span style="color:#166534; font-weight:700;">Mise en production</span>';
     }
 
-    function mepCellCustom(weekStart) {
+    function mepCellCustom() {
         return '<span style="color:#c15f3c; font-weight:700;">Mise en production</span>';
     }
 
