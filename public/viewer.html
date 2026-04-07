@@ -1965,6 +1965,7 @@
         banner.style.display = 'none'; banner.className = 'status-banner';
         bar.style.display = 'none'; buttons.innerHTML = '';
 
+        console.log('[SETUP]', 'status:', status, 'isFreelance:', isFreelance, 'isClient:', isClient, 'USER_ACCOUNT_ID:', USER_ACCOUNT_ID, 'freelance_account_id:', PROJECT_DATA.freelance_account_id);
         if (status === 'draft' && isFreelance) {
             bar.style.display = 'block';
             text.textContent = 'Votre proposition est prête ?';
