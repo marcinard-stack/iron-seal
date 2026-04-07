@@ -966,6 +966,7 @@
         // Bind checkboxes
         table.querySelectorAll('.job-check').forEach(function(cb) {
             cb.addEventListener('change', function() {
+                markLocalChange();
                 var row = cb.closest('tr');
                 var jobId = parseInt(row.dataset.jobId);
                 fetch('/api/features?slug=' + encodeURIComponent(SLUG), {
@@ -1115,6 +1116,7 @@
         // Bind CDC checkbox events
         document.querySelectorAll('.job-check-cdc').forEach(function(cb) {
             cb.addEventListener('change', function() {
+                markLocalChange();
                 var jobId = parseInt(cb.dataset.jobId);
                 // Sync to matrix checkbox
                 var matrixCb = document.querySelector('.detail-table tr[data-job-id="' + jobId + '"] .job-check');
@@ -1144,10 +1146,11 @@
     }
 
     // ===== POLLING — sync checkbox state every 5s =====
-    var lastJobStates = {}; // jobId → included
+    var pollSkipUntil = 0; // timestamp — skip polling right after local change
 
     function pollFeatures() {
         if (!SLUG) return;
+        if (Date.now() < pollSkipUntil) return; // skip if we just made a local change
         fetch('/api/features?slug=' + encodeURIComponent(SLUG))
             .then(function(r) { return r.json(); })
             .then(function(features) {
@@ -1155,17 +1158,18 @@
                 features.forEach(function(feat) {
                     feat.jobs.forEach(function(job) {
                         if (job.is_offered) return;
-                        var prev = lastJobStates[job.id];
-                        if (prev !== undefined && prev !== job.included) {
+                        // Check matrix checkbox
+                        var matrixCb = document.querySelector('.detail-table tr[data-job-id="' + job.id + '"] .job-check');
+                        if (matrixCb && matrixCb.checked !== job.included) {
+                            matrixCb.checked = job.included;
                             changed = true;
-                            // Update matrix checkbox
-                            var matrixCb = document.querySelector('.detail-table tr[data-job-id="' + job.id + '"] .job-check');
-                            if (matrixCb) matrixCb.checked = job.included;
-                            // Update CDC checkbox
-                            var cdcCb = document.querySelector('.job-check-cdc[data-job-id="' + job.id + '"]');
-                            if (cdcCb) cdcCb.checked = job.included;
                         }
-                        lastJobStates[job.id] = job.included;
+                        // Check CDC checkbox
+                        var cdcCb = document.querySelector('.job-check-cdc[data-job-id="' + job.id + '"]');
+                        if (cdcCb && cdcCb.checked !== job.included) {
+                            cdcCb.checked = job.included;
+                            changed = true;
+                        }
                     });
                 });
                 if (changed) recalcAll();
@@ -1173,12 +1177,8 @@
             .catch(function() {}); // silent fail on poll
     }
 
-    function initJobStates(features) {
-        features.forEach(function(feat) {
-            feat.jobs.forEach(function(job) {
-                if (!job.is_offered) lastJobStates[job.id] = job.included;
-            });
-        });
+    function markLocalChange() {
+        pollSkipUntil = Date.now() + 3000; // skip polls for 3s after local action
     }
 
     // Load features + exclusions from API
@@ -1192,7 +1192,6 @@
             recalcAll();
             setupCdcCheckboxes(allFeatures);
             bindMatrixSync();
-            initJobStates(allFeatures);
             renderExclusions(results[1]);
             // Start polling every 5 seconds
             setInterval(pollFeatures, 5000);
