@@ -116,7 +116,7 @@
         if (!email || !password) { showErr(err, 'Remplissez tous les champs.'); return; }
         btn.disabled = true; btn.textContent = 'Connexion...'; err.style.display = 'none';
 
-        fetch('/api/auth/login', {
+        fetch('/api/auth?action=login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: email, password: password })
@@ -143,7 +143,7 @@
         if (!name || !email || !password) { showErr(err, 'Remplissez tous les champs obligatoires.'); return; }
         btn.disabled = true; btn.textContent = 'Création...'; err.style.display = 'none';
 
-        fetch('/api/auth/signup', {
+        fetch('/api/auth?action=signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: email, password: password, name: name, company: company })

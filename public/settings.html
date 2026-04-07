@@ -142,7 +142,7 @@
     var headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
 
     // Load profile
-    fetch('/api/auth/me', { headers: headers })
+    fetch('/api/auth?action=me', { headers: headers })
         .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
         .then(function(data) {
             document.getElementById('userName').value = data.user.name || '';
@@ -165,7 +165,7 @@
         var status = document.getElementById('saveStatus');
         btn.disabled = true; btn.textContent = 'Enregistrement...';
 
-        fetch('/api/auth/me', {
+        fetch('/api/auth?action=me', {
             method: 'PUT',
             headers: headers,
             body: JSON.stringify({
@@ -185,7 +185,7 @@
 
     // Logout
     document.getElementById('logoutBtn').addEventListener('click', function() {
-        fetch('/api/auth/logout', { method: 'POST', headers: headers })
+        fetch('/api/auth?action=logout', { method: 'POST', headers: headers })
             .finally(function() {
                 localStorage.removeItem('df_token');
                 localStorage.removeItem('df_user');
