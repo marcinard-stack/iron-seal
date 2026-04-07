@@ -89,6 +89,15 @@ export default async function handler(req, res) {
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `;
+    // Migrate existing projects table: add new columns if missing
+    await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS owner_account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL`;
+    await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS freelance_account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL`;
+    await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS client_account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL`;
+    await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS created_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL`;
+    await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS tjm_override NUMERIC(10,2)`;
+    await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS capacity_override NUMERIC(5,2)`;
+    await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS version VARCHAR(20) DEFAULT '1.0'`;
+    await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS valid_until DATE`;
     await sql`CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_projects_owner ON projects(owner_account_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_projects_freelance ON projects(freelance_account_id)`;
@@ -180,7 +189,7 @@ export default async function handler(req, res) {
     `;
     await sql`CREATE INDEX IF NOT EXISTS idx_exclusions_project ON exclusions(project_id)`;
 
-    // ── COMMENTS (updated: project_id instead of doc_id) ──
+    // ── COMMENTS (updated: project_id + guest_id added) ──
     await sql`
       CREATE TABLE IF NOT EXISTS comments (
         id SERIAL PRIMARY KEY,
@@ -195,6 +204,9 @@ export default async function handler(req, res) {
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `;
+    // Migrate existing comments table
+    await sql`ALTER TABLE comments ADD COLUMN IF NOT EXISTS project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE`;
+    await sql`ALTER TABLE comments ADD COLUMN IF NOT EXISTS guest_id INTEGER`;
     await sql`CREATE INDEX IF NOT EXISTS idx_comments_doc ON comments(doc_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_comments_project ON comments(project_id)`;
 
