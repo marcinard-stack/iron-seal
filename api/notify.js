@@ -8,7 +8,7 @@ async function sendEmail(to, subject, html) {
       'Authorization': 'Bearer ' + process.env.RESEND_KEY
     },
     body: JSON.stringify({
-      from: 'deal-forge <onboarding@resend.dev>',
+      from: 'deal-forge <notifications@mail.blueheronlab.com>',
       to: to,
       subject: subject,
       html: html
