@@ -99,6 +99,7 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS tjm_override NUMERIC(10,2)`;
     await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS capacity_override NUMERIC(5,2)`;
     await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS version VARCHAR(20) DEFAULT '1.0'`;
+    await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS ref_number VARCHAR(20)`;
     await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS valid_until DATE`;
     await sql`CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_projects_owner ON projects(owner_account_id)`;

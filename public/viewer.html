@@ -2040,42 +2040,77 @@
         return c.toDataURL('image/png');
     }
 
+    function fmtEurPdf(v) { return v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ').replace('.', ',') + ' \u20ac'; }
+
     function generateSignedPDF(sigData) {
         if (!window.jspdf) return null;
         var jsPDF = window.jspdf.jsPDF;
         var doc = new jsPDF();
-        var pw = 210, ph = 297, mx = 20, mw = pw - 2 * mx;
+        var pw = 210, ph = 297, mx = 20, rx = pw - mx, mw = rx - mx;
         var y = 0;
 
         function checkPage(need) { if (y + need > ph - 25) { doc.addPage(); y = 25; } }
-        function hr() { doc.setDrawColor(232, 230, 224); doc.line(mx, y, pw - mx, y); y += 8; }
+        function hr() { doc.setDrawColor(220, 218, 212); doc.line(mx, y, rx, y); y += 6; }
+        function printAddr(addr, x) {
+            if (!addr) return;
+            doc.setFontSize(8); doc.setTextColor(106, 101, 96);
+            if (addr.line1) { doc.text(addr.line1, x, y); y += 3.5; }
+            if (addr.line2) { doc.text(addr.line2, x, y); y += 3.5; }
+            if (addr.zip || addr.city) { doc.text((addr.zip || '') + ' ' + (addr.city || ''), x, y); y += 3.5; }
+            if (addr.country && addr.country !== 'France') { doc.text(addr.country, x, y); y += 3.5; }
+        }
 
-        // ===== PAGE 1: DEVIS =====
-        y = 25;
-        doc.setFontSize(10); doc.setTextColor(138, 135, 128);
-        doc.text('deal-forge', mx, y);
-        doc.text('Proposition commerciale', pw - mx, y, { align: 'right' }); y += 12;
-
-        // Parties
         var fi = sigData.freelanceInfo || {};
         var ci = sigData.clientInfo || {};
-        doc.setFontSize(8); doc.setTextColor(138, 135, 128);
-        doc.text('PRESTATAIRE', mx, y); doc.text('CLIENT', pw / 2 + 10, y); y += 5;
-        doc.setFontSize(10); doc.setTextColor(45, 43, 53); doc.setFont(undefined, 'bold');
-        doc.text(fi.name || fi.user_name || '', mx, y);
-        doc.text(ci.name || ci.user_name || '', pw / 2 + 10, y); y += 5;
+        var refNum = sigData.refNumber || 'BDC0001';
+        var tjm = PROJECT_DATA && PROJECT_DATA.tjm_override ? parseFloat(PROJECT_DATA.tjm_override) : 500;
+
+        // ===== PAGE 1: DEVIS =====
+        y = 20;
+
+        // Top bar
+        doc.setFontSize(9); doc.setTextColor(138, 135, 128);
+        doc.text('deal-forge', mx, y);
+        doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
+        doc.text(refNum, rx, y, { align: 'right' }); y += 14;
+        doc.setFont(undefined, 'normal');
+
+        // Parties side by side
+        var leftX = mx, rightX = pw / 2 + 5;
+        var partyY = y;
+
+        // Left: Prestataire
+        doc.setFontSize(7); doc.setTextColor(138, 135, 128);
+        doc.text('PRESTATAIRE', leftX, y); y += 5;
+        doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
+        doc.text(fi.legal_name || fi.name || fi.user_name || '', leftX, y); y += 5;
         doc.setFont(undefined, 'normal'); doc.setFontSize(8); doc.setTextColor(106, 101, 96);
-        if (fi.user_email) doc.text(fi.user_email, mx, y);
-        if (ci.user_email) doc.text(ci.user_email, pw / 2 + 10, y); y += 4;
-        if (fi.siren) doc.text('SIREN : ' + fi.siren, mx, y);
-        if (ci.siren) doc.text('SIREN : ' + ci.siren, pw / 2 + 10, y);
-        y += 10; hr();
+        if (fi.user_email) { doc.text(fi.user_email, leftX, y); y += 3.5; }
+        if (fi.siren) { doc.text('SIREN ' + fi.siren, leftX, y); y += 3.5; }
+        if (fi.tva_intra) { doc.text('TVA ' + fi.tva_intra, leftX, y); y += 3.5; }
+        if (fi.address) printAddr(fi.address, leftX);
+        var leftEnd = y;
+
+        // Right: Client
+        y = partyY;
+        doc.setFontSize(7); doc.setTextColor(138, 135, 128);
+        doc.text('CLIENT', rightX, y); y += 5;
+        doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
+        doc.text(ci.legal_name || ci.name || ci.user_name || '', rightX, y); y += 5;
+        doc.setFont(undefined, 'normal'); doc.setFontSize(8); doc.setTextColor(106, 101, 96);
+        if (ci.user_email) { doc.text(ci.user_email, rightX, y); y += 3.5; }
+        if (ci.siren) { doc.text('SIREN ' + ci.siren, rightX, y); y += 3.5; }
+        if (ci.tva_intra) { doc.text('TVA ' + ci.tva_intra, rightX, y); y += 3.5; }
+        if (ci.address) printAddr(ci.address, rightX);
+
+        y = Math.max(leftEnd, y) + 8;
+        hr();
 
         // Title
         doc.setFontSize(16); doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
         doc.text(PROJECT_DATA ? PROJECT_DATA.title : 'Devis', mx, y); y += 8;
         doc.setFont(undefined, 'normal'); doc.setFontSize(9); doc.setTextColor(106, 101, 96);
-        doc.text('Version ' + (PROJECT_DATA ? PROJECT_DATA.version || '1.0' : '1.0') + ' — ' + sigData.date + ' ' + sigData.time, mx, y); y += 10;
+        doc.text('Ref. ' + refNum + '  |  Version ' + (PROJECT_DATA ? PROJECT_DATA.version || '1.0' : '1.0') + '  |  ' + sigData.date + ' ' + sigData.time, mx, y); y += 12;
 
         // Pricing matrix
         var jobs = [];
@@ -2083,154 +2118,161 @@
             var cb = row.querySelector('.job-check');
             if (!cb || !cb.checked) return;
             var desc = row.querySelector('td').textContent.trim();
-            if (desc.length > 65) desc = desc.substring(0, 62) + '...';
-            jobs.push({ desc: desc, jh: row.dataset.jh, type: row.dataset.type, prio: row.dataset.prio });
+            if (desc.length > 60) desc = desc.substring(0, 57) + '...';
+            jobs.push({ desc: desc, jh: parseFloat(row.dataset.jh), type: row.dataset.type, prio: row.dataset.prio });
         });
 
-        var colW = [100, 20, 20, 20];
-        var colX = [mx, mx + colW[0] + 2, mx + colW[0] + colW[1] + 4, mx + colW[0] + colW[1] + colW[2] + 6];
+        // Table columns: Description | Type | Prio | J/H | Montant HT
+        var cDesc = mx, cType = mx + 95, cPrio = mx + 115, cJh = mx + 137, cMont = rx;
 
-        doc.setFillColor(249, 248, 246); doc.rect(mx, y - 4, mw, 7, 'F');
+        doc.setFillColor(245, 244, 240); doc.rect(mx, y - 4, mw, 7, 'F');
         doc.setFontSize(7); doc.setFont(undefined, 'bold'); doc.setTextColor(74, 72, 80);
-        doc.text('Description', colX[0], y);
-        doc.text('Type', colX[1], y);
-        doc.text('Priorité', colX[2], y);
-        doc.text('J/H', colX[3] + 12, y, { align: 'right' });
+        doc.text('Description', cDesc, y);
+        doc.text('Type', cType, y);
+        doc.text('Prio.', cPrio, y);
+        doc.text('J/H', cJh, y, { align: 'right' });
+        doc.text('Montant HT', cMont, y, { align: 'right' });
         y += 6; doc.setFont(undefined, 'normal');
 
         var totalJh = 0;
         jobs.forEach(function(j) {
             checkPage(6);
             doc.setFontSize(7); doc.setTextColor(45, 43, 53);
-            doc.text(j.desc, colX[0], y);
+            doc.text(j.desc, cDesc, y);
             doc.setTextColor(106, 101, 96);
-            doc.text(j.type.toUpperCase(), colX[1], y);
-            doc.text(j.prio.toUpperCase(), colX[2], y);
-            doc.text(parseFloat(j.jh).toFixed(2).replace('.', ','), colX[3] + 12, y, { align: 'right' });
-            totalJh += parseFloat(j.jh);
+            doc.text(j.type.toUpperCase(), cType, y);
+            doc.text(j.prio.toUpperCase(), cPrio, y);
+            doc.text(j.jh.toFixed(2).replace('.', ','), cJh, y, { align: 'right' });
+            doc.text(fmtEurPdf(j.jh * tjm), cMont, y, { align: 'right' });
+            totalJh += j.jh;
             y += 5;
         });
 
-        y += 3; hr();
-        var tjm = PROJECT_DATA && PROJECT_DATA.tjm_override ? parseFloat(PROJECT_DATA.tjm_override) : 500;
-        var totalEur = totalJh * tjm;
+        // Totals block
+        y += 4;
+        doc.setDrawColor(45, 43, 53); doc.setLineWidth(0.5); doc.line(mx + 90, y - 2, rx, y - 2); doc.setLineWidth(0.2); y += 4;
+        var totalHT = totalJh * tjm;
+        var tva = totalHT * 0.20;
+        var totalTTC = totalHT + tva;
+
+        doc.setFontSize(9); doc.setTextColor(74, 72, 80);
+        doc.text('Total HT', mx + 100, y); doc.setFont(undefined, 'bold'); doc.text(fmtEurPdf(totalHT), rx, y, { align: 'right' }); y += 5;
+        doc.setFont(undefined, 'normal');
+        doc.text('TVA 20%', mx + 100, y); doc.text(fmtEurPdf(tva), rx, y, { align: 'right' }); y += 5;
         doc.setFontSize(11); doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
-        doc.text('Total : ' + totalJh.toFixed(2).replace('.', ',') + ' J/H', mx, y);
-        doc.text(Math.round(totalEur).toLocaleString('fr-FR') + ' \u20ac HT', pw - mx, y, { align: 'right' });
-        y += 6;
-        doc.setFontSize(7); doc.setFont(undefined, 'normal'); doc.setTextColor(138, 135, 128);
-        doc.text('Base tarifaire : ' + tjm + ' \u20ac HT / jour-homme', mx, y); y += 12;
+        doc.text('Total TTC', mx + 100, y); doc.text(fmtEurPdf(totalTTC), rx, y, { align: 'right' }); y += 6;
+
+        doc.setFont(undefined, 'normal'); doc.setFontSize(7); doc.setTextColor(138, 135, 128);
+        doc.text(totalJh.toFixed(2).replace('.', ',') + ' J/H x ' + tjm.toFixed(0) + ' \u20ac HT / jour', mx + 100, y); y += 14;
 
         // Signature block
         hr();
         doc.setFontSize(9); doc.setTextColor(106, 101, 96);
-        doc.text('Fait à ' + sigData.city + ', le ' + sigData.date + ' à ' + sigData.time, mx, y); y += 7;
+        doc.text('Fait a ' + sigData.city + ', le ' + sigData.date + ' a ' + sigData.time, mx, y); y += 8;
         doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
         doc.text(sigData.name, mx, y); y += 5;
         doc.setFont(undefined, 'normal');
-        try { doc.addImage(sigData.sigImage, 'PNG', mx, y, 55, 13); } catch(e) {}
-        y += 18;
+        try { doc.addImage(sigData.sigImage, 'PNG', mx, y, 50, 12); } catch(e) {}
+        y += 16;
 
         // ===== ANNEXES: CDC =====
-        doc.addPage(); y = 25;
+        doc.addPage(); y = 20;
+        doc.setFontSize(9); doc.setTextColor(138, 135, 128);
+        doc.text('deal-forge  |  ' + refNum, mx, y); y += 10;
         doc.setFontSize(14); doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
-        doc.text('Annexe — Cahier des charges', mx, y); y += 10;
+        doc.text('Annexe A — Cahier des charges', mx, y); y += 12;
         doc.setFont(undefined, 'normal');
 
         allFeatures.forEach(function(feat) {
             if (feat.jobs.every(function(j) { return j.is_offered; })) return;
-            checkPage(18);
-            var title = feat.code ? feat.code + ' \u2014 ' + feat.title : feat.title;
+            checkPage(20);
+            var title = feat.code ? feat.code + ' — ' + feat.title : feat.title;
             doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
             doc.text(title, mx, y); y += 5; doc.setFont(undefined, 'normal');
             if (feat.description) {
                 doc.setFontSize(8); doc.setTextColor(106, 101, 96);
                 var dl = doc.splitTextToSize(feat.description, mw);
-                doc.text(dl, mx, y); y += dl.length * 3.5 + 2;
+                doc.text(dl, mx, y); y += dl.length * 3.8 + 2;
             }
             feat.jobs.forEach(function(j) {
                 if (j.is_offered) return;
-                checkPage(7);
-                doc.setFontSize(7); doc.setTextColor(74, 72, 80);
-                var jt = '\u2022 ' + j.description;
-                if (jt.length > 100) jt = jt.substring(0, 97) + '...';
-                var jl = doc.splitTextToSize(jt, mw - 4);
-                doc.text(jl, mx + 3, y); y += jl.length * 3.5 + 1;
+                checkPage(8);
+                doc.setFontSize(7.5); doc.setTextColor(74, 72, 80);
+                var jl = doc.splitTextToSize('- ' + j.description, mw - 6);
+                doc.text(jl, mx + 4, y); y += jl.length * 3.5 + 1.5;
             });
-            y += 4;
+            y += 5;
         });
 
         // Planning
-        checkPage(25); y += 4;
-        doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
-        doc.text('Planning de livraison', mx, y); y += 7; doc.setFont(undefined, 'normal');
+        checkPage(30); y += 4;
+        doc.setFontSize(12); doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
+        doc.text('Annexe B — Planning de livraison', mx, y); y += 8; doc.setFont(undefined, 'normal');
         document.querySelectorAll('#planningBody tr').forEach(function(tr) {
             checkPage(6);
             var cells = tr.querySelectorAll('td');
             if (cells.length < 2) return;
-            doc.setFontSize(7); doc.setTextColor(74, 72, 80);
-            var c0 = cells[0].textContent.trim(); if (c0.length > 28) c0 = c0.substring(0, 25) + '...';
+            doc.setFontSize(7.5); doc.setTextColor(74, 72, 80);
+            var c0 = cells[0].textContent.trim(); if (c0.length > 30) c0 = c0.substring(0, 27) + '...';
             doc.text(c0, mx, y);
-            for (var ci = 1; ci < cells.length && ci < 4; ci++) {
-                var ct = cells[ci].textContent.trim(); if (ct.length > 25) ct = ct.substring(0, 22) + '...';
-                if (ct) doc.text(ct, mx + 55 + (ci - 1) * 40, y);
+            for (var i = 1; i < cells.length && i < 4; i++) {
+                var ct = cells[i].textContent.trim(); if (ct.length > 25) ct = ct.substring(0, 22) + '...';
+                if (ct) doc.text(ct, mx + 55 + (i - 1) * 40, y);
             }
-            y += 4;
+            y += 5;
         });
 
         // Hors scope
         var exList = document.getElementById('exclusionsList');
         if (exList && exList.children.length) {
-            checkPage(18); y += 6;
-            doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
-            doc.text('Hors scope et dépendances', mx, y); y += 7; doc.setFont(undefined, 'normal');
+            checkPage(20); y += 8;
+            doc.setFontSize(12); doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
+            doc.text('Annexe C — Hors scope', mx, y); y += 8; doc.setFont(undefined, 'normal');
             Array.from(exList.children).forEach(function(li) {
-                checkPage(7);
-                doc.setFontSize(7); doc.setTextColor(74, 72, 80);
-                var txt = '\u2022 ' + li.textContent.trim();
-                if (txt.length > 110) txt = txt.substring(0, 107) + '...';
-                var lines = doc.splitTextToSize(txt, mw - 4);
-                doc.text(lines, mx + 3, y); y += lines.length * 3.5 + 1;
+                checkPage(8);
+                doc.setFontSize(7.5); doc.setTextColor(74, 72, 80);
+                var lines = doc.splitTextToSize('- ' + li.textContent.trim(), mw - 6);
+                doc.text(lines, mx + 4, y); y += lines.length * 3.5 + 1.5;
             });
         }
 
         // ===== LAST PAGE: CERTIFICAT =====
-        doc.addPage(); y = 25;
+        doc.addPage(); y = 20;
+        doc.setFontSize(9); doc.setTextColor(138, 135, 128);
+        doc.text('deal-forge  |  ' + refNum, mx, y); y += 10;
         doc.setFontSize(14); doc.setFont(undefined, 'bold'); doc.setTextColor(45, 43, 53);
-        doc.text('Certificat de signature électronique', 105, y, { align: 'center' }); y += 7;
-        doc.setFontSize(9); doc.setFont(undefined, 'normal'); doc.setTextColor(106, 101, 96);
-        doc.text('deal-forge', 105, y, { align: 'center' }); y += 12; hr();
+        doc.text('Certificat de signature electronique', 105, y, { align: 'center' }); y += 12; hr();
 
         doc.setFontSize(9); doc.setTextColor(45, 43, 53);
         var certFields = [
+            ['Reference', refNum],
             ['Projet', PROJECT_DATA ? PROJECT_DATA.title : ''],
             ['Signataire', sigData.name],
             ['Email', dfUser ? dfUser.email : ''],
-            ['Fait à', sigData.city],
-            ['Date', sigData.date + ' à ' + sigData.time],
+            ['Fait a', sigData.city],
+            ['Date et heure', sigData.date + ' a ' + sigData.time],
             ['Adresse IP', sigData.ip || '']
         ];
         certFields.forEach(function(f) {
             doc.setFont(undefined, 'bold'); doc.text(f[0] + ' :', mx, y);
-            doc.setFont(undefined, 'normal'); doc.text(f[1], mx + 35, y); y += 6;
+            doc.setFont(undefined, 'normal'); doc.text(f[1], mx + 40, y); y += 7;
         });
         y += 4; hr();
-        doc.text('Signature :', mx, y); y += 5;
-        try { doc.addImage(sigData.sigImage, 'PNG', mx, y, 60, 14); } catch(e) {}
+        doc.text('Signature :', mx, y); y += 6;
+        try { doc.addImage(sigData.sigImage, 'PNG', mx, y, 55, 13); } catch(e) {}
         y += 20; hr();
         doc.setFontSize(7); doc.setTextColor(138, 135, 128);
         doc.text('Empreinte SHA-256 du document :', mx, y); y += 4;
-        doc.text(sigData.hash, mx, y); y += 8;
-        doc.setFontSize(7);
-        doc.text('Ce document a été signé électroniquement via deal-forge.', mx, y); y += 4;
-        doc.text('La signature simple a valeur probante conformément à l\'article 1367 du Code civil.', mx, y);
+        doc.text(sigData.hash, mx, y); y += 10;
+        doc.text('Ce document a ete signe electroniquement via deal-forge.', mx, y); y += 4;
+        doc.text('La signature simple a valeur probante conformement a l\'article 1367 du Code civil.', mx, y);
 
         // Footer all pages
         var pc = doc.internal.getNumberOfPages();
         for (var i = 1; i <= pc; i++) {
             doc.setPage(i);
             doc.setFontSize(6); doc.setTextColor(180, 180, 180);
-            doc.text('deal-forge — ' + (PROJECT_DATA ? PROJECT_DATA.title : '') + ' — Page ' + i + '/' + pc, 105, ph - 10, { align: 'center' });
+            doc.text(refNum + '  |  ' + (PROJECT_DATA ? PROJECT_DATA.title : '') + '  |  Page ' + i + '/' + pc, 105, ph - 10, { align: 'center' });
         }
 
         return doc.output('datauristring');
@@ -2284,7 +2326,7 @@
             // Generate PDF with full info
             var pdfBase64 = null;
             try {
-                var pdfData = generateSignedPDF({ name: name, city: city, date: dateStr, time: timeStr, hash: hash, sigImage: sigImage, ip: result.ip_address, freelanceInfo: result.freelance_info, clientInfo: result.client_info });
+                var pdfData = generateSignedPDF({ name: name, city: city, date: dateStr, time: timeStr, hash: hash, sigImage: sigImage, ip: result.ip_address, freelanceInfo: result.freelance_info, clientInfo: result.client_info, refNumber: result.ref_number });
                 if (pdfData) pdfBase64 = pdfData.split(',')[1];
                 // Send PDF to API for email attachment
                 if (pdfBase64) {

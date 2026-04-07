@@ -119,15 +119,36 @@ export default async function handler(req, res) {
       // Update project status to signed
       await sql`UPDATE projects SET status = 'signed', updated_at = NOW() WHERE id = ${project.id}`;
 
-      // Get account info for PDF
+      // Auto-generate ref_number if missing
+      if (!project.ref_number) {
+        var year = new Date().getFullYear().toString().slice(-2);
+        var month = (new Date().getMonth() + 1).toString().padStart(2, '0');
+        var count = await sql`SELECT COUNT(*) as c FROM projects WHERE ref_number IS NOT NULL`;
+        var num = (parseInt(count[0].c) + 1).toString().padStart(2, '0');
+        var refNum = 'BDC' + year + month + num;
+        await sql`UPDATE projects SET ref_number = ${refNum} WHERE id = ${project.id}`;
+        project.ref_number = refNum;
+      }
+
+      // Get account info + addresses for PDF
       var freelanceInfo = null, clientInfo = null;
       if (project.freelance_account_id) {
-        var fi = await sql`SELECT a.name, a.legal_name, a.siren, u.name as user_name, u.email as user_email FROM accounts a LEFT JOIN users u ON u.account_id = a.id WHERE a.id = ${project.freelance_account_id} LIMIT 1`;
-        if (fi.length) freelanceInfo = fi[0];
+        var fi = await sql`SELECT a.name, a.legal_name, a.siren, a.tva_intra, u.name as user_name, u.email as user_email FROM accounts a LEFT JOIN users u ON u.account_id = a.id WHERE a.id = ${project.freelance_account_id} LIMIT 1`;
+        if (fi.length) {
+          freelanceInfo = fi[0];
+          var fAddr = await sql`SELECT line1, line2, city, zip, country FROM addresses WHERE account_id = ${project.freelance_account_id} AND is_default = true LIMIT 1`;
+          if (!fAddr.length) fAddr = await sql`SELECT line1, line2, city, zip, country FROM addresses WHERE account_id = ${project.freelance_account_id} ORDER BY id LIMIT 1`;
+          if (fAddr.length) freelanceInfo.address = fAddr[0];
+        }
       }
       if (project.client_account_id) {
-        var ci = await sql`SELECT a.name, a.legal_name, a.siren, u.name as user_name, u.email as user_email FROM accounts a LEFT JOIN users u ON u.account_id = a.id WHERE a.id = ${project.client_account_id} LIMIT 1`;
-        if (ci.length) clientInfo = ci[0];
+        var ci = await sql`SELECT a.name, a.legal_name, a.siren, a.tva_intra, u.name as user_name, u.email as user_email FROM accounts a LEFT JOIN users u ON u.account_id = a.id WHERE a.id = ${project.client_account_id} LIMIT 1`;
+        if (ci.length) {
+          clientInfo = ci[0];
+          var cAddr = await sql`SELECT line1, line2, city, zip, country FROM addresses WHERE account_id = ${project.client_account_id} AND is_default = true LIMIT 1`;
+          if (!cAddr.length) cAddr = await sql`SELECT line1, line2, city, zip, country FROM addresses WHERE account_id = ${project.client_account_id} ORDER BY id LIMIT 1`;
+          if (cAddr.length) clientInfo.address = cAddr[0];
+        }
       }
 
       // Format date with time
@@ -135,7 +156,7 @@ export default async function handler(req, res) {
 
       // Emails with PDF will be sent in a separate call after client-side PDF generation
 
-      return res.status(201).json({ ...rows[0], freelance_info: freelanceInfo, client_info: clientInfo });
+      return res.status(201).json({ ...rows[0], freelance_info: freelanceInfo, client_info: clientInfo, ref_number: project.ref_number });
     }
 
     return res.status(405).json({ error: 'method not allowed' });
