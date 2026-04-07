@@ -127,8 +127,21 @@
             text-transform: uppercase; letter-spacing: 0.3px; flex-shrink: 0;
         }
         .project-card .project-status.draft { background: #fef3c7; color: #92400e; }
+        .project-card .project-status.proposed { background: #dbeafe; color: #1e40af; }
+        .project-card .project-status.signed { background: #dcfce7; color: #166534; }
         .project-card .project-status.active { background: #dcfce7; color: #166534; }
-        .project-card .project-status.closed { background: #f4f3ee; color: #8a8780; }
+        .project-card .project-status.delivered { background: #f3e8ff; color: #6b21a8; }
+        .project-card .project-status.completed { background: #f4f3ee; color: #4a4850; }
+        .project-card .project-status.lost { background: #f4f3ee; color: #8a8780; }
+
+        .filter-bar { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+        .filter-tag {
+            font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 12px;
+            border: 1px solid #e8e6e0; background: white; color: #6b6560;
+            cursor: pointer; transition: all 0.15s; user-select: none;
+        }
+        .filter-tag:hover { border-color: #c15f3c; color: #c15f3c; }
+        .filter-tag.active { background: #2d2b35; color: white; border-color: #2d2b35; }
         .project-card .project-comments {
             font-size: 12px; color: #8a8780; display: flex; align-items: center; gap: 4px; flex-shrink: 0;
         }
@@ -200,27 +213,26 @@
             Créer un projet
         </button>
         <div class="sidebar-section">
-            <div class="sidebar-section-title">Drafts</div>
-            <a class="sidebar-item" href="/deals/draft" data-status="draft">
+            <div class="sidebar-section-title">Pipeline</div>
+            <a class="sidebar-item" href="/deals/draft" data-tab="draft">
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2.5l.5.5-8.5 8.5L2 13l1.5-3L12 1.5l1 1z"/><line x1="9.5" y1="6" x2="11" y2="7.5"/></svg>
                 Brouillons
                 <span class="item-count" id="countDraft">0</span>
             </a>
-        </div>
-        <div class="sidebar-section">
-            <div class="sidebar-section-title">Active projects</div>
-            <a class="sidebar-item" href="/deals/active" data-status="active">
+            <a class="sidebar-item" href="/deals/proposed" data-tab="proposed">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8l5 5 7-9"/></svg>
+                Proposés
+                <span class="item-count" id="countProposed">0</span>
+            </a>
+            <a class="sidebar-item" href="/deals/active" data-tab="active">
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><polyline points="8,5 8,8 10.5,9.5"/></svg>
                 En cours
                 <span class="item-count" id="countActive">0</span>
             </a>
-        </div>
-        <div class="sidebar-section">
-            <div class="sidebar-section-title">Closed projects</div>
-            <a class="sidebar-item" href="/deals/closed" data-status="closed">
+            <a class="sidebar-item" href="/deals/completed" data-tab="completed">
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,8.5 7,11.5 12,5"/><circle cx="8" cy="8" r="6"/></svg>
                 Terminés
-                <span class="item-count" id="countClosed">0</span>
+                <span class="item-count" id="countCompleted">0</span>
             </a>
         </div>
     </div>
@@ -255,6 +267,7 @@
         <h1 id="pageTitle">Brouillons</h1>
         <p id="pageSubtitle">Projets en cours de rédaction</p>
     </div>
+    <div class="filter-bar" id="filterBar"></div>
     <div class="project-grid" id="projectGrid"></div>
 </div>
 
@@ -274,18 +287,74 @@
     }
 
     var path = window.location.pathname.replace(/\/$/, '');
-    var currentStatus = 'draft';
-    if (path === '/deals/active') currentStatus = 'active';
-    else if (path === '/deals/closed') currentStatus = 'closed';
+    var currentTab = 'draft';
+    if (path === '/deals/proposed') currentTab = 'proposed';
+    else if (path === '/deals/active') currentTab = 'active';
+    else if (path === '/deals/completed') currentTab = 'completed';
 
-    var titles = { draft: ['Brouillons', 'Projets en cours de rédaction'], active: ['Projets actifs', 'Missions en cours d\'exécution'], closed: ['Projets terminés', 'Missions livrées ou archivées'] };
-    document.getElementById('pageTitle').textContent = titles[currentStatus][0];
-    document.getElementById('pageSubtitle').textContent = titles[currentStatus][1];
+    // Tab config: which statuses belong to each tab, display info, sub-filters
+    var TABS = {
+        draft: {
+            title: 'Brouillons', subtitle: 'Projets en cours de rédaction',
+            statuses: ['draft'], filters: []
+        },
+        proposed: {
+            title: 'Proposés', subtitle: 'Devis envoyés en attente de réponse',
+            statuses: ['proposed'], filters: []
+        },
+        active: {
+            title: 'En cours', subtitle: 'Projets signés ou en exécution',
+            statuses: ['signed', 'active', 'delivered'],
+            filters: [
+                { value: 'all', label: 'Tous' },
+                { value: 'signed', label: 'Signé' },
+                { value: 'active', label: 'En exécution' },
+                { value: 'delivered', label: 'Livré' }
+            ]
+        },
+        completed: {
+            title: 'Terminés', subtitle: 'Projets complétés ou perdus',
+            statuses: ['completed', 'lost'],
+            filters: [
+                { value: 'all', label: 'Tous' },
+                { value: 'completed', label: 'Complété' },
+                { value: 'lost', label: 'Perdu' }
+            ]
+        }
+    };
+
+    var STATUS_LABELS = {
+        draft: 'Brouillon', proposed: 'Proposé', signed: 'Signé',
+        active: 'En exécution', delivered: 'Livré', completed: 'Complété', lost: 'Perdu'
+    };
+
+    var tab = TABS[currentTab];
+    document.getElementById('pageTitle').textContent = tab.title;
+    document.getElementById('pageSubtitle').textContent = tab.subtitle;
 
     // Highlight sidebar
     document.querySelectorAll('.sidebar-item').forEach(function(el) {
-        if (el.dataset.status === currentStatus) el.classList.add('active');
+        if (el.dataset.tab === currentTab) el.classList.add('active');
     });
+
+    // Sub-filters
+    var activeFilter = 'all';
+    var filterBar = document.getElementById('filterBar');
+    if (tab.filters.length) {
+        tab.filters.forEach(function(f) {
+            var tag = document.createElement('span');
+            tag.className = 'filter-tag' + (f.value === 'all' ? ' active' : '');
+            tag.textContent = f.label;
+            tag.dataset.filter = f.value;
+            tag.addEventListener('click', function() {
+                activeFilter = f.value;
+                filterBar.querySelectorAll('.filter-tag').forEach(function(t) { t.classList.remove('active'); });
+                tag.classList.add('active');
+                renderProjects();
+            });
+            filterBar.appendChild(tag);
+        });
+    }
 
     // Sidebar toggle
     var sidebar = document.getElementById('leftSidebar');
@@ -313,50 +382,70 @@
             return;
         });
 
-    // Load counts
-    ['draft','active','closed'].forEach(function(s) {
-        fetch('/api/projects?status=' + s, { headers: authHeaders }).then(function(r) { return r.json(); }).then(function(rows) {
-            document.getElementById('count' + s.charAt(0).toUpperCase() + s.slice(1)).textContent = rows.length;
-        }).catch(function() {});
-    });
-
-    // Load projects
+    // Load all projects once, then filter locally
+    var allProjects = [];
     var grid = document.getElementById('projectGrid');
 
-    fetch('/api/projects?status=' + currentStatus, { headers: authHeaders }).then(function(r) { return r.json(); }).then(function(projects) {
-        if (!projects.length) {
+    fetch('/api/projects', { headers: authHeaders }).then(function(r) { return r.json(); }).then(function(projects) {
+        allProjects = projects;
+        updateCounts();
+        renderProjects();
+    }).catch(function() {
+        grid.innerHTML = '<div class="empty-state"><p>Erreur de chargement</p></div>';
+    });
+
+    function updateCounts() {
+        var counts = { draft: 0, proposed: 0, active: 0, completed: 0 };
+        allProjects.forEach(function(p) {
+            if (p.status === 'draft') counts.draft++;
+            else if (p.status === 'proposed') counts.proposed++;
+            else if (p.status === 'signed' || p.status === 'active' || p.status === 'delivered') counts.active++;
+            else if (p.status === 'completed' || p.status === 'lost') counts.completed++;
+        });
+        document.getElementById('countDraft').textContent = counts.draft;
+        document.getElementById('countProposed').textContent = counts.proposed;
+        document.getElementById('countActive').textContent = counts.active;
+        document.getElementById('countCompleted').textContent = counts.completed;
+    }
+
+    function renderProjects() {
+        var filtered = allProjects.filter(function(p) {
+            if (tab.statuses.indexOf(p.status) === -1) return false;
+            if (activeFilter !== 'all' && p.status !== activeFilter) return false;
+            return true;
+        });
+
+        grid.innerHTML = '';
+        if (!filtered.length) {
             grid.innerHTML = '<div class="empty-state"><p>Aucun projet pour le moment</p>'
-                + '<button class="create-btn" onclick="document.getElementById(\'modalOverlay\').classList.add(\'show\'); document.getElementById(\'projectTitleInput\').focus();">'
+                + (currentTab === 'draft' ? '<button class="create-btn" onclick="document.getElementById(\'modalOverlay\').classList.add(\'show\'); document.getElementById(\'projectTitleInput\').focus();">'
                 + '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>'
-                + 'Créer un projet</button></div>';
+                + 'Créer un projet</button>' : '') + '</div>';
             return;
         }
 
-        // Load comment counts for each project
-        projects.forEach(function(p) {
+        filtered.forEach(function(p) {
             var card = document.createElement('a');
             card.className = 'project-card';
             card.href = '/deals/' + p.status + '/' + p.slug;
 
             var date = new Date(p.updated_at);
             var dateStr = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+            var statusLabel = STATUS_LABELS[p.status] || p.status;
 
             card.innerHTML = '<div class="project-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2" width="14" height="16" rx="2"/><line x1="6" y1="6" x2="14" y2="6"/><line x1="6" y1="9.5" x2="14" y2="9.5"/><line x1="6" y1="13" x2="11" y2="13"/></svg></div>'
                 + '<div class="project-info"><div class="project-title">' + escHtml(p.title) + '</div>'
                 + '<div class="project-meta">Mis à jour le ' + dateStr + '</div></div>'
-                + '<span class="project-status ' + p.status + '">' + p.status + '</span>'
-                + '<span class="project-comments" data-slug="' + p.slug + '"><svg viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="14" height="9" rx="2"/><polygon points="4,10 7,13 10,10"/></svg><span>—</span></span>';
+                + '<span class="project-status ' + p.status + '">' + statusLabel + '</span>'
+                + '<span class="project-comments" data-slug="' + p.slug + '"><svg viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="14" height="9" rx="2"/><polygon points="4,10 7,13 10,10"/></svg><span>\u2014</span></span>';
             grid.appendChild(card);
 
-            // Load comment count async
             fetch('/api/comments?doc=' + encodeURIComponent(p.slug)).then(function(r) { return r.json(); }).then(function(comments) {
                 var el = card.querySelector('.project-comments span');
                 if (el) el.textContent = comments.filter(function(c) { return c.text; }).length;
             }).catch(function() {});
         });
-    }).catch(function() {
-        grid.innerHTML = '<div class="empty-state"><p>Erreur de chargement</p></div>';
-    });
+    }
 
     // Create modal
     var modalOverlay = document.getElementById('modalOverlay');
