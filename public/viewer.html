@@ -678,6 +678,50 @@
     </div>
 </div>
 
+<!-- PROPOSE MODAL -->
+<div class="confirm-overlay" id="proposeOverlay" style="display:none;">
+    <div class="confirm-modal" style="width:420px;">
+        <p style="font-size:15px; font-weight:700; color:#2d2b35; margin-bottom:4px;">Proposer le devis</p>
+        <p style="font-size:13px; color:#8a8780; margin-bottom:16px;">Le client recevra un email avec un lien direct vers la proposition.</p>
+        <div style="margin-bottom:14px;">
+            <label style="font-size:12px; font-weight:600; color:#4a4850; display:block; margin-bottom:4px;">Email du client</label>
+            <input type="email" id="proposeEmail" placeholder="client@entreprise.com" style="width:100%; padding:10px 14px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none;">
+        </div>
+        <div class="confirm-actions">
+            <button class="confirm-cancel" id="proposeCancel">Annuler</button>
+            <button class="confirm-ok primary" id="proposeSubmit" disabled>Envoyer la proposition</button>
+        </div>
+    </div>
+</div>
+
+<!-- ONBOARDING MODAL (post-signature) -->
+<div class="confirm-overlay" id="onboardOverlay" style="display:none;">
+    <div class="confirm-modal" style="width:460px;">
+        <p style="font-size:15px; font-weight:700; color:#2d2b35; margin-bottom:4px;">Premier devis sur deal-forge ?</p>
+        <p style="font-size:13px; color:#8a8780; margin-bottom:16px;">Complétez vos informations pour qu'elles apparaissent sur vos documents.</p>
+        <div style="margin-bottom:12px;">
+            <label style="font-size:12px; font-weight:600; color:#4a4850; display:block; margin-bottom:4px;">Nom de la structure</label>
+            <input type="text" id="obCompany" placeholder="CarJager SAS" style="width:100%; padding:9px 12px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none;">
+        </div>
+        <div style="margin-bottom:12px;">
+            <label style="font-size:12px; font-weight:600; color:#4a4850; display:block; margin-bottom:4px;">Adresse</label>
+            <input type="text" id="obLine1" placeholder="12 rue de la Paix" style="width:100%; padding:9px 12px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none; margin-bottom:8px;">
+            <div style="display:flex; gap:8px;">
+                <input type="text" id="obZip" placeholder="75002" style="flex:1; padding:9px 12px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none;">
+                <input type="text" id="obCity" placeholder="Paris" style="flex:2; padding:9px 12px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none;">
+            </div>
+        </div>
+        <div style="margin-bottom:14px;">
+            <label style="font-size:12px; font-weight:600; color:#4a4850; display:block; margin-bottom:4px;">N° TVA intracommunautaire</label>
+            <input type="text" id="obTva" placeholder="FR12345678901" style="width:100%; padding:9px 12px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none;">
+        </div>
+        <div class="confirm-actions">
+            <button class="confirm-cancel" id="obSkip">Passer pour l'instant</button>
+            <button class="confirm-ok primary" id="obSave" disabled>Valider</button>
+        </div>
+    </div>
+</div>
+
 <!-- CONFIRM MODAL -->
 <div class="confirm-overlay" id="confirmOverlay">
     <div class="confirm-modal">
@@ -1002,6 +1046,93 @@
     confirmCancel.addEventListener('click', function() { confirmOverlay.classList.remove('show'); confirmCallback = null; });
     confirmOverlay.addEventListener('click', function(e) { if (e.target === confirmOverlay) { confirmOverlay.classList.remove('show'); confirmCallback = null; } });
     confirmOk.addEventListener('click', function() { confirmOverlay.classList.remove('show'); if (confirmCallback) confirmCallback(confirmTextarea.value); confirmCallback = null; });
+
+    // ===== PROPOSE MODAL =====
+    (function() {
+        var overlay = document.getElementById('proposeOverlay');
+        var emailInput = document.getElementById('proposeEmail');
+        var submitBtn = document.getElementById('proposeSubmit');
+        var cancelBtn = document.getElementById('proposeCancel');
+
+        emailInput.addEventListener('input', function() {
+            submitBtn.disabled = !emailInput.value.includes('@');
+        });
+        emailInput.addEventListener('keydown', function(e) { if (e.key === 'Enter' && !submitBtn.disabled) submitBtn.click(); });
+        cancelBtn.addEventListener('click', function() { overlay.style.display = 'none'; });
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.style.display = 'none'; });
+
+        submitBtn.addEventListener('click', function() {
+            var email = emailInput.value.trim();
+            if (!email) return;
+            submitBtn.disabled = true; submitBtn.textContent = 'Envoi en cours...';
+            var dfToken = localStorage.getItem('df_token') || '';
+
+            // 1. Invite client (creates account if needed, links to project, sends email)
+            fetch('/api/notify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
+                body: JSON.stringify({ type: 'invite_and_propose', slug: SLUG, client_email: email })
+            }).then(function(r) { return r.json(); }).then(function(result) {
+                // 2. Change status
+                return changeStatus('proposed');
+            }).then(function() {
+                overlay.style.display = 'none';
+                submitBtn.textContent = 'Envoyer la proposition'; submitBtn.disabled = false;
+            }).catch(function() {
+                submitBtn.textContent = 'Envoyer la proposition'; submitBtn.disabled = false;
+            });
+        });
+    })();
+
+    // ===== ONBOARDING MODAL (post-signature) =====
+    (function() {
+        var overlay = document.getElementById('onboardOverlay');
+        var saveBtn = document.getElementById('obSave');
+        var skipBtn = document.getElementById('obSkip');
+        var fields = ['obCompany', 'obLine1', 'obZip', 'obCity', 'obTva'];
+
+        function checkFilled() {
+            var allFilled = fields.every(function(id) { return document.getElementById(id).value.trim(); });
+            saveBtn.disabled = !allFilled;
+        }
+        fields.forEach(function(id) { document.getElementById(id).addEventListener('input', checkFilled); });
+
+        skipBtn.addEventListener('click', function() { overlay.style.display = 'none'; });
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.style.display = 'none'; });
+
+        saveBtn.addEventListener('click', function() {
+            saveBtn.disabled = true; saveBtn.textContent = 'Enregistrement...';
+            var dfToken = localStorage.getItem('df_token') || '';
+            var headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken };
+
+            // Save account info
+            fetch('/api/auth?action=me', {
+                method: 'PUT', headers: headers,
+                body: JSON.stringify({
+                    account_name: document.getElementById('obCompany').value.trim(),
+                    tva_intra: document.getElementById('obTva').value.trim()
+                })
+            }).then(function() {
+                // Save address
+                return fetch('/api/account?entity=addresses', {
+                    method: 'POST', headers: headers,
+                    body: JSON.stringify({
+                        label: 'Principal',
+                        line1: document.getElementById('obLine1').value.trim(),
+                        zip: document.getElementById('obZip').value.trim(),
+                        city: document.getElementById('obCity').value.trim(),
+                        country: 'France',
+                        is_default: true
+                    })
+                });
+            }).then(function() {
+                overlay.style.display = 'none';
+                saveBtn.textContent = 'Valider'; saveBtn.disabled = false;
+            });
+        });
+
+        window.showOnboarding = function() { overlay.style.display = 'flex'; };
+    })();
 
     // ===== USER PROFILE (sidebar) =====
     var dfUser = null;
@@ -1839,24 +1970,12 @@
             text.textContent = 'Votre proposition est prête ?';
             buttons.innerHTML = '<button class="action-btn primary" id="btnPropose" disabled>Proposer le devis</button>';
             document.getElementById('btnPropose').addEventListener('click', function() {
-                var btn = this;
-                showConfirm('Proposer ce devis au client ? Le projet passera en statut "Proposé" et le client sera notifié par email.', 'Proposer', 'primary', function() {
-                btn.disabled = true; btn.textContent = 'Envoi...';
-                var dfToken = localStorage.getItem('df_token') || '';
-
-                // 1. Change status + 2. Notify (API creates magic link + sends email)
-                changeStatus('proposed').then(function() {
-                    return fetch('/api/notify', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
-                        body: JSON.stringify({ type: 'proposed', slug: SLUG })
-                    });
-                }).then(function() {
-                    btn.textContent = 'Envoyé';
-                }).catch(function() {
-                    btn.disabled = false; btn.textContent = 'Proposer le devis';
-                });
-                });
+                var propOverlay = document.getElementById('proposeOverlay');
+                var propEmail = document.getElementById('proposeEmail');
+                var propSubmit = document.getElementById('proposeSubmit');
+                propEmail.value = ''; propSubmit.disabled = true;
+                propOverlay.style.display = 'flex';
+                propEmail.focus();
             });
             trackScroll('btnPropose');
         }
@@ -2347,8 +2466,19 @@
                 }
             } catch(e) { console.warn('PDF generation failed', e); }
 
-            // Show success modal
+            // Show success modal, then onboarding
             document.getElementById('successOverlay').classList.add('show');
+            document.getElementById('successClose').addEventListener('click', function() {
+                // Check if client has incomplete profile → show onboarding
+                var dfToken2 = localStorage.getItem('df_token') || '';
+                fetch('/api/auth?action=me', { headers: { 'Authorization': 'Bearer ' + dfToken2 } })
+                    .then(function(r) { return r.ok ? r.json() : null; })
+                    .then(function(data) {
+                        if (data && (!data.account.tva_intra || data.account.name === data.user.name)) {
+                            showOnboarding();
+                        }
+                    });
+            }, { once: true });
 
             PROJECT_DATA.status = 'signed';
             setupStatusActions();

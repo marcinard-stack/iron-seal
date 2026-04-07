@@ -61,7 +61,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   var sql = neon(process.env.DATABASE_URL);
-  var { type, slug, view_link, message } = req.body;
+  var { type, slug, view_link, message, client_email } = req.body;
 
   // Resolve sender from session
   var auth = (req.headers.authorization || '').replace('Bearer ', '');
@@ -80,6 +80,39 @@ export default async function handler(req, res) {
     var projects = await sql`SELECT * FROM projects WHERE slug = ${slug}`;
     if (!projects.length) return res.status(404).json({ error: 'Project not found' });
     var project = projects[0];
+
+    if (type === 'invite_and_propose') {
+      // Freelance invites client by email → create account if needed → link → send magic link
+      if (!client_email) return res.status(400).json({ error: 'client_email required' });
+      var cleanEmail = client_email.toLowerCase().trim();
+
+      // Find or create user
+      var existingUser = await sql`SELECT u.id, u.account_id FROM users u WHERE u.email = ${cleanEmail}`;
+      var clientAccountId;
+      if (existingUser.length) {
+        clientAccountId = existingUser[0].account_id;
+      } else {
+        // Create account + user (no password — magic link only for now)
+        var namePart = cleanEmail.split('@')[0].replace(/[._-]/g, ' ');
+        var newAcct = await sql`INSERT INTO accounts (name, type, plan) VALUES (${namePart}, 'solo', 'free') RETURNING id`;
+        clientAccountId = newAcct[0].id;
+        await sql`INSERT INTO users (account_id, email, name, role) VALUES (${clientAccountId}, ${cleanEmail}, ${namePart}, 'owner')`;
+      }
+
+      // Link client to project
+      await sql`UPDATE projects SET client_account_id = ${clientAccountId}, updated_at = NOW() WHERE slug = ${slug}`;
+
+      // Send magic link email
+      var senderName = sender ? sender.name : 'Un freelance';
+      var magicToken = await createMagicToken(sql, cleanEmail);
+      var directLink = (req.headers.origin || 'https://deal-forge-tawny.vercel.app') + '/deals/proposed/' + project.slug + '?auth=' + magicToken;
+      var result = await sendEmail(
+        cleanEmail,
+        'Proposition : ' + project.title,
+        proposalEmail(project.title, senderName, directLink)
+      );
+      return res.json({ ok: true, email: result, client_account_id: clientAccountId, sent_to: cleanEmail });
+    }
 
     if (type === 'proposed') {
       // Freelance proposes → notify client
