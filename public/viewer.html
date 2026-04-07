@@ -2181,8 +2181,15 @@
         doc.setFontSize(9); doc.setTextColor(138, 135, 128);
         doc.text('deal-forge  |  ' + refNum, mx, y); y += 10;
         doc.setFontSize(14); doc.setFont(undefined, 'bold'); doc.setTextColor(193, 95, 60);
-        doc.text('Annexe A — Cahier des charges', mx, y); y += 12;
-        doc.setFont(undefined, 'normal');
+        doc.text('Annexe A - Cahier des charges complet', mx, y); y += 6;
+        doc.setFontSize(8); doc.setFont(undefined, 'normal'); doc.setTextColor(106, 101, 96);
+        doc.text('Incluant les elements non retenus. Les elements inclus dans le devis sont en orange.', mx, y); y += 10;
+
+        var includedJobIds = {};
+        document.querySelectorAll('.detail-table tr.job').forEach(function(row) {
+            var cb = row.querySelector('.job-check');
+            if (cb && cb.checked) includedJobIds[row.dataset.jobId] = true;
+        });
 
         allFeatures.forEach(function(feat) {
             if (feat.jobs.every(function(j) { return j.is_offered; })) return;
@@ -2198,7 +2205,8 @@
             feat.jobs.forEach(function(j) {
                 if (j.is_offered) return;
                 checkPage(8);
-                doc.setFontSize(7.5); doc.setTextColor(74, 72, 80);
+                doc.setFontSize(7.5);
+                if (includedJobIds[j.id]) { doc.setTextColor(193, 95, 60); } else { doc.setTextColor(120, 118, 112); }
                 var jl = doc.splitTextToSize('- ' + pdfSafe(j.description), mw - 6);
                 doc.text(jl, mx + 4, y); y += jl.length * 3.5 + 1.5;
             });
@@ -2210,22 +2218,20 @@
         doc.setFontSize(12); doc.setFont(undefined, 'bold'); doc.setTextColor(193, 95, 60);
         doc.text('Annexe B — Planning de livraison', mx, y); y += 8; doc.setFont(undefined, 'normal');
         document.querySelectorAll('#planningBody tr').forEach(function(tr) {
-            checkPage(10);
+            checkPage(8);
             var cells = tr.querySelectorAll('td');
-            if (cells.length < 2) return;
+            if (cells.length < 4) return;
             var week = pdfSafe(cells[0].textContent.trim());
+            var custom = pdfSafe(cells[3].textContent.trim());
             if (!week) return;
             doc.setFontSize(8); doc.setFont(undefined, 'bold'); doc.setTextColor(30, 30, 30);
-            doc.text(week, mx, y); y += 4; doc.setFont(undefined, 'normal');
-            for (var i = 1; i < cells.length && i < 4; i++) {
-                var ct = pdfSafe(cells[i].textContent.trim());
-                if (ct) {
-                    doc.setFontSize(7.5); doc.setTextColor(106, 101, 96);
-                    var colLabel = i === 1 ? 'Must Have: ' : i === 2 ? 'Complet: ' : 'Sur mesure: ';
-                    doc.text('  - ' + colLabel + ct, mx + 4, y); y += 3.5;
-                }
+            doc.text(week, mx, y);
+            if (custom) {
+                doc.setFont(undefined, 'normal'); doc.setFontSize(7.5); doc.setTextColor(193, 95, 60);
+                doc.text(custom, mx + 75, y);
             }
-            y += 2;
+            doc.setFont(undefined, 'normal');
+            y += 5;
         });
 
         // Hors scope
