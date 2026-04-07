@@ -242,6 +242,20 @@ export default async function handler(req, res) {
     await sql`CREATE INDEX IF NOT EXISTS idx_project_guests_project ON project_guests(project_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_project_guests_email ON project_guests(email)`;
 
+    // ── PRESENCE ──
+    await sql`
+      CREATE TABLE IF NOT EXISTS presence (
+        id SERIAL PRIMARY KEY,
+        project_slug VARCHAR(200) NOT NULL,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        guest_email VARCHAR(300),
+        guest_name VARCHAR(300),
+        last_seen TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_presence_slug ON presence(project_slug)`;
+    await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_presence_unique ON presence(project_slug, COALESCE(user_id, -1), COALESCE(guest_email, ''))`;
+
     // ── SESSIONS ──
     await sql`
       CREATE TABLE IF NOT EXISTS sessions (

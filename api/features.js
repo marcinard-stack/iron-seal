@@ -7,10 +7,26 @@ export default async function handler(req, res) {
 
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
+    // Presence heartbeat (piggyback on poll)
+    var auth = (req.headers.authorization || '').replace('Bearer ', '');
+    var currentUserId = null;
+    if (auth) {
+      var sess = await sql`SELECT u.id, u.name FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ${auth} AND s.expires_at > NOW()`;
+      if (sess.length) {
+        currentUserId = sess[0].id;
+        // Upsert presence
+        var existing = await sql`SELECT id FROM presence WHERE project_slug = ${slug} AND user_id = ${currentUserId}`;
+        if (existing.length) {
+          await sql`UPDATE presence SET last_seen = NOW() WHERE id = ${existing[0].id}`;
+        } else {
+          await sql`INSERT INTO presence (project_slug, user_id, last_seen) VALUES (${slug}, ${currentUserId}, NOW())`;
+        }
+      }
+    }
     // PUT: update a job's included state
     if (req.method === 'PUT') {
       const { job_id, included } = req.body;
@@ -45,7 +61,17 @@ export default async function handler(req, res) {
       jobs: jobs.filter(j => j.feature_id === f.id)
     }));
 
-    return res.json(result);
+    // Clean stale presence (>15s) and get online users
+    await sql`DELETE FROM presence WHERE last_seen < NOW() - INTERVAL '15 seconds'`;
+    var online = await sql`
+      SELECT p.user_id, u.name FROM presence p
+      JOIN users u ON u.id = p.user_id
+      WHERE p.project_slug = ${slug} AND p.user_id IS NOT NULL
+    `;
+    // Filter out current user
+    var others = online.filter(function(o) { return o.user_id !== currentUserId; });
+
+    return res.json({ features: result, presence: others });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: err.message });

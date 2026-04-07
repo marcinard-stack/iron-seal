@@ -481,12 +481,7 @@
             <span>Notes</span>
             <span class="count" id="commentCount">0</span>
         </button>
-        <div id="topbarUser" style="display:none; margin-left:4px;">
-            <a href="/settings" style="display:flex; align-items:center; gap:6px; text-decoration:none; padding:4px 8px; border-radius:6px; transition:background 0.15s;" onmouseover="this.style.background='#edecea'" onmouseout="this.style.background='none'">
-                <span id="topbarAvatar" style="width:26px; height:26px; border-radius:50%; background:#c15f3c; color:white; font-size:10px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0;"></span>
-                <span id="topbarUserName" style="font-size:12px; color:#6b6560; font-weight:500;"></span>
-            </a>
-        </div>
+        <div id="presenceBar" style="display:flex; align-items:center; gap:-4px; margin-left:8px;"></div>
     </div>
 </div>
 
@@ -803,18 +798,30 @@
     var DOC_ID = IS_SHARED ? '' : ((pathParts.length >= 3 && pathParts[0] === 'deals') ? pathParts[2] : 'default');
     var API = '/api/comments?doc=' + encodeURIComponent(DOC_ID);
 
-    // ===== USER PROFILE (sidebar + topbar) =====
+    // ===== USER PROFILE (sidebar) =====
     var dfUser = null;
     try { dfUser = JSON.parse(localStorage.getItem('df_user')); } catch(e) {}
-    if (dfUser) {
+    if (dfUser && !IS_SHARED) {
         var initials = dfUser.name ? dfUser.name.split(' ').map(function(w) { return w[0]; }).join('').toUpperCase().substring(0,2) : '?';
-        if (!IS_SHARED) {
-            document.getElementById('sidebarAvatar').textContent = initials;
-            document.getElementById('sidebarUserName').textContent = dfUser.name || 'Utilisateur';
-        }
-        document.getElementById('topbarAvatar').textContent = initials;
-        document.getElementById('topbarUserName').textContent = dfUser.name || 'Utilisateur';
-        document.getElementById('topbarUser').style.display = 'block';
+        document.getElementById('sidebarAvatar').textContent = initials;
+        document.getElementById('sidebarUserName').textContent = dfUser.name || 'Utilisateur';
+    }
+
+    // ===== PRESENCE =====
+    var PRESENCE_COLORS = ['#c15f3c', '#1e40af', '#6b21a8', '#166534', '#92400e'];
+    function updatePresence(others) {
+        var bar = document.getElementById('presenceBar');
+        bar.innerHTML = '';
+        others.forEach(function(u, i) {
+            var name = u.name || 'Anonyme';
+            var init = name.split(' ').map(function(w) { return w[0]; }).join('').toUpperCase().substring(0,2);
+            var color = PRESENCE_COLORS[i % PRESENCE_COLORS.length];
+            var el = document.createElement('span');
+            el.title = name + ' est en ligne';
+            el.style.cssText = 'width:28px; height:28px; border-radius:50%; background:' + color + '; color:white; font-size:10px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; border:2px solid white; margin-left:-6px; cursor:default;';
+            el.textContent = init;
+            bar.appendChild(el);
+        });
     }
 
     // ===== TOP BAR & SIDEBARS =====
@@ -1469,10 +1476,22 @@
 
     function pollFeatures() {
         if (!SLUG) return;
-        if (Date.now() < pollSkipUntil) return; // skip if we just made a local change
-        fetch('/api/features?slug=' + encodeURIComponent(SLUG))
+        var pollHeaders = {};
+        var t = localStorage.getItem('df_token');
+        if (t) pollHeaders['Authorization'] = 'Bearer ' + t;
+        if (Date.now() < pollSkipUntil) {
+            // Still send heartbeat for presence even when skipping checkbox sync
+            fetch('/api/features?slug=' + encodeURIComponent(SLUG), { headers: pollHeaders })
+                .then(function(r) { return r.json(); })
+                .then(function(data) { if (data.presence) updatePresence(data.presence); })
+                .catch(function() {});
+            return;
+        }
+        fetch('/api/features?slug=' + encodeURIComponent(SLUG), { headers: pollHeaders })
             .then(function(r) { return r.json(); })
-            .then(function(features) {
+            .then(function(data) {
+                var features = data.features || data;
+                if (data.presence) updatePresence(data.presence);
                 var changed = false;
                 features.forEach(function(feat) {
                     feat.jobs.forEach(function(job) {
@@ -1712,7 +1731,9 @@
         ]).then(function(results) {
             PROJECT_DATA = results[2];
             if (results[3]) USER_ACCOUNT_ID = results[3].account.id;
-            allFeatures = results[0];
+            var featData = results[0];
+            allFeatures = featData.features || featData;
+            if (featData.presence) updatePresence(featData.presence);
             renderDetailTable(allFeatures);
             recalcAll();
             setupCdcCheckboxes(allFeatures);
