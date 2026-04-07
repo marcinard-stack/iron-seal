@@ -297,6 +297,22 @@
         sidebar.classList.remove('open'); overlay.classList.remove('show');
     });
 
+    // Verify session is valid
+    fetch('/api/auth?action=me', { headers: authHeaders })
+        .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+        .then(function(data) {
+            localStorage.setItem('df_user', JSON.stringify(data.user));
+            var initials = data.user.name ? data.user.name.split(' ').map(function(w) { return w[0]; }).join('').toUpperCase().substring(0,2) : '?';
+            document.querySelector('.left-sidebar-user .avatar').textContent = initials;
+            document.querySelector('.left-sidebar-user .user-name').textContent = data.user.name;
+        })
+        .catch(function() {
+            localStorage.removeItem('df_token');
+            localStorage.removeItem('df_user');
+            window.location.href = '/login';
+            return;
+        });
+
     // Load counts
     ['draft','active','closed'].forEach(function(s) {
         fetch('/api/projects?status=' + s, { headers: authHeaders }).then(function(r) { return r.json(); }).then(function(rows) {
