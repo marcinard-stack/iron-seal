@@ -375,6 +375,32 @@
         .notes h2 { font-size: 18px; font-weight: 700; margin-bottom: 14px; color: #2d2b35; }
         .notes ul { margin-left: 18px; }
         .notes li { font-size: 13px; margin-bottom: 5px; color: #4a4850; }
+        /* ---- PROJECT ACTION BAR ---- */
+        .project-action-bar {
+            background: white; border-radius: 10px; padding: 20px 28px;
+            margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+            display: none; text-align: center;
+        }
+        .project-action-bar p { font-size: 13px; color: #6b6560; margin-bottom: 14px; }
+        .action-btn {
+            padding: 11px 28px; border: none; border-radius: 8px;
+            font-size: 13px; font-weight: 600; cursor: pointer;
+            transition: all 0.15s; font-family: inherit; margin: 0 4px;
+        }
+        .action-btn.primary { background: #c15f3c; color: white; }
+        .action-btn.primary:hover { background: #a84e30; }
+        .action-btn.secondary { background: white; color: #6b6560; border: 1px solid #e8e6e0; }
+        .action-btn.secondary:hover { background: #f4f3ee; color: #2d2b35; }
+
+        .status-banner {
+            padding: 12px 28px; border-radius: 10px; margin-bottom: 20px;
+            font-size: 13px; font-weight: 500; display: none;
+            text-align: center;
+        }
+        .status-banner.proposed {
+            background: #dbeafe; color: #1e40af; display: block;
+        }
+
         /* ---- EMAIL GATE ---- */
         .email-gate {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -572,6 +598,8 @@
 <!-- MAIN CONTENT -->
 <div class="main-content" id="mainContent">
 
+    <div class="status-banner" id="statusBanner"></div>
+
     <div class="header" id="cdc">
         <h1>Cahier des Charges — Cockpit Sales</h1>
         <div class="subtitle">Projet CarJager Salesforce — Home Page Sales & gestion des intérêts</div>
@@ -720,6 +748,11 @@
         <ul id="exclusionsList">
             <!-- Dynamically rendered from API -->
         </ul>
+    </div>
+
+    <div class="project-action-bar" id="actionBar">
+        <p id="actionText"></p>
+        <div id="actionButtons"></div>
     </div>
 
 </div>
@@ -1445,6 +1478,73 @@
         }).catch(function() { showSaveError(); });
     }
 
+    // ===== PROJECT STATUS ACTIONS =====
+    var PROJECT_DATA = null;
+    var USER_ACCOUNT_ID = null;
+
+    function setupStatusActions() {
+        if (!PROJECT_DATA || IS_SHARED) return;
+        var status = PROJECT_DATA.status;
+        var isFreelance = USER_ACCOUNT_ID && PROJECT_DATA.freelance_account_id == USER_ACCOUNT_ID;
+        var isClient = USER_ACCOUNT_ID && PROJECT_DATA.client_account_id == USER_ACCOUNT_ID;
+        var banner = document.getElementById('statusBanner');
+        var bar = document.getElementById('actionBar');
+        var text = document.getElementById('actionText');
+        var buttons = document.getElementById('actionButtons');
+
+        // Reset
+        banner.style.display = 'none'; banner.className = 'status-banner';
+        bar.style.display = 'none'; buttons.innerHTML = '';
+
+        if (status === 'draft' && isFreelance) {
+            bar.style.display = 'block';
+            text.textContent = 'Votre proposition est prête ? Envoyez-la au client pour validation.';
+            buttons.innerHTML = '<button class="action-btn primary" id="btnPropose">Proposer le devis</button>';
+            document.getElementById('btnPropose').addEventListener('click', function() {
+                if (!confirm('Proposer ce devis au client ? Le projet passera en statut "Proposé".')) return;
+                changeStatus('proposed');
+            });
+        }
+
+        if (status === 'proposed') {
+            banner.className = 'status-banner proposed';
+            banner.style.display = 'block';
+            banner.textContent = isFreelance
+                ? 'Ce devis a été proposé au client. En attente de réponse.'
+                : 'Ce devis vous a été soumis pour validation.';
+
+            bar.style.display = 'block';
+            if (isFreelance) {
+                text.textContent = 'Vous pouvez retirer votre proposition pour la modifier.';
+                buttons.innerHTML = '<button class="action-btn secondary" id="btnBackDraft">Retour en brouillon</button>';
+                document.getElementById('btnBackDraft').addEventListener('click', function() {
+                    if (!confirm('Retirer la proposition et repasser en brouillon ?')) return;
+                    changeStatus('draft');
+                });
+            }
+            if (isClient) {
+                text.textContent = 'Vous pouvez accepter cette proposition ou demander des modifications.';
+                buttons.innerHTML = '<button class="action-btn secondary" id="btnRequestEdit">Demander des modifications</button>';
+                document.getElementById('btnRequestEdit').addEventListener('click', function() {
+                    if (!confirm('Demander au freelance de modifier sa proposition ?')) return;
+                    changeStatus('draft');
+                });
+            }
+        }
+    }
+
+    function changeStatus(newStatus) {
+        fetch('/api/projects', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('df_token') || '') },
+            body: JSON.stringify({ slug: SLUG, status: newStatus })
+        }).then(function(r) { return r.json(); }).then(function(p) {
+            PROJECT_DATA = p;
+            setupStatusActions();
+            showSaved();
+        }).catch(function() { showSaveError(); });
+    }
+
     // ===== SHARE BUTTON + MODAL =====
     var shareBtn = document.getElementById('shareBtn');
     var shareOverlay = document.getElementById('shareOverlay');
@@ -1496,16 +1596,24 @@
         DOC_ID = slug;
         API = '/api/comments?doc=' + encodeURIComponent(slug);
 
+        // Load project data + user account
+        var dfToken = localStorage.getItem('df_token');
+        var authH = dfToken ? { 'Authorization': 'Bearer ' + dfToken } : {};
         Promise.all([
             fetch('/api/features?slug=' + encodeURIComponent(slug)).then(function(r) { return r.json(); }),
-            fetch('/api/exclusions?slug=' + encodeURIComponent(slug)).then(function(r) { return r.json(); })
+            fetch('/api/exclusions?slug=' + encodeURIComponent(slug)).then(function(r) { return r.json(); }),
+            fetch('/api/projects?slug=' + encodeURIComponent(slug)).then(function(r) { return r.json(); }),
+            dfToken ? fetch('/api/auth?action=me', { headers: authH }).then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; }) : Promise.resolve(null)
         ]).then(function(results) {
+            PROJECT_DATA = results[2];
+            if (results[3]) USER_ACCOUNT_ID = results[3].account.id;
             allFeatures = results[0];
             renderDetailTable(allFeatures);
             recalcAll();
             setupCdcCheckboxes(allFeatures);
             bindMatrixSync();
             renderExclusions(results[1]);
+            setupStatusActions();
             setInterval(pollFeatures, 5000);
 
             // Load comments
