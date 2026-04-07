@@ -274,7 +274,7 @@
         .feature ul { margin-left: 18px; margin-bottom: 10px; }
         .feature li { font-size: 13px; margin-bottom: 4px; color: #2d2b35; }
         .feature li[data-job-pos] { list-style: none; margin-left: -18px; margin-bottom: 8px; }
-        .feature li.job-subtask { color: #6b6560; font-size: 12px; margin-left: 6px; }
+        .feature li.job-subtask { color: #8a8780; font-size: 12px; margin-left: 14px; list-style: '\2013\0020'; }
         .job-row {
             display: flex; align-items: baseline; gap: 0;
         }
@@ -1088,9 +1088,9 @@
         // Build a lookup: featCode → { pos → job }
         var jobMap = {};
         features.forEach(function(feat) {
-            var code = feat.code || (feat.is_transverse ? 'TRANSVERSE' : '');
+            var code = feat.code || (feat.is_transverse && !feat.jobs.some(function(j) { return j.is_offered; }) ? 'TRANSVERSE' : '');
             if (!code) return;
-            jobMap[code] = {};
+            if (!jobMap[code]) jobMap[code] = {};
             feat.jobs.forEach(function(j) {
                 if (!j.is_offered) jobMap[code][j.position] = j;
             });
@@ -1122,6 +1122,15 @@
                     + '<span class="job-tags">' + tagHtml + '</span>'
                     + '<span class="job-incl"><input type="checkbox" class="job-check-cdc" data-job-id="' + job.id + '"' + (job.included ? ' checked' : '') + '></span>'
                     + '</div>';
+
+                // Indent following li items that are sub-tasks (no data-job-pos, no tags)
+                var next = li.nextElementSibling;
+                while (next && next.tagName === 'LI' && !next.hasAttribute('data-job-pos')) {
+                    if (!next.querySelector('.tag')) {
+                        next.classList.add('job-subtask');
+                    }
+                    next = next.nextElementSibling;
+                }
             });
         });
 
