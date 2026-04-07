@@ -818,8 +818,11 @@
         });
     }
 
+    function isReadOnly() { return SHARE_PERMISSION === 'view'; }
+
     addBtn.addEventListener('click', function(e) {
         e.stopPropagation();
+        if (isReadOnly()) return;
         if (placingMode) exitPlace(); else enterPlace();
     });
     function enterPlace() {
@@ -833,7 +836,7 @@
     }
 
     container.addEventListener('click', function(e) {
-        if (!placingMode) return;
+        if (!placingMode || isReadOnly()) return;
         if (e.target.closest('.comment-pin') || e.target.closest('.comment-bubble')) return;
         exitPlace();
         var relX = e.pageX - container.getBoundingClientRect().left - window.scrollX;
@@ -842,7 +845,7 @@
 
     document.addEventListener('mousedown', function(e) {
         var pin = e.target.closest('.comment-pin');
-        if (!pin || placingMode) return;
+        if (!pin || placingMode || isReadOnly()) return;
         var id = parseInt(pin.dataset.id);
         var comment = comments.find(function(c) { return c.id === id; });
         if (!comment) return;
@@ -920,14 +923,23 @@
         var c = comments.find(function(x) { return x.id===id; });
         if (!bub || !c) return;
         var ta = bub.querySelector('textarea'); ta.value = c.text;
+        if (isReadOnly()) {
+            ta.readOnly = true;
+            ta.style.cursor = 'default';
+            ta.style.background = '#f9f8f6';
+            var hint = bub.querySelector('.bubble-hint');
+            if (hint) hint.style.display = 'none';
+        }
         bub.classList.add('show'); activeBubble = bub;
-        setTimeout(function() { ta.focus(); }, 50);
-        ta.onkeydown = function(ev) {
-            if (ev.key==='Enter' && !ev.shiftKey) {
-                ev.preventDefault(); c.text = ta.value.trim();
-                apiPut({id:c.id,text:c.text}); bub.classList.remove('show'); activeBubble=null; renderCards();
-            }
-        };
+        if (!isReadOnly()) {
+            setTimeout(function() { ta.focus(); }, 50);
+            ta.onkeydown = function(ev) {
+                if (ev.key==='Enter' && !ev.shiftKey) {
+                    ev.preventDefault(); c.text = ta.value.trim();
+                    apiPut({id:c.id,text:c.text}); bub.classList.remove('show'); activeBubble=null; renderCards();
+                }
+            };
+        }
         document.querySelectorAll('.comment-card').forEach(function(x) { x.classList.remove('active'); });
         var card = document.querySelector('.comment-card[data-id="'+id+'"]');
         if (card) card.classList.add('active');
@@ -975,10 +987,13 @@
         sorted.forEach(function(c) {
             var card = document.createElement('div');
             card.className = 'comment-card'+(c.closed?' closed':''); card.dataset.id = c.id;
-            card.innerHTML = '<div class="card-actions"><button class="card-btn close-btn">Cloturer</button><button class="card-btn reopen">Réouvrir</button></div>'
+            var actionsHtml = isReadOnly() ? '' : '<div class="card-actions"><button class="card-btn close-btn">Cloturer</button><button class="card-btn reopen">Réouvrir</button></div>';
+            card.innerHTML = actionsHtml
                 +'<div class="card-num"># '+c.id+'</div><div class="card-text">'+esc(c.text)+'</div><div class="card-meta">'+fmt(c.created)+'</div>';
-            card.querySelector('.close-btn').addEventListener('click', function(ev) { ev.stopPropagation(); toggleClosed(c.id); });
-            card.querySelector('.reopen').addEventListener('click', function(ev) { ev.stopPropagation(); toggleClosed(c.id); });
+            if (!isReadOnly()) {
+                card.querySelector('.close-btn').addEventListener('click', function(ev) { ev.stopPropagation(); toggleClosed(c.id); });
+                card.querySelector('.reopen').addEventListener('click', function(ev) { ev.stopPropagation(); toggleClosed(c.id); });
+            }
             card.addEventListener('click', function() {
                 if (c.closed) return; openBubble(c.id);
                 var p = container.querySelector('.comment-pin[data-id="'+c.id+'"]');
@@ -1518,7 +1533,7 @@
             .then(function(share) {
                 SHARE_PERMISSION = share.permission;
                 if (share.permission === 'view') {
-                    document.getElementById('commentToggle').style.display = 'none';
+                    addBtn.style.display = 'none';
                 }
                 if (share.require_email) {
                     showEmailGate(share);
