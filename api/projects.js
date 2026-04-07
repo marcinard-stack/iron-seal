@@ -70,8 +70,11 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'PUT') {
-      var { slug, title, status, owner_account_id, freelance_account_id, client_account_id } = req.body;
+      var { slug, title, status, owner_account_id, freelance_account_id, client_account_id, clear_client } = req.body;
       if (!slug) return res.status(400).json({ error: 'slug required' });
+      if (clear_client) {
+        await sql`UPDATE projects SET client_account_id = NULL, updated_at = NOW() WHERE slug = ${slug}`;
+      }
       var rows = await sql`
         UPDATE projects
         SET title = COALESCE(${title ?? null}, title),
