@@ -49,7 +49,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   var sql = neon(process.env.DATABASE_URL);
-  var { type, slug, client_email, view_link } = req.body;
+  var { type, slug, view_link } = req.body;
 
   // Resolve sender from session
   var auth = (req.headers.authorization || '').replace('Bearer ', '');
@@ -70,30 +70,40 @@ export default async function handler(req, res) {
     var project = projects[0];
 
     if (type === 'proposed') {
-      // Notify client
-      if (!client_email) return res.status(400).json({ error: 'client_email required' });
+      // Freelance proposes → notify client
+      if (!project.client_account_id) return res.json({ ok: true, skipped: 'no client account on project' });
+      var clients = await sql`SELECT email, name FROM users WHERE account_id = ${project.client_account_id}`;
+      if (!clients.length) return res.json({ ok: true, skipped: 'no client user' });
       var senderName = sender ? sender.name : 'Un freelance';
       var result = await sendEmail(
-        client_email,
+        clients[0].email,
         'Proposition : ' + project.title,
         proposalEmail(project.title, senderName, view_link)
       );
-      return res.json({ ok: true, email: result });
+      return res.json({ ok: true, email: result, sent_to: clients[0].email });
     }
 
     if (type === 'back_to_draft') {
-      // Notify freelance
-      if (!project.freelance_account_id) return res.json({ ok: true, skipped: 'no freelance account' });
-      var freelancers = await sql`SELECT email, name FROM users WHERE account_id = ${project.freelance_account_id}`;
-      if (!freelancers.length) return res.json({ ok: true, skipped: 'no freelance user' });
-      var requesterName = sender ? sender.name : 'Le client';
-      var isClient = sender && sender.account_id !== project.freelance_account_id;
+      // Whoever did the action → notify the OTHER party
+      var notifyAccountId = null;
+      if (sender && sender.account_id == project.freelance_account_id) {
+        // Freelance reverted → notify client
+        notifyAccountId = project.client_account_id;
+      } else {
+        // Client requested changes → notify freelance
+        notifyAccountId = project.freelance_account_id;
+      }
+      if (!notifyAccountId) return res.json({ ok: true, skipped: 'no counterpart account' });
+      var recipients = await sql`SELECT email, name FROM users WHERE account_id = ${notifyAccountId}`;
+      if (!recipients.length) return res.json({ ok: true, skipped: 'no counterpart user' });
+      var requesterName = sender ? sender.name : 'Un utilisateur';
+      var isClient = sender && sender.account_id == project.client_account_id;
       var result = await sendEmail(
-        freelancers[0].email,
+        recipients[0].email,
         'Retour en brouillon : ' + project.title,
         backToDraftEmail(project.title, requesterName, isClient)
       );
-      return res.json({ ok: true, email: result });
+      return res.json({ ok: true, email: result, sent_to: recipients[0].email });
     }
 
     return res.status(400).json({ error: 'Invalid type. Use proposed|back_to_draft' });

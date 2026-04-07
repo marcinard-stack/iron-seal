@@ -1515,12 +1515,11 @@
             text.textContent = 'Votre proposition est prête ?';
             buttons.innerHTML = '<button class="action-btn primary" id="btnPropose" disabled>Proposer le devis</button>';
             document.getElementById('btnPropose').addEventListener('click', function() {
-                var email = prompt('Email du client pour envoyer la proposition :');
-                if (!email || !email.includes('@')) return;
+                if (!confirm('Proposer ce devis au client ?')) return;
                 var btn = this; btn.disabled = true; btn.textContent = 'Envoi...';
+                var dfToken = localStorage.getItem('df_token') || '';
 
                 // 1. Create share link
-                var dfToken = localStorage.getItem('df_token') || '';
                 fetch('/api/shares', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1528,13 +1527,12 @@
                 }).then(function(r) { return r.json(); }).then(function(share) {
                     var viewLink = window.location.origin + '/view/' + share.token;
 
-                    // 2. Change status
+                    // 2. Change status + 3. Notify (API resolves client email from project)
                     return changeStatus('proposed').then(function() {
-                        // 3. Send email
                         return fetch('/api/notify', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
-                            body: JSON.stringify({ type: 'proposed', slug: SLUG, client_email: email, view_link: viewLink })
+                            body: JSON.stringify({ type: 'proposed', slug: SLUG, view_link: viewLink })
                         });
                     });
                 }).then(function() {
@@ -1559,7 +1557,14 @@
                 buttons.innerHTML = '<button class="action-btn secondary" id="btnBackDraft">Retour en brouillon</button>';
                 document.getElementById('btnBackDraft').addEventListener('click', function() {
                     if (!confirm('Retirer la proposition et repasser en brouillon ?')) return;
-                    changeStatus('draft');
+                    var dfToken = localStorage.getItem('df_token') || '';
+                    changeStatus('draft').then(function() {
+                        fetch('/api/notify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
+                            body: JSON.stringify({ type: 'back_to_draft', slug: SLUG })
+                        });
+                    });
                 });
             }
             if (isClient) {
