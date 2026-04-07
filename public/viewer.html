@@ -774,6 +774,23 @@
 <script>
 (function() {
     var pathParts = window.location.pathname.split('/').filter(Boolean);
+    // Magic auth link from email
+    var urlParams = new URLSearchParams(window.location.search);
+    var magicAuth = urlParams.get('auth');
+    if (magicAuth) {
+        localStorage.setItem('df_token', magicAuth);
+        // Fetch user info
+        fetch('/api/auth?action=me', { headers: { 'Authorization': 'Bearer ' + magicAuth } })
+            .then(function(r) { return r.ok ? r.json() : null; })
+            .then(function(data) {
+                if (data) localStorage.setItem('df_user', JSON.stringify(data.user));
+                // Remove ?auth from URL
+                window.history.replaceState({}, '', window.location.pathname);
+                window.location.reload();
+            });
+        return;
+    }
+
     var IS_SHARED = (pathParts[0] === 'view');
     var SHARE_TOKEN = IS_SHARED ? pathParts[1] : null;
     var DOC_ID = IS_SHARED ? '' : ((pathParts.length >= 3 && pathParts[0] === 'deals') ? pathParts[2] : 'default');
@@ -1519,21 +1536,12 @@
                 var btn = this; btn.disabled = true; btn.textContent = 'Envoi...';
                 var dfToken = localStorage.getItem('df_token') || '';
 
-                // 1. Create share link
-                fetch('/api/shares', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ slug: SLUG, permission: 'comment', require_email: true })
-                }).then(function(r) { return r.json(); }).then(function(share) {
-                    var viewLink = window.location.origin + '/view/' + share.token;
-
-                    // 2. Change status + 3. Notify (API resolves client email from project)
-                    return changeStatus('proposed').then(function() {
-                        return fetch('/api/notify', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
-                            body: JSON.stringify({ type: 'proposed', slug: SLUG, view_link: viewLink })
-                        });
+                // 1. Change status + 2. Notify (API creates magic link + sends email)
+                changeStatus('proposed').then(function() {
+                    return fetch('/api/notify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
+                        body: JSON.stringify({ type: 'proposed', slug: SLUG })
                     });
                 }).then(function() {
                     btn.textContent = 'Envoyé';

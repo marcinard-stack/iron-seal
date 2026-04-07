@@ -1,4 +1,13 @@
 import { neon } from '@neondatabase/serverless';
+import crypto from 'crypto';
+
+async function createMagicToken(sql, email) {
+  var users = await sql`SELECT id FROM users WHERE email = ${email}`;
+  if (!users.length) return null;
+  var token = crypto.randomBytes(32).toString('base64url');
+  await sql`INSERT INTO sessions (user_id, token) VALUES (${users[0].id}, ${token})`;
+  return token;
+}
 
 async function sendEmail(to, subject, html) {
   var res = await fetch('https://api.resend.com/emails', {
@@ -29,13 +38,14 @@ function proposalEmail(projectTitle, freelanceName, viewLink) {
     + '</div>';
 }
 
-function backToDraftEmail(projectTitle, requesterName, isClient) {
+function backToDraftEmail(projectTitle, requesterName, isClient, link) {
   var action = isClient ? 'a demandé des modifications sur' : 'a repassé en brouillon';
   return '<div style="font-family:-apple-system,system-ui,sans-serif; max-width:520px; margin:0 auto; padding:32px 0;">'
     + '<p style="font-size:14px; color:#6b6560; margin-bottom:4px;">deal-forge</p>'
     + '<h2 style="font-size:20px; color:#2d2b35; margin-bottom:16px;">Retour en brouillon</h2>'
-    + '<p style="font-size:14px; color:#4a4850; line-height:1.6;">'
+    + '<p style="font-size:14px; color:#4a4850; line-height:1.6; margin-bottom:24px;">'
     + '<strong>' + requesterName + '</strong> ' + action + ' le projet <strong>' + projectTitle + '</strong>.</p>'
+    + '<a href="' + link + '" style="display:inline-block; padding:12px 28px; background:#2d2b35; color:white; text-decoration:none; border-radius:8px; font-size:14px; font-weight:600;">Voir le projet</a>'
     + '<p style="font-size:12px; color:#8a8780; margin-top:32px;">Cet email a été envoyé via deal-forge.</p>'
     + '</div>';
 }
@@ -75,10 +85,12 @@ export default async function handler(req, res) {
       var clients = await sql`SELECT email, name FROM users WHERE account_id = ${project.client_account_id}`;
       if (!clients.length) return res.json({ ok: true, skipped: 'no client user' });
       var senderName = sender ? sender.name : 'Un freelance';
+      var magicToken = await createMagicToken(sql, clients[0].email);
+      var directLink = (req.headers.origin || 'https://deal-forge-tawny.vercel.app') + '/deals/' + project.status + '/' + project.slug + '?auth=' + magicToken;
       var result = await sendEmail(
         clients[0].email,
         'Proposition : ' + project.title,
-        proposalEmail(project.title, senderName, view_link)
+        proposalEmail(project.title, senderName, directLink)
       );
       return res.json({ ok: true, email: result, sent_to: clients[0].email });
     }
@@ -98,10 +110,12 @@ export default async function handler(req, res) {
       if (!recipients.length) return res.json({ ok: true, skipped: 'no counterpart user' });
       var requesterName = sender ? sender.name : 'Un utilisateur';
       var isClient = sender && sender.account_id == project.client_account_id;
+      var magicToken = await createMagicToken(sql, recipients[0].email);
+      var directLink = (req.headers.origin || 'https://deal-forge-tawny.vercel.app') + '/deals/' + project.status + '/' + project.slug + '?auth=' + magicToken;
       var result = await sendEmail(
         recipients[0].email,
         'Retour en brouillon : ' + project.title,
-        backToDraftEmail(project.title, requesterName, isClient)
+        backToDraftEmail(project.title, requesterName, isClient, directLink)
       );
       return res.json({ ok: true, email: result, sent_to: recipients[0].email });
     }
