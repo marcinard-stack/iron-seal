@@ -473,6 +473,7 @@
         <span id="saveText">Enregistré</span>
     </div>
     <div class="topbar-right">
+        <div id="presenceBar" style="display:flex; align-items:center; flex-direction:row-reverse;"></div>
         <button class="topbar-btn" id="shareBtn" title="Partager" style="display:none;">
             <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="4" r="2.5"/><circle cx="4" cy="9" r="2.5"/><circle cx="14" cy="14" r="2.5"/><line x1="6.2" y1="10.1" x2="11.8" y2="12.9"/><line x1="6.2" y1="7.9" x2="11.8" y2="5.1"/></svg>
         </button>
@@ -481,7 +482,6 @@
             <span>Notes</span>
             <span class="count" id="commentCount">0</span>
         </button>
-        <div id="presenceBar" style="display:flex; align-items:center; gap:-4px; margin-left:8px;"></div>
     </div>
 </div>
 
@@ -808,21 +808,70 @@
     }
 
     // ===== PRESENCE =====
-    var PRESENCE_COLORS = ['#c15f3c', '#1e40af', '#6b21a8', '#166534', '#92400e'];
+    var PRESENCE_THEMES = [
+        { bg: '#dbeafe', color: '#1e40af' },
+        { bg: '#dcfce7', color: '#166534' },
+        { bg: '#f3e8ff', color: '#6b21a8' },
+        { bg: '#fef3c7', color: '#92400e' },
+        { bg: '#fce7f3', color: '#9d174d' },
+        { bg: '#e0f2fe', color: '#075985' }
+    ];
+    var expandedPresence = null;
+
     function updatePresence(others) {
         var bar = document.getElementById('presenceBar');
+        // Keep expanded state
+        var prevExpanded = expandedPresence;
         bar.innerHTML = '';
         others.forEach(function(u, i) {
             var name = u.name || 'Anonyme';
             var init = name.split(' ').map(function(w) { return w[0]; }).join('').toUpperCase().substring(0,2);
-            var color = PRESENCE_COLORS[i % PRESENCE_COLORS.length];
-            var el = document.createElement('span');
-            el.title = name + ' est en ligne';
-            el.style.cssText = 'width:28px; height:28px; border-radius:50%; background:' + color + '; color:white; font-size:10px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; border:2px solid white; margin-left:-6px; cursor:default;';
-            el.textContent = init;
+            var theme = PRESENCE_THEMES[i % PRESENCE_THEMES.length];
+            var isExpanded = prevExpanded === u.user_id;
+
+            var el = document.createElement('div');
+            el.dataset.uid = u.user_id;
+            el.style.cssText = 'height:28px; border-radius:14px; background:' + theme.bg + '; color:' + theme.color + '; font-size:10px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; border:2px solid white; cursor:pointer; transition:all 0.25s ease; overflow:hidden; margin-right:-8px; position:relative; z-index:' + (10 - i) + ';';
+
+            if (isExpanded) {
+                el.style.width = 'auto';
+                el.style.minWidth = '28px';
+                el.style.padding = '0 12px 0 8px';
+                el.innerHTML = '<span style="width:20px; height:20px; border-radius:50%; background:' + theme.color + '; color:' + theme.bg + '; font-size:9px; display:flex; align-items:center; justify-content:center; margin-right:6px; flex-shrink:0;">' + init + '</span><span style="white-space:nowrap; font-size:11px;">' + name + '</span>';
+            } else {
+                el.style.width = '28px';
+                el.style.minWidth = '28px';
+                el.textContent = init;
+            }
+
+            el.addEventListener('click', function(ev) {
+                ev.stopPropagation();
+                if (expandedPresence === u.user_id) {
+                    expandedPresence = null;
+                } else {
+                    expandedPresence = u.user_id;
+                }
+                updatePresence(others);
+            });
+
             bar.appendChild(el);
         });
     }
+
+    // Close expanded presence on click outside
+    document.addEventListener('click', function() {
+        if (expandedPresence !== null) {
+            expandedPresence = null;
+            var bar = document.getElementById('presenceBar');
+            if (bar.children.length) {
+                // Re-render with current data — poll will refresh anyway
+                var current = [];
+                Array.from(bar.children).forEach(function(el) {
+                    current.push({ user_id: parseInt(el.dataset.uid), name: el.textContent });
+                });
+            }
+        }
+    });
 
     // ===== TOP BAR & SIDEBARS =====
     var leftSidebar = document.getElementById('leftSidebar');
