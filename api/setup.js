@@ -259,6 +259,7 @@ export default async function handler(req, res) {
       )
     `;
     await sql`CREATE INDEX IF NOT EXISTS idx_signatures_project ON devis_signatures(project_id)`;
+    await sql`ALTER TABLE devis_signatures ADD COLUMN IF NOT EXISTS city VARCHAR(200)`;
 
     // ── PRESENCE ──
     await sql`
