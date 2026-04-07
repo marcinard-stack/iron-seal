@@ -1970,8 +1970,12 @@
             bar.style.display = 'block';
             text.textContent = 'Votre proposition est prête ?';
             buttons.innerHTML = '<button class="action-btn primary" id="btnPropose">Proposer le devis</button>';
-            document.getElementById('btnPropose').addEventListener('click', function() {
+            var btnP = document.getElementById('btnPropose');
+            console.log('[SETUP] btnPropose found:', !!btnP, 'disabled:', btnP ? btnP.disabled : 'N/A');
+            btnP.addEventListener('click', function(e) {
+                console.log('[CLICK] Propose clicked', e);
                 var propOverlay = document.getElementById('proposeOverlay');
+                console.log('[CLICK] proposeOverlay found:', !!propOverlay);
                 var propEmail = document.getElementById('proposeEmail');
                 var propSubmit = document.getElementById('proposeSubmit');
                 propEmail.value = ''; propSubmit.disabled = true;
