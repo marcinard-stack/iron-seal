@@ -37,6 +37,33 @@ export default async function handler(req, res) {
       }
     }
 
+    // FEAT 5 — Split single job into 2: LWC backlog (must) + notif (nice)
+    const feat5m = await sql`SELECT id FROM features WHERE project_id = ${projectId} AND code = 'FEAT 5'`;
+    if (feat5m.length) {
+      var f5id = feat5m[0].id;
+      // Update existing job to LWC backlog, 0.25, must
+      var existingJ5 = await sql`SELECT id FROM jobs WHERE feature_id = ${f5id} AND position = 1`;
+      if (existingJ5.length) {
+        await sql`UPDATE jobs SET description = ${'LWC Backlog relance après-vente : remontée des opps gagnées à M+1 dans la Home Page'}, jh = 0.25, priority = 'must' WHERE id = ${existingJ5[0].id}`;
+      }
+      // Add second job: notif, 0.25, nice
+      var existingJ5b = await sql`SELECT id FROM jobs WHERE feature_id = ${f5id} AND position = 2`;
+      if (!existingJ5b.length) {
+        await sql`INSERT INTO jobs (feature_id, position, description, jh, type, priority, is_offered, included)
+          VALUES (${f5id}, 2, ${'Flow scheduled path opp gagnée → notif native au sales à M+1 du closing'}, 0.25, 'new', 'nice', false, false)`;
+      }
+    }
+
+    // FEAT 7 — Update description to include ranking
+    const feat7m = await sql`SELECT id FROM features WHERE project_id = ${projectId} AND code = 'FEAT 7'`;
+    if (feat7m.length) {
+      await sql`UPDATE features SET title = ${'KPIs Sales & Ranking'} WHERE id = ${feat7m[0].id}`;
+      var j7 = await sql`SELECT id FROM jobs WHERE feature_id = ${feat7m[0].id} AND position = 1`;
+      if (j7.length) {
+        await sql`UPDATE jobs SET description = ${'LWC Ranking Table : classement des sales sur 4 KPIs (non-trash, ventes, CA HT, marge nette), mise en avant du sales connecté, trophée top performer'} WHERE id = ${j7[0].id}`;
+      }
+    }
+
     // Assign project to the account that has a user (not orphan accounts)
     const proj = await sql`SELECT freelance_account_id FROM projects WHERE id = ${projectId}`;
     const realAccount = await sql`SELECT a.id FROM accounts a JOIN users u ON u.account_id = a.id ORDER BY a.id LIMIT 1`;

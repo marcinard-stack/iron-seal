@@ -677,8 +677,9 @@
         <div class="feat-desc">Rappeler le client à M+1 du closing pour prendre des leads en referral.</div>
         <h3>Charge d'exécution</h3>
         <ul>
-            <li data-job-pos="1">Flow scheduled path opp gagnée → notif native à M+1 + remontée dans backlog HP <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li>
-            <li>Basé sur <code>CloseDate</code> — sortie du backlog quand le sales marque la relance effectuée</li>
+            <li data-job-pos="1">LWC Backlog relance après-vente : remontée des opps gagnées à M+1 dans la Home Page, sortie quand le sales marque la relance effectuée <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li>
+            <li>Basé sur <code>CloseDate</code> — calcul dynamique de l'éligibilité à M+1</li>
+            <li data-job-pos="2">Flow scheduled path opp gagnée → notif native au sales à M+1 du closing <span class="tag nice">NICE TO HAVE</span> <span class="tag new">NEW</span></li>
         </ul>
     </div>
 
@@ -695,12 +696,12 @@
     </div>
 
     <div class="feature" id="feat7" data-feat-code="FEAT 7">
-        <h2>FEAT 7 — KPIs Sales</h2>
-        <div class="feat-desc">Indicateurs clés du sales connecté, mois calendaire en cours, temps réel.</div>
+        <h2>FEAT 7 — KPIs Sales & Ranking</h2>
+        <div class="feat-desc">Scorecard individuelle du sales connecté intégrée dans un ranking d'équipe (table des sales) sur les 4 KPIs, mois calendaire en cours, temps réel.</div>
         <h3>Charge d'exécution</h3>
         <ul>
-            <li data-job-pos="1">LWC Scorecard : taux de non-trash, # ventes, CA HT (<code>CA_HT__c</code>), marge nette (<code>Marge_nette__c</code>) <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li>
-            <li>Filtrage <code>OwnerId = $User.Id</code>, reset auto au 1er du mois (calcul dynamique)</li>
+            <li data-job-pos="1">LWC Ranking Table : classement des sales sur 4 KPIs (taux de non-trash, # ventes, CA HT <code>CA_HT__c</code>, marge nette <code>Marge_nette__c</code>), mise en avant du sales connecté, trophée top performer <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li>
+            <li>Filtrage <code>OwnerId = $User.Id</code> pour la mise en avant, reset auto au 1er du mois (calcul dynamique)</li>
         </ul>
     </div>
 
