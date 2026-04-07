@@ -1483,9 +1483,11 @@
     var USER_ACCOUNT_ID = null;
 
     function setupStatusActions() {
+        console.log('[STATUS]', 'PROJECT_DATA:', PROJECT_DATA, 'USER_ACCOUNT_ID:', USER_ACCOUNT_ID, 'IS_SHARED:', IS_SHARED);
         if (!PROJECT_DATA || IS_SHARED) return;
         var status = PROJECT_DATA.status;
         var isFreelance = USER_ACCOUNT_ID && PROJECT_DATA.freelance_account_id == USER_ACCOUNT_ID;
+        console.log('[STATUS]', 'status:', status, 'isFreelance:', isFreelance, 'freelance_account_id:', PROJECT_DATA.freelance_account_id);
         var isClient = USER_ACCOUNT_ID && PROJECT_DATA.client_account_id == USER_ACCOUNT_ID;
         var banner = document.getElementById('statusBanner');
         var bar = document.getElementById('actionBar');
