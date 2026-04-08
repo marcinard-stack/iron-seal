@@ -54,10 +54,11 @@ function emailLayout(content) {
     + '</td></tr></table></body></html>';
 }
 
-function emailBtn(href, label, style) {
-  var bg = style === 'primary' ? '#c15f3c' : '#2d2b35';
-  return '<table cellpadding="0" cellspacing="0" style="margin:24px 0 8px;"><tr><td style="background:' + bg + '; border-radius:8px;">'
-    + '<a href="' + href + '" style="display:inline-block; padding:12px 28px; color:white; text-decoration:none; font-size:14px; font-weight:600;">' + label + '</a>'
+function emailBtn(href, label) {
+  return '<table cellpadding="0" cellspacing="0" width="100%" style="margin:28px 0 12px;"><tr><td align="center">'
+    + '<table cellpadding="0" cellspacing="0"><tr><td style="background:#c15f3c; border-radius:8px;">'
+    + '<a href="' + href + '" style="display:inline-block; padding:13px 32px; color:white; text-decoration:none; font-size:14px; font-weight:600;">' + label + '</a>'
+    + '</td></tr></table>'
     + '</td></tr></table>';
 }
 
@@ -69,14 +70,14 @@ function emailTag(label, color) {
 
 function proposalEmail(projectTitle, freelanceName, viewLink) {
   return emailLayout(
-    '<p style="font-size:11px; font-weight:600; color:#c15f3c; text-transform:uppercase; letter-spacing:0.5px; margin:0 0 12px;">' + emailTag('Nouvelle proposition', 'orange') + '</p>'
-    + '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px; line-height:1.3;">' + projectTitle + '</h2>'
-    + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 6px;">'
+    '<p style="margin:0 0 14px;">' + emailTag('Nouvelle proposition', 'orange') + '</p>'
+    + '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 20px; line-height:1.3;">' + projectTitle + '</h2>'
+    + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 10px; text-align:justify;">'
     + '<strong>' + freelanceName + '</strong> vous a envoy\u00e9 une proposition commerciale.</p>'
-    + '<p style="font-size:13px; color:#6b6560; line-height:1.7; margin:0 0 4px;">'
+    + '<p style="font-size:13px; color:#6b6560; line-height:1.7; margin:0; text-align:justify;">'
     + 'Consultez le cahier des charges et le devis, ajoutez vos commentaires et choisissez les options qui vous conviennent.</p>'
-    + emailBtn(viewLink, 'Voir la proposition', 'primary')
-    + '<p style="font-size:11px; color:#b1ada1; margin:8px 0 0;">Ce lien vous connecte automatiquement.</p>'
+    + emailBtn(viewLink, 'Voir la proposition')
+    + '<p style="font-size:11px; color:#b1ada1; margin:0; text-align:center;">Ce lien vous connecte automatiquement.</p>'
   );
 }
 
@@ -84,13 +85,13 @@ function backToDraftEmail(projectTitle, requesterName, isClient, link, message) 
   var action = isClient ? 'a demand\u00e9 des modifications sur' : 'a repass\u00e9 en brouillon';
   var msgBlock = message ? '<div style="background:#f9f8f6; border-left:3px solid #c15f3c; border-radius:0 6px 6px 0; padding:12px 16px; margin:16px 0 0; font-size:13px; color:#4a4850; line-height:1.6; white-space:pre-wrap;">' + message.replace(/</g, '&lt;') + '</div>' : '';
   return emailLayout(
-    '<p style="margin:0 0 12px;">' + emailTag('Retour en brouillon', 'gray') + '</p>'
-    + '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px; line-height:1.3;">' + projectTitle + '</h2>'
-    + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0;">'
+    '<p style="margin:0 0 14px;">' + emailTag('Retour en brouillon', 'gray') + '</p>'
+    + '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 20px; line-height:1.3;">' + projectTitle + '</h2>'
+    + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0; text-align:justify;">'
     + '<strong>' + requesterName + '</strong> ' + action + ' ce projet.</p>'
     + msgBlock
-    + emailBtn(link, 'Voir le projet', 'dark')
-    + '<p style="font-size:11px; color:#b1ada1; margin:8px 0 0;">Ce lien vous connecte automatiquement.</p>'
+    + emailBtn(link, 'Voir le projet')
+    + '<p style="font-size:11px; color:#b1ada1; margin:0; text-align:center;">Ce lien vous connecte automatiquement.</p>'
   );
 }
 

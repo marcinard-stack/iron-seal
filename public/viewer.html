@@ -633,9 +633,23 @@
     <div class="sign-modal">
         <h3>Signer cette proposition</h3>
         <p class="sign-subtitle">En signant, vous acceptez les termes de cette proposition commerciale.</p>
-        <div class="sign-field">
-            <label>Nom complet du signataire <span class="required-star">*</span></label>
-            <input type="text" id="signName" placeholder="ex : Jean Dupont">
+        <div class="sign-row" style="gap:8px;">
+            <div class="sign-field" style="flex:0 0 90px;">
+                <label>Civilité <span class="required-star">*</span></label>
+                <select id="signCivility" style="width:100%; padding:10px 8px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none; background:white;">
+                    <option value="">—</option>
+                    <option value="M.">M.</option>
+                    <option value="Mme">Mme</option>
+                </select>
+            </div>
+            <div class="sign-field" style="flex:1;">
+                <label>Prénom <span class="required-star">*</span></label>
+                <input type="text" id="signFirstName" placeholder="ex : Jean">
+            </div>
+            <div class="sign-field" style="flex:1;">
+                <label>Nom <span class="required-star">*</span></label>
+                <input type="text" id="signLastName" placeholder="ex : Dupont">
+            </div>
         </div>
         <div class="sign-row">
             <div class="sign-field">
@@ -1100,8 +1114,9 @@
         }
         fields.forEach(function(id) { document.getElementById(id).addEventListener('input', checkFilled); });
 
-        skipBtn.addEventListener('click', function() { overlay.classList.remove('show'); });
-        overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.classList.remove('show'); });
+        var onboardCallback = null;
+        skipBtn.addEventListener('click', function() { overlay.classList.remove('show'); if (onboardCallback) { onboardCallback(); onboardCallback = null; } });
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) { overlay.classList.remove('show'); if (onboardCallback) { onboardCallback(); onboardCallback = null; } } });
 
         saveBtn.addEventListener('click', function() {
             saveBtn.disabled = true; saveBtn.textContent = 'Enregistrement...';
@@ -1129,10 +1144,11 @@
             }).then(function() {
                 overlay.classList.remove('show');
                 saveBtn.textContent = 'Valider'; saveBtn.disabled = false;
+                if (onboardCallback) { onboardCallback(); onboardCallback = null; }
             });
         });
 
-        window.showOnboarding = function() { overlay.classList.add('show'); };
+        window.showOnboarding = function(cb) { onboardCallback = cb || null; overlay.classList.add('show'); };
     })();
 
     // ===== USER PROFILE (sidebar) =====
@@ -1971,10 +1987,28 @@
             text.textContent = 'Votre proposition est prête ?';
             buttons.innerHTML = '<button class="action-btn primary" id="btnPropose">Proposer le devis</button>';
             document.getElementById('btnPropose').addEventListener('click', function() {
-                document.getElementById('proposeOverlay').classList.add('show');
-                document.getElementById('proposeEmail').value = '';
-                document.getElementById('proposeSubmit').disabled = true;
-                document.getElementById('proposeEmail').focus();
+                // If client already linked, propose directly without asking email
+                if (PROJECT_DATA.client_account_id) {
+                    var btn = document.getElementById('btnPropose');
+                    btn.disabled = true; btn.textContent = 'Envoi...';
+                    var dfToken = localStorage.getItem('df_token') || '';
+                    fetch('/api/notify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
+                        body: JSON.stringify({ type: 'proposed', slug: SLUG })
+                    }).then(function(r) { return r.json(); }).then(function() {
+                        return changeStatus('proposed');
+                    }).then(function() {
+                        btn.textContent = 'Proposer le devis'; btn.disabled = false;
+                    }).catch(function() {
+                        btn.textContent = 'Proposer le devis'; btn.disabled = false;
+                    });
+                } else {
+                    document.getElementById('proposeOverlay').classList.add('show');
+                    document.getElementById('proposeEmail').value = '';
+                    document.getElementById('proposeSubmit').disabled = true;
+                    document.getElementById('proposeEmail').focus();
+                }
             });
             trackScroll('btnPropose');
         }
@@ -2066,7 +2100,9 @@
 
     // ===== SIGNATURE MODAL =====
     var signOverlay = document.getElementById('signOverlay');
-    var signName = document.getElementById('signName');
+    var signCivility = document.getElementById('signCivility');
+    var signFirstName = document.getElementById('signFirstName');
+    var signLastName = document.getElementById('signLastName');
     var signCity = document.getElementById('signCity');
     var signDateEl = document.getElementById('signDate');
     var signAccept = document.getElementById('signAccept');
@@ -2120,27 +2156,34 @@
     });
 
     // Typed signature updates
-    signName.addEventListener('input', function() {
-        signTyped.textContent = signName.value; checkSignForm();
-    });
+    function updateTypedSig() { signTyped.textContent = (signFirstName.value + ' ' + signLastName.value).trim(); checkSignForm(); }
+    signFirstName.addEventListener('input', updateTypedSig);
+    signLastName.addEventListener('input', updateTypedSig);
+    signCivility.addEventListener('change', checkSignForm);
     signAccept.addEventListener('change', checkSignForm);
     signCity.addEventListener('input', checkSignForm);
 
+    function getSignFullName() { return (signCivility.value + ' ' + signFirstName.value.trim() + ' ' + signLastName.value.trim()).trim(); }
+
     function checkSignForm() {
-        var nameOk = signName.value.trim().length > 0;
+        var civOk = signCivility.value.length > 0;
+        var firstOk = signFirstName.value.trim().length > 0;
+        var lastOk = signLastName.value.trim().length > 0;
         var cityOk = signCity.value.trim().length > 0;
-        var sigOk = signMode === 'draw' ? hasDrawn : signName.value.trim().length > 0;
+        var sigOk = signMode === 'draw' ? hasDrawn : (firstOk && lastOk);
         var accepted = signAccept.checked;
-        signSubmit.disabled = !(nameOk && cityOk && sigOk && accepted);
-        // Clear error state on input
-        if (nameOk) signName.classList.remove('field-error');
+        signSubmit.disabled = !(civOk && firstOk && lastOk && cityOk && sigOk && accepted);
+        if (civOk) signCivility.classList.remove('field-error');
+        if (firstOk) signFirstName.classList.remove('field-error');
+        if (lastOk) signLastName.classList.remove('field-error');
         if (cityOk) signCity.classList.remove('field-error');
     }
 
-    // Highlight empty required fields on disabled button click
     signSubmit.parentElement.addEventListener('click', function(e) {
         if (!signSubmit.disabled) return;
-        if (!signName.value.trim()) signName.classList.add('field-error');
+        if (!signCivility.value) signCivility.classList.add('field-error');
+        if (!signFirstName.value.trim()) signFirstName.classList.add('field-error');
+        if (!signLastName.value.trim()) signLastName.classList.add('field-error');
         if (!signCity.value.trim()) signCity.classList.add('field-error');
     });
 
@@ -2164,7 +2207,7 @@
         var ctx = c.getContext('2d');
         ctx.font = '32px "Segoe Script", "Comic Sans MS", "Brush Script MT", cursive';
         ctx.fillStyle = '#2d2b35'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(signName.value.trim(), 228, 50);
+        ctx.fillText((signFirstName.value.trim() + ' ' + signLastName.value.trim()), 228, 50);
         return c.toDataURL('image/png');
     }
 
@@ -2416,14 +2459,19 @@
     }
 
     async function openSignModal() {
-        signName.value = dfUser ? dfUser.name : '';
+        // Pre-fill from user data if known
+        var userName = dfUser ? dfUser.name : '';
+        var nameParts = userName.split(' ');
+        signFirstName.value = nameParts[0] || '';
+        signLastName.value = nameParts.slice(1).join(' ') || '';
+        signCivility.value = '';
         signCity.value = '';
         signDateEl.value = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
         signAccept.checked = false;
         signSubmit.disabled = true;
         signCtx.clearRect(0, 0, signCanvas.width, signCanvas.height);
         hasDrawn = false;
-        signTyped.textContent = dfUser ? dfUser.name : '';
+        signTyped.textContent = (signFirstName.value + ' ' + signLastName.value).trim();
         signMode = 'draw'; tabDraw.classList.add('active'); tabType.classList.remove('active');
         signDrawArea.style.display = ''; signTypeArea.style.display = 'none';
 
@@ -2435,7 +2483,7 @@
     }
 
     signSubmit.addEventListener('click', function() {
-        var name = signName.value.trim();
+        var name = getSignFullName();
         var city = signCity.value.trim();
         var hash = signOverlay.dataset.hash;
         var dateStr = signDateEl.value;
@@ -2459,38 +2507,52 @@
         }).then(function(result) {
             signOverlay.classList.remove('show');
             signSubmit.textContent = 'Signer le devis';
-
-            // Generate PDF with full info
-            var pdfBase64 = null;
-            try {
-                var pdfData = generateSignedPDF({ name: name, city: city, date: dateStr, time: timeStr, hash: hash, sigImage: sigImage, ip: result.ip_address, freelanceInfo: result.freelance_info, clientInfo: result.client_info, refNumber: result.ref_number });
-                if (pdfData) pdfBase64 = pdfData.split(',')[1];
-                // Send PDF to API for email attachment
-                if (pdfBase64) {
-                    fetch('/api/signature?action=pdf', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
-                        body: JSON.stringify({ slug: SLUG, pdf_base64: pdfBase64 })
-                    });
-                }
-            } catch(e) { console.warn('PDF generation failed', e); }
-
-            // Show success modal, then onboarding
-            document.getElementById('successOverlay').classList.add('show');
-            document.getElementById('successClose').addEventListener('click', function() {
-                // Check if client has incomplete profile → show onboarding
-                var dfToken2 = localStorage.getItem('df_token') || '';
-                fetch('/api/auth?action=me', { headers: { 'Authorization': 'Bearer ' + dfToken2 } })
-                    .then(function(r) { return r.ok ? r.json() : null; })
-                    .then(function(data) {
-                        if (data && (!data.account.tva_intra || data.account.name === data.user.name)) {
-                            showOnboarding();
-                        }
-                    });
-            }, { once: true });
-
             PROJECT_DATA.status = 'signed';
             setupStatusActions();
+
+            // Store data for deferred PDF generation
+            var signResult = result;
+            var sigData = { name: name, city: city, date: dateStr, time: timeStr, hash: hash, sigImage: sigImage, ip: result.ip_address, freelanceInfo: result.freelance_info, clientInfo: result.client_info, refNumber: result.ref_number };
+
+            function doGeneratePDF() {
+                // Re-fetch fresh account data (in case onboarding updated it)
+                fetch('/api/auth?action=me', { headers: { 'Authorization': 'Bearer ' + dfToken } })
+                    .then(function(r) { return r.ok ? r.json() : null; })
+                    .then(function(fresh) {
+                        if (fresh) {
+                            sigData.clientInfo = sigData.clientInfo || {};
+                            sigData.clientInfo.name = fresh.account.name;
+                            sigData.clientInfo.tva_intra = fresh.account.tva_intra;
+                            sigData.clientInfo.user_name = fresh.user.name;
+                            sigData.clientInfo.user_email = fresh.user.email;
+                        }
+                        try {
+                            var pdfData = generateSignedPDF(sigData);
+                            if (pdfData) {
+                                fetch('/api/signature?action=pdf', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
+                                    body: JSON.stringify({ slug: SLUG, pdf_base64: pdfData.split(',')[1] })
+                                });
+                            }
+                        } catch(e) { console.warn('PDF generation failed', e); }
+                        document.getElementById('successOverlay').classList.add('show');
+                    });
+            }
+
+            // Check if client needs onboarding BEFORE generating PDF
+            fetch('/api/auth?action=me', { headers: { 'Authorization': 'Bearer ' + dfToken } })
+                .then(function(r) { return r.ok ? r.json() : null; })
+                .then(function(data) {
+                    var incomplete = data && (!data.account.tva_intra || !data.account.name || data.account.name === data.user.name);
+                    if (incomplete) {
+                        if (data.account.name && data.account.name !== data.user.name) document.getElementById('obCompany').value = data.account.name;
+                        showOnboarding(doGeneratePDF);
+                    } else {
+                        doGeneratePDF();
+                    }
+                })
+                .catch(function() { doGeneratePDF(); });
         }).catch(function(err) {
             signSubmit.disabled = false;
             signSubmit.textContent = 'Signer le devis';
