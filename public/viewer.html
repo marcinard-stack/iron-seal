@@ -375,6 +375,11 @@
         .notes h2 { font-size: 18px; font-weight: 700; margin-bottom: 14px; color: #2d2b35; }
         .notes ul { margin-left: 18px; }
         .notes li { font-size: 13px; margin-bottom: 5px; color: #4a4850; }
+        /* ---- FORM UX: placeholders + required + validation ---- */
+        ::placeholder { color: #c4c2bc; font-style: italic; }
+        .required-star { color: #c15f3c; margin-left: 2px; }
+        input.field-error, textarea.field-error { border-color: #dc2626 !important; box-shadow: 0 0 0 2px rgba(220,38,38,0.12) !important; }
+
         /* ---- PROJECT ACTION BAR (fixed bottom) ---- */
         .project-action-bar {
             position: fixed; bottom: 0; left: 0; right: 0;
@@ -629,13 +634,13 @@
         <h3>Signer cette proposition</h3>
         <p class="sign-subtitle">En signant, vous acceptez les termes de cette proposition commerciale.</p>
         <div class="sign-field">
-            <label>Nom complet du signataire</label>
-            <input type="text" id="signName" placeholder="Prénom Nom">
+            <label>Nom complet du signataire <span class="required-star">*</span></label>
+            <input type="text" id="signName" placeholder="ex : Jean Dupont">
         </div>
         <div class="sign-row">
             <div class="sign-field">
-                <label>Fait à</label>
-                <input type="text" id="signCity" placeholder="Paris">
+                <label>Fait à <span class="required-star">*</span></label>
+                <input type="text" id="signCity" placeholder="ex : Paris">
             </div>
             <div class="sign-field">
                 <label>Le</label>
@@ -684,8 +689,8 @@
         <p style="font-size:15px; font-weight:700; color:#2d2b35; margin-bottom:4px;">Proposer le devis</p>
         <p style="font-size:13px; color:#8a8780; margin-bottom:16px;">Le client recevra un email avec un lien direct vers la proposition.</p>
         <div style="margin-bottom:14px;">
-            <label style="font-size:12px; font-weight:600; color:#4a4850; display:block; margin-bottom:4px;">Email du client</label>
-            <input type="email" id="proposeEmail" placeholder="client@entreprise.com" style="width:100%; padding:10px 14px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none;">
+            <label style="font-size:12px; font-weight:600; color:#4a4850; display:block; margin-bottom:4px;">Email du client <span class="required-star">*</span></label>
+            <input type="email" id="proposeEmail" placeholder="ex : client@entreprise.com" style="width:100%; padding:10px 14px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none;">
         </div>
         <div class="confirm-actions">
             <button class="confirm-cancel" id="proposeCancel">Annuler</button>
@@ -700,20 +705,20 @@
         <p style="font-size:15px; font-weight:700; color:#2d2b35; margin-bottom:4px;">Premier devis sur deal-forge ?</p>
         <p style="font-size:13px; color:#8a8780; margin-bottom:16px;">Complétez vos informations pour qu'elles apparaissent sur vos documents.</p>
         <div style="margin-bottom:12px;">
-            <label style="font-size:12px; font-weight:600; color:#4a4850; display:block; margin-bottom:4px;">Nom de la structure</label>
-            <input type="text" id="obCompany" placeholder="CarJager SAS" style="width:100%; padding:9px 12px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none;">
+            <label style="font-size:12px; font-weight:600; color:#4a4850; display:block; margin-bottom:4px;">Nom de la structure <span class="required-star">*</span></label>
+            <input type="text" id="obCompany" placeholder="ex : CarJager SAS" style="width:100%; padding:9px 12px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none;">
         </div>
         <div style="margin-bottom:12px;">
-            <label style="font-size:12px; font-weight:600; color:#4a4850; display:block; margin-bottom:4px;">Adresse</label>
-            <input type="text" id="obLine1" placeholder="12 rue de la Paix" style="width:100%; padding:9px 12px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none; margin-bottom:8px;">
+            <label style="font-size:12px; font-weight:600; color:#4a4850; display:block; margin-bottom:4px;">Adresse <span class="required-star">*</span></label>
+            <input type="text" id="obLine1" placeholder="ex : 12 rue de la Paix" style="width:100%; padding:9px 12px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none; margin-bottom:8px;">
             <div style="display:flex; gap:8px;">
-                <input type="text" id="obZip" placeholder="75002" style="flex:1; padding:9px 12px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none;">
-                <input type="text" id="obCity" placeholder="Paris" style="flex:2; padding:9px 12px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none;">
+                <input type="text" id="obZip" placeholder="ex : 75002" style="flex:1; padding:9px 12px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none;">
+                <input type="text" id="obCity" placeholder="ex : Paris" style="flex:2; padding:9px 12px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none;">
             </div>
         </div>
         <div style="margin-bottom:14px;">
-            <label style="font-size:12px; font-weight:600; color:#4a4850; display:block; margin-bottom:4px;">N° TVA intracommunautaire</label>
-            <input type="text" id="obTva" placeholder="FR12345678901" style="width:100%; padding:9px 12px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none;">
+            <label style="font-size:12px; font-weight:600; color:#4a4850; display:block; margin-bottom:4px;">N° TVA intracommunautaire <span class="required-star">*</span></label>
+            <input type="text" id="obTva" placeholder="ex : FR12345678901" style="width:100%; padding:9px 12px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none;">
         </div>
         <div class="confirm-actions">
             <button class="confirm-cancel" id="obSkip">Passer pour l'instant</button>
@@ -2127,7 +2132,17 @@
         var sigOk = signMode === 'draw' ? hasDrawn : signName.value.trim().length > 0;
         var accepted = signAccept.checked;
         signSubmit.disabled = !(nameOk && cityOk && sigOk && accepted);
+        // Clear error state on input
+        if (nameOk) signName.classList.remove('field-error');
+        if (cityOk) signCity.classList.remove('field-error');
     }
+
+    // Highlight empty required fields on disabled button click
+    signSubmit.parentElement.addEventListener('click', function(e) {
+        if (!signSubmit.disabled) return;
+        if (!signName.value.trim()) signName.classList.add('field-error');
+        if (!signCity.value.trim()) signCity.classList.add('field-error');
+    });
 
     async function computeDevisHash() {
         var content = '';

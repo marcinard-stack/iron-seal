@@ -6,6 +6,9 @@
     <title>deal-forge — Paramètres</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        ::placeholder { color: #c4c2bc; font-style: italic; }
+        .required-star { color: #c15f3c; margin-left: 2px; }
+        input.field-error { border-color: #dc2626 !important; box-shadow: 0 0 0 2px rgba(220,38,38,0.12) !important; }
         body {
             font-family: -apple-system, system-ui, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             color: #2d2b35; background: #f4f3ee; line-height: 1.6;
@@ -94,20 +97,20 @@
         <h2>Structure</h2>
         <div class="field">
             <label>Nom commercial</label>
-            <input type="text" id="accountName" placeholder="Studio XYZ">
+            <input type="text" id="accountName" placeholder="ex : Studio XYZ">
         </div>
         <div class="field">
             <label>Raison sociale</label>
-            <input type="text" id="legalName" placeholder="XYZ SAS">
+            <input type="text" id="legalName" placeholder="ex : XYZ SAS">
         </div>
         <div class="field-row">
             <div class="field">
                 <label>SIREN</label>
-                <input type="text" id="siren" placeholder="123 456 789">
+                <input type="text" id="siren" placeholder="ex : 123 456 789">
             </div>
             <div class="field">
                 <label>TVA intracommunautaire</label>
-                <input type="text" id="tvaIntra" placeholder="FR12345678901">
+                <input type="text" id="tvaIntra" placeholder="ex : FR12345678901">
             </div>
         </div>
     </div>
@@ -117,12 +120,12 @@
         <div class="field-row">
             <div class="field">
                 <label>TJM par défaut (€ HT)</label>
-                <input type="number" id="defaultTjm" placeholder="500">
+                <input type="number" id="defaultTjm" placeholder="ex : 500">
                 <div class="hint">Tarif journalier appliqué aux nouveaux projets</div>
             </div>
             <div class="field">
                 <label>Capacité hebdo (J/H)</label>
-                <input type="number" id="defaultCap" placeholder="3" step="0.5">
+                <input type="number" id="defaultCap" placeholder="ex : 3" step="0.5">
                 <div class="hint">Jours disponibles par semaine sur un projet</div>
             </div>
         </div>
@@ -134,24 +137,24 @@
         <div id="addressForm" style="display:none;">
             <div class="field">
                 <label>Libellé</label>
-                <input type="text" id="addrLabel" placeholder="Siège social">
+                <input type="text" id="addrLabel" placeholder="ex : Siège social">
             </div>
             <div class="field">
                 <label>Adresse</label>
-                <input type="text" id="addrLine1" placeholder="12 rue de la Paix">
+                <input type="text" id="addrLine1" placeholder="ex : 12 rue de la Paix">
             </div>
             <div class="field">
                 <label>Complément</label>
-                <input type="text" id="addrLine2" placeholder="Bâtiment B, 3e étage">
+                <input type="text" id="addrLine2" placeholder="ex : Bâtiment B, 3e étage">
             </div>
             <div class="field-row">
                 <div class="field">
                     <label>Code postal</label>
-                    <input type="text" id="addrZip" placeholder="75002">
+                    <input type="text" id="addrZip" placeholder="ex : 75002">
                 </div>
                 <div class="field">
                     <label>Ville</label>
-                    <input type="text" id="addrCity" placeholder="Paris">
+                    <input type="text" id="addrCity" placeholder="ex : Paris">
                 </div>
             </div>
             <div class="field">
@@ -172,16 +175,16 @@
         <div id="ibanForm" style="display:none;">
             <div class="field">
                 <label>Libellé</label>
-                <input type="text" id="ibanLabel" placeholder="Compte principal">
+                <input type="text" id="ibanLabel" placeholder="ex : Compte principal">
             </div>
             <div class="field">
                 <label>IBAN</label>
-                <input type="text" id="ibanValue" placeholder="FR76 3000 1007 9412 3456 7890 185">
+                <input type="text" id="ibanValue" placeholder="ex : FR76 3000 1007 9412 3456 7890 185">
                 <div class="hint">Chiffré en AES-256 avant stockage. Jamais visible en clair dans la base de données.</div>
             </div>
             <div class="field">
                 <label>BIC / SWIFT</label>
-                <input type="text" id="ibanBic" placeholder="BNPAFRPP">
+                <input type="text" id="ibanBic" placeholder="ex : BNPAFRPP">
             </div>
             <div style="display:flex; gap:8px; margin-top:8px;">
                 <button class="save-btn" id="ibanSave">Enregistrer l'IBAN</button>

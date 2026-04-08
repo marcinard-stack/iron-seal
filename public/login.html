@@ -6,6 +6,9 @@
     <title>deal-forge — Connexion</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        ::placeholder { color: #c4c2bc; font-style: italic; }
+        .required-star { color: #c15f3c; margin-left: 2px; }
+        input.field-error { border-color: #dc2626 !important; box-shadow: 0 0 0 2px rgba(220,38,38,0.12) !important; }
         body {
             font-family: -apple-system, system-ui, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             color: #2d2b35; background: #f4f3ee; line-height: 1.6;
@@ -61,7 +64,7 @@
         <p>Accédez à vos projets et devis.</p>
         <div class="auth-error" id="loginError"></div>
         <label>Email</label>
-        <input type="email" id="loginEmail" placeholder="vous@exemple.com">
+        <input type="email" id="loginEmail" placeholder="ex : vous@exemple.com">
         <label>Mot de passe</label>
         <input type="password" id="loginPassword" placeholder="••••••••">
         <button id="loginBtn">Se connecter</button>
@@ -74,11 +77,11 @@
         <p>Commencez à structurer vos projets.</p>
         <div class="auth-error" id="signupError"></div>
         <label>Prénom</label>
-        <input type="text" id="signupName" placeholder="Jean">
+        <input type="text" id="signupName" placeholder="ex : Jean">
         <label>Nom de votre structure (optionnel)</label>
-        <input type="text" id="signupCompany" placeholder="Studio XYZ">
+        <input type="text" id="signupCompany" placeholder="ex : Studio XYZ">
         <label>Email</label>
-        <input type="email" id="signupEmail" placeholder="vous@exemple.com">
+        <input type="email" id="signupEmail" placeholder="ex : vous@exemple.com">
         <label>Mot de passe</label>
         <input type="password" id="signupPassword" placeholder="6 caractères minimum">
         <button id="signupBtn">Créer mon compte</button>
