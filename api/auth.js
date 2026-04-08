@@ -207,6 +207,95 @@ export default async function handler(req, res) {
       });
     }
 
+    // ── GITHUB LOGIN ──
+    if (action === 'github' && req.method === 'POST') {
+      var { code } = req.body;
+      if (!code) return res.status(400).json({ error: 'code required' });
+
+      // Exchange code for access token
+      var tokenRes = await fetch('https://github.com/login/oauth/access_token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          client_id: process.env.GITHUB_CLIENT_ID,
+          client_secret: process.env.GITHUB_CLIENT_SECRET,
+          code: code
+        })
+      });
+      var tokenData = await tokenRes.json();
+      if (!tokenData.access_token) return res.status(400).json({ error: 'GitHub authentication failed' });
+
+      // Get user profile
+      var ghUserRes = await fetch('https://api.github.com/user', {
+        headers: { 'Authorization': 'Bearer ' + tokenData.access_token, 'User-Agent': 'deal-forge' }
+      });
+      var ghUser = await ghUserRes.json();
+
+      // Get email (may be private)
+      var ghEmail = ghUser.email;
+      if (!ghEmail) {
+        var emailsRes = await fetch('https://api.github.com/user/emails', {
+          headers: { 'Authorization': 'Bearer ' + tokenData.access_token, 'User-Agent': 'deal-forge' }
+        });
+        var emails = await emailsRes.json();
+        var primary = emails.find(function(e) { return e.primary; }) || emails[0];
+        if (primary) ghEmail = primary.email;
+      }
+      if (!ghEmail) return res.status(400).json({ error: 'Could not get email from GitHub' });
+
+      var cleanEmail = ghEmail.toLowerCase().trim();
+      var ghName = ghUser.name || ghUser.login || cleanEmail;
+
+      // Find or create user (same logic as Google)
+      var existing = await sql`
+        SELECT u.id, u.email, u.name, u.account_id, u.role,
+               a.name as account_name, a.type as account_type
+        FROM users u JOIN accounts a ON a.id = u.account_id
+        WHERE u.email = ${cleanEmail}
+      `;
+
+      var user;
+      if (existing.length) {
+        user = existing[0];
+        await sql`UPDATE users SET email_verified = true WHERE id = ${user.id} AND email_verified = false`;
+      } else {
+        var accounts = await sql`
+          INSERT INTO accounts (name, type, plan) VALUES (${ghName}, 'solo', 'free') RETURNING id
+        `;
+        var users = await sql`
+          INSERT INTO users (account_id, email, name, role, email_verified)
+          VALUES (${accounts[0].id}, ${cleanEmail}, ${ghName}, 'owner', true)
+          RETURNING id, email, name, role, account_id
+        `;
+        user = { ...users[0], account_name: ghName, account_type: 'solo' };
+
+        // Send welcome email
+        var homeLink = req.headers.origin || 'https://deal-forge-tawny.vercel.app';
+        await sendAuthEmail(cleanEmail, 'Bienvenue sur deal-forge',
+          authEmailLayout(
+            '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Bienvenue sur deal-forge, ' + ghName + ' !</h2>'
+            + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 12px; text-align:justify;">Vous venez de rejoindre deal-forge, la plateforme qui simplifie la relation freelance-client, du cadrage du besoin a la signature du devis.</p>'
+            + '<p style="font-size:13px; color:#6b6560; line-height:1.7; margin:0 0 8px; text-align:justify;"><strong>Ce qui vous attend :</strong></p>'
+            + '<p style="font-size:13px; color:#6b6560; line-height:1.8; margin:0 0 12px; text-align:justify;">'
+            + '&bull; Construisez vos cahiers des charges et devis en quelques clics<br>'
+            + '&bull; Partagez et collaborez en temps reel avec vos clients<br>'
+            + '&bull; Faites signer vos devis electroniquement, sans quitter l\'outil<br>'
+            + '&bull; Generez des PDF professionnels avec certificat de signature</p>'
+            + authBtn(homeLink + '/deals/draft', 'Commencer')
+            + '<p style="font-size:12px; color:#b1ada1; margin:16px 0 0; text-align:center;">Merci de votre confiance.<br>L\'equipe deal-forge</p>'
+          ));
+      }
+
+      var token = crypto.randomBytes(32).toString('base64url');
+      await sql`INSERT INTO sessions (user_id, token) VALUES (${user.id}, ${token})`;
+
+      return res.json({
+        token: token,
+        user: { id: user.id, email: user.email, name: user.name, role: user.role },
+        account: { id: user.account_id, name: user.account_name, type: user.account_type }
+      });
+    }
+
     // ── LOGOUT ──
     if (action === 'logout' && req.method === 'POST') {
       var auth = (req.headers.authorization || '').replace('Bearer ', '');
