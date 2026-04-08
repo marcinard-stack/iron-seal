@@ -851,7 +851,7 @@
     <div class="header" id="cdc">
         <h1>Cahier des Charges — Cockpit Sales</h1>
         <div class="subtitle">Projet CarJager Salesforce — Home Page Sales & gestion des intérêts</div>
-        <div class="meta"><span>Version 1.0 — 30 mars 2026</span><span>Org cible : Production</span><span>Record Types : Sell, Buy, Ecommerce</span></div>
+        <div class="meta"><span id="cdcVersion">Version 1.0 — 30 mars 2026</span><span>Org cible : Production</span><span>Record Types : Sell, Buy, Ecommerce</span></div>
     </div>
 
     <div class="feature" id="feat1" data-feat-code="FEAT 1">
@@ -955,7 +955,7 @@
     <div class="header" id="propale" style="margin-top: 40px;">
         <h1>Proposition Commerciale — Cockpit Sales</h1>
         <div class="subtitle">Détail des charges, packages et planning de livraison</div>
-        <div class="meta"><span>Version 1.0 — 30 mars 2026</span><span>Client : CarJager</span></div>
+        <div class="meta"><span id="propaleVersion">Version 1.0 — 30 mars 2026</span><span>Client : CarJager</span></div>
     </div>
 
     <div class="section" id="detail">
@@ -2625,6 +2625,12 @@
         ]).then(function(results) {
             PROJECT_DATA = results[2];
             if (results[3]) USER_ACCOUNT_ID = results[3].account.id;
+            // Update version display
+            var vLabel = 'Version ' + (PROJECT_DATA.version || '1.0');
+            var cdcV = document.getElementById('cdcVersion');
+            var propV = document.getElementById('propaleVersion');
+            if (cdcV) cdcV.textContent = cdcV.textContent.replace(/Version [0-9.]+/, vLabel);
+            if (propV) propV.textContent = propV.textContent.replace(/Version [0-9.]+/, vLabel);
             var featData = results[0];
             allFeatures = featData.features || featData;
             if (featData.presence) updatePresence(featData.presence);
