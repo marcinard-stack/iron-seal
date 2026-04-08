@@ -370,9 +370,10 @@
     document.getElementById('githubLoginBtn').addEventListener('click', handleGithubLogin);
     document.getElementById('githubSignupBtn').addEventListener('click', handleGithubLogin);
 
-    // Handle GitHub callback
+    // Handle GitHub callback (prevent double submission)
     var ghCode = params.get('code');
-    if (ghCode) {
+    if (ghCode && !sessionStorage.getItem('gh_code_used')) {
+        sessionStorage.setItem('gh_code_used', ghCode);
         window.history.replaceState({}, '', '/login');
         fetch('/api/auth?action=github', {
             method: 'POST',
@@ -380,11 +381,14 @@
             body: JSON.stringify({ code: ghCode })
         }).then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
         .then(function(res) {
-            if (!res.ok) { showErr(document.getElementById('loginError'), res.data.error || 'Erreur GitHub'); return; }
+            sessionStorage.removeItem('gh_code_used');
+            if (!res.ok) { showErr(document.getElementById('loginError'), (res.data.github_error || res.data.error || 'Erreur GitHub')); return; }
             localStorage.setItem('df_token', res.data.token);
             localStorage.setItem('df_user', JSON.stringify(res.data.user));
             window.location.href = '/deals/draft';
-        });
+        }).catch(function() { sessionStorage.removeItem('gh_code_used'); });
+    } else if (ghCode) {
+        window.history.replaceState({}, '', '/login');
     }
 })();
 </script>
