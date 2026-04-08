@@ -20,19 +20,34 @@ async function sendEmail(to, subject, html, attachments) {
 }
 
 function signedEmail(projectTitle, signerName, signedAt, hash) {
-  return '<div style="font-family:-apple-system,system-ui,sans-serif; max-width:520px; margin:0 auto; padding:32px 0;">'
-    + '<p style="font-size:14px; color:#6b6560; margin-bottom:4px;">deal-forge</p>'
-    + '<h2 style="font-size:20px; color:#2d2b35; margin-bottom:16px;">Devis signé</h2>'
-    + '<p style="font-size:14px; color:#4a4850; line-height:1.6; margin-bottom:8px;">'
-    + 'Le projet <strong>' + projectTitle + '</strong> a été signé par <strong>' + signerName + '</strong>.</p>'
-    + '<div style="background:#f9f8f6; border-radius:8px; padding:16px; margin:16px 0; font-size:13px; color:#4a4850;">'
-    + '<div style="margin-bottom:6px;"><strong>Date :</strong> ' + signedAt + '</div>'
-    + '<div style="margin-bottom:6px;"><strong>Signataire :</strong> ' + signerName + '</div>'
-    + '<div><strong>Hash du document :</strong> <code style="font-size:11px; color:#8a8780; word-break:break-all;">' + hash + '</code></div>'
-    + '</div>'
-    + '<p style="font-size:13px; color:#4a4850; line-height:1.6;">Le PDF signé est disponible depuis l\'interface deal-forge.</p>'
-    + '<p style="font-size:12px; color:#8a8780; margin-top:32px;">Cet email a été envoyé via deal-forge.</p>'
-    + '</div>';
+  return '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>'
+    + '<body style="margin:0; padding:0; background:#f4f3ee; font-family:-apple-system,system-ui,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,sans-serif;">'
+    + '<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f3ee; padding:32px 16px;">'
+    + '<tr><td align="center">'
+    + '<table width="520" cellpadding="0" cellspacing="0" style="max-width:520px;">'
+    + '<tr><td style="padding:0 0 24px;">'
+    + '<table width="100%" cellpadding="0" cellspacing="0"><tr>'
+    + '<td style="font-size:16px; font-weight:700; color:#2d2b35; letter-spacing:-0.02em;">deal-forge</td>'
+    + '<td align="right" style="font-size:11px; color:#b1ada1;">Proposition &amp; signature en ligne</td>'
+    + '</tr></table></td></tr>'
+    + '<tr><td style="background:white; border-radius:10px; padding:32px 36px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">'
+    + '<p style="margin:0 0 12px;"><span style="display:inline-block; font-size:10px; font-weight:600; padding:2px 8px; border-radius:6px; background:#dcfce7; color:#166534;">Document signe</span></p>'
+    + '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px; line-height:1.3;">' + projectTitle + '</h2>'
+    + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 16px;">'
+    + 'Ce projet a ete signe electroniquement par <strong>' + signerName + '</strong>.</p>'
+    + '<table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f8f6; border-radius:8px; margin:0 0 16px;">'
+    + '<tr><td style="padding:16px 20px;">'
+    + '<p style="font-size:13px; color:#4a4850; margin:0 0 6px;"><strong>Date :</strong> ' + signedAt + '</p>'
+    + '<p style="font-size:13px; color:#4a4850; margin:0 0 6px;"><strong>Signataire :</strong> ' + signerName + '</p>'
+    + '<p style="font-size:11px; color:#8a8780; margin:0; word-break:break-all;"><strong>Hash :</strong> ' + hash.substring(0, 32) + '...</p>'
+    + '</td></tr></table>'
+    + '<p style="font-size:13px; color:#6b6560; line-height:1.6; margin:0;">Le PDF signe est joint a cet email et disponible depuis l\'interface deal-forge.</p>'
+    + '</td></tr>'
+    + '<tr><td style="padding:24px 0 0; text-align:center;">'
+    + '<p style="font-size:11px; color:#b1ada1; margin:0 0 6px;">deal-forge par Blue Heron Lab</p>'
+    + '<p style="font-size:10px; color:#c4c2bc; margin:0;">Vous recevez cet email car vous etes partie prenante d\'un projet sur deal-forge.<br>'
+    + 'Pour ne plus recevoir ces notifications, modifiez vos <a href="https://deal-forge-tawny.vercel.app/settings" style="color:#c4c2bc;">preferences email</a>.</p>'
+    + '</td></tr></table></td></tr></table></body></html>';
 }
 
 export default async function handler(req, res) {

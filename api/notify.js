@@ -26,30 +26,72 @@ async function sendEmail(to, subject, html) {
   return res.json();
 }
 
+// ===== EMAIL TEMPLATE SYSTEM =====
+function emailLayout(content) {
+  return '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>'
+    + '<body style="margin:0; padding:0; background:#f4f3ee; font-family:-apple-system,system-ui,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,sans-serif;">'
+    + '<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f3ee; padding:32px 16px;">'
+    + '<tr><td align="center">'
+    // Header
+    + '<table width="520" cellpadding="0" cellspacing="0" style="max-width:520px;">'
+    + '<tr><td style="padding:0 0 24px;">'
+    + '<table width="100%" cellpadding="0" cellspacing="0"><tr>'
+    + '<td style="font-size:16px; font-weight:700; color:#2d2b35; letter-spacing:-0.02em;">deal-forge</td>'
+    + '<td align="right" style="font-size:11px; color:#b1ada1;">Proposition &amp; signature en ligne</td>'
+    + '</tr></table>'
+    + '</td></tr>'
+    // Body card
+    + '<tr><td style="background:white; border-radius:10px; padding:32px 36px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">'
+    + content
+    + '</td></tr>'
+    // Footer
+    + '<tr><td style="padding:24px 0 0; text-align:center;">'
+    + '<p style="font-size:11px; color:#b1ada1; margin:0 0 6px;">deal-forge par Blue Heron Lab</p>'
+    + '<p style="font-size:10px; color:#c4c2bc; margin:0;">Vous recevez cet email car vous etes partie prenante d\'un projet sur deal-forge.<br>'
+    + 'Pour ne plus recevoir ces notifications, modifiez vos <a href="https://deal-forge-tawny.vercel.app/settings" style="color:#c4c2bc;">preferences email</a>.</p>'
+    + '</td></tr>'
+    + '</table>'
+    + '</td></tr></table></body></html>';
+}
+
+function emailBtn(href, label, style) {
+  var bg = style === 'primary' ? '#c15f3c' : '#2d2b35';
+  return '<table cellpadding="0" cellspacing="0" style="margin:24px 0 8px;"><tr><td style="background:' + bg + '; border-radius:8px;">'
+    + '<a href="' + href + '" style="display:inline-block; padding:12px 28px; color:white; text-decoration:none; font-size:14px; font-weight:600;">' + label + '</a>'
+    + '</td></tr></table>';
+}
+
+function emailTag(label, color) {
+  var colors = { orange: ['#fef3c7','#92400e'], green: ['#dcfce7','#166534'], blue: ['#dbeafe','#1e40af'], gray: ['#f4f3ee','#6b6560'] };
+  var c = colors[color] || colors.gray;
+  return '<span style="display:inline-block; font-size:10px; font-weight:600; padding:2px 8px; border-radius:6px; background:' + c[0] + '; color:' + c[1] + ';">' + label + '</span>';
+}
+
 function proposalEmail(projectTitle, freelanceName, viewLink) {
-  return '<div style="font-family:-apple-system,system-ui,sans-serif; max-width:520px; margin:0 auto; padding:32px 0;">'
-    + '<p style="font-size:14px; color:#6b6560; margin-bottom:4px;">deal-forge</p>'
-    + '<h2 style="font-size:20px; color:#2d2b35; margin-bottom:16px;">Nouvelle proposition</h2>'
-    + '<p style="font-size:14px; color:#4a4850; line-height:1.6; margin-bottom:20px;">'
-    + '<strong>' + freelanceName + '</strong> vous a envoyé une proposition pour le projet <strong>' + projectTitle + '</strong>.</p>'
-    + '<p style="font-size:14px; color:#4a4850; line-height:1.6; margin-bottom:24px;">Consultez le cahier des charges et le devis, ajoutez vos commentaires, et choisissez les options qui vous conviennent.</p>'
-    + '<a href="' + viewLink + '" style="display:inline-block; padding:12px 28px; background:#c15f3c; color:white; text-decoration:none; border-radius:8px; font-size:14px; font-weight:600;">Voir la proposition</a>'
-    + '<p style="font-size:12px; color:#8a8780; margin-top:32px;">Cet email a été envoyé via deal-forge.</p>'
-    + '</div>';
+  return emailLayout(
+    '<p style="font-size:11px; font-weight:600; color:#c15f3c; text-transform:uppercase; letter-spacing:0.5px; margin:0 0 12px;">' + emailTag('Nouvelle proposition', 'orange') + '</p>'
+    + '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px; line-height:1.3;">' + projectTitle + '</h2>'
+    + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 6px;">'
+    + '<strong>' + freelanceName + '</strong> vous a envoy\u00e9 une proposition commerciale.</p>'
+    + '<p style="font-size:13px; color:#6b6560; line-height:1.7; margin:0 0 4px;">'
+    + 'Consultez le cahier des charges et le devis, ajoutez vos commentaires et choisissez les options qui vous conviennent.</p>'
+    + emailBtn(viewLink, 'Voir la proposition', 'primary')
+    + '<p style="font-size:11px; color:#b1ada1; margin:8px 0 0;">Ce lien vous connecte automatiquement.</p>'
+  );
 }
 
 function backToDraftEmail(projectTitle, requesterName, isClient, link, message) {
-  var action = isClient ? 'a demandé des modifications sur' : 'a repassé en brouillon';
-  var msgBlock = message ? '<div style="background:#f9f8f6; border-left:3px solid #c15f3c; border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0; font-size:13px; color:#4a4850; line-height:1.6; white-space:pre-wrap;">' + message.replace(/</g, '&lt;') + '</div>' : '';
-  return '<div style="font-family:-apple-system,system-ui,sans-serif; max-width:520px; margin:0 auto; padding:32px 0;">'
-    + '<p style="font-size:14px; color:#6b6560; margin-bottom:4px;">deal-forge</p>'
-    + '<h2 style="font-size:20px; color:#2d2b35; margin-bottom:16px;">Retour en brouillon</h2>'
-    + '<p style="font-size:14px; color:#4a4850; line-height:1.6; margin-bottom:8px;">'
-    + '<strong>' + requesterName + '</strong> ' + action + ' le projet <strong>' + projectTitle + '</strong>.</p>'
+  var action = isClient ? 'a demand\u00e9 des modifications sur' : 'a repass\u00e9 en brouillon';
+  var msgBlock = message ? '<div style="background:#f9f8f6; border-left:3px solid #c15f3c; border-radius:0 6px 6px 0; padding:12px 16px; margin:16px 0 0; font-size:13px; color:#4a4850; line-height:1.6; white-space:pre-wrap;">' + message.replace(/</g, '&lt;') + '</div>' : '';
+  return emailLayout(
+    '<p style="margin:0 0 12px;">' + emailTag('Retour en brouillon', 'gray') + '</p>'
+    + '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px; line-height:1.3;">' + projectTitle + '</h2>'
+    + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0;">'
+    + '<strong>' + requesterName + '</strong> ' + action + ' ce projet.</p>'
     + msgBlock
-    + '<a href="' + link + '" style="display:inline-block; padding:12px 28px; background:#2d2b35; color:white; text-decoration:none; border-radius:8px; font-size:14px; font-weight:600; margin-top:16px;">Voir le projet</a>'
-    + '<p style="font-size:12px; color:#8a8780; margin-top:32px;">Cet email a été envoyé via deal-forge.</p>'
-    + '</div>';
+    + emailBtn(link, 'Voir le projet', 'dark')
+    + '<p style="font-size:11px; color:#b1ada1; margin:8px 0 0;">Ce lien vous connecte automatiquement.</p>'
+  );
 }
 
 export default async function handler(req, res) {
