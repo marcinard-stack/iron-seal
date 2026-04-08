@@ -76,6 +76,28 @@ export default async function handler(req, res) {
       }
     }
 
+    // Duplicate features/jobs to test project if it exists
+    const testProj = await sql`SELECT id FROM projects WHERE slug = 'cdc-cockpit-sales-carjager-test-gdkaar'`;
+    if (testProj.length) {
+      const testId = testProj[0].id;
+      const testFeats = await sql`SELECT COUNT(*) as c FROM features WHERE project_id = ${testId}`;
+      if (parseInt(testFeats[0].c) === 0) {
+        const srcFeats = await sql`SELECT * FROM features WHERE project_id = ${projectId} ORDER BY position`;
+        for (const f of srcFeats) {
+          const nf = await sql`INSERT INTO features (project_id, position, code, title, description, is_transverse) VALUES (${testId}, ${f.position}, ${f.code}, ${f.title}, ${f.description}, ${f.is_transverse}) RETURNING id`;
+          const srcJobs = await sql`SELECT * FROM jobs WHERE feature_id = ${f.id} ORDER BY position`;
+          for (const j of srcJobs) {
+            await sql`INSERT INTO jobs (feature_id, position, description, jh, type, priority, is_offered, included) VALUES (${nf[0].id}, ${j.position}, ${j.description}, ${j.jh}, ${j.type}, ${j.priority}, ${j.is_offered}, ${j.included})`;
+          }
+        }
+        // Copy exclusions
+        const srcEx = await sql`SELECT * FROM exclusions WHERE project_id = ${projectId} ORDER BY position`;
+        for (const e of srcEx) {
+          await sql`INSERT INTO exclusions (project_id, position, title, description) VALUES (${testId}, ${e.position}, ${e.title}, ${e.description})`;
+        }
+      }
+    }
+
     // Assign project to the account that has a user (not orphan accounts)
     const proj = await sql`SELECT freelance_account_id FROM projects WHERE id = ${projectId}`;
     const realAccount = await sql`SELECT a.id FROM accounts a JOIN users u ON u.account_id = a.id ORDER BY a.id LIMIT 1`;
