@@ -113,6 +113,8 @@
             <div class="pw-rule" data-rule="lower">● Une minuscule</div>
             <div class="pw-rule" data-rule="number">● Un chiffre</div>
         </div>
+        <label>Confirmer le mot de passe</label>
+        <input type="password" id="signupPasswordConfirm" placeholder="••••••••">
         <button id="signupBtn">Créer mon compte</button>
 
         <div style="display:flex; align-items:center; gap:12px; margin:20px 0 16px;">
@@ -169,13 +171,15 @@
     if (params.get('verify')) {
         fetch('/api/auth?action=verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: params.get('verify') }) })
             .then(function(r) { return r.json(); })
-            .then(function() { window.history.replaceState({}, '', '/login'); });
-        // Show a success message
-        setTimeout(function() {
-            var el = document.getElementById('loginError');
-            el.style.display = 'block'; el.style.background = '#f0fdf4'; el.style.color = '#166534';
-            el.textContent = 'Email vérifié avec succès. Vous pouvez vous connecter.';
-        }, 100);
+            .then(function(data) {
+                window.history.replaceState({}, '', '/login');
+                // Show success banner above the login form
+                var banner = document.createElement('div');
+                banner.style.cssText = 'background:#dcfce7; color:#166534; padding:14px 20px; border-radius:8px; margin-bottom:16px; font-size:13px; font-weight:500; text-align:center;';
+                banner.innerHTML = '<strong>Email verifie avec succes !</strong><br><span style="font-size:12px; font-weight:400;">Votre adresse email a ete confirmee. Vous pouvez vous connecter.</span>';
+                var card = document.querySelector('.auth-card');
+                card.insertBefore(banner, card.querySelector('#loginView'));
+            });
     }
 
     // Handle password reset token
@@ -238,8 +242,10 @@
         var company = document.getElementById('signupCompany').value.trim();
         var email = document.getElementById('signupEmail').value.trim();
         var password = document.getElementById('signupPassword').value;
+        var passwordConfirm = document.getElementById('signupPasswordConfirm').value;
         if (!name || !email || !password) { showErr(err, 'Remplissez tous les champs obligatoires.'); return; }
         if (!checkPwStrength(document.getElementById('signupPassword'), document.getElementById('pwRules'))) { showErr(err, 'Le mot de passe ne respecte pas les critères de sécurité.'); return; }
+        if (password !== passwordConfirm) { showErr(err, 'Les mots de passe ne correspondent pas.'); return; }
         btn.disabled = true; btn.textContent = 'Création...'; err.style.display = 'none';
 
         fetch('/api/auth?action=signup', {

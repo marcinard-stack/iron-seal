@@ -68,7 +68,7 @@ export default async function handler(req, res) {
     if (action === 'signup' && req.method === 'POST') {
       var { email, password, name, company } = req.body;
       if (!email || !password || !name) return res.status(400).json({ error: 'email, password and name required' });
-      if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+      if (password.length < 9) return res.status(400).json({ error: 'Password must be at least 9 characters' });
 
       var existing = await sql`SELECT id FROM users WHERE email = ${email.toLowerCase().trim()}`;
       if (existing.length) return res.status(409).json({ error: 'Email already registered' });
@@ -84,12 +84,29 @@ export default async function handler(req, res) {
         RETURNING id, email, name
       `;
 
-      // Send verification email
-      var verifyLink = (req.headers.origin || 'https://deal-forge-tawny.vercel.app') + '/login?verify=' + verifyToken;
-      await sendAuthEmail(email.toLowerCase().trim(), 'Vérifiez votre email — deal-forge',
+      // Send welcome email
+      var cleanedEmail = email.toLowerCase().trim();
+      var homeLink = req.headers.origin || 'https://deal-forge-tawny.vercel.app';
+      await sendAuthEmail(cleanedEmail, 'Bienvenue sur deal-forge',
         authEmailLayout(
-          '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Bienvenue sur deal-forge</h2>'
-          + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 6px; text-align:justify;">Merci de vous etre inscrit. Cliquez sur le bouton ci-dessous pour verifier votre adresse email.</p>'
+          '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Bienvenue sur deal-forge, ' + name + ' !</h2>'
+          + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 12px; text-align:justify;">Vous venez de rejoindre deal-forge, la plateforme qui simplifie la relation freelance-client, du cadrage du besoin a la signature du devis.</p>'
+          + '<p style="font-size:13px; color:#6b6560; line-height:1.7; margin:0 0 8px; text-align:justify;"><strong>Ce qui vous attend :</strong></p>'
+          + '<p style="font-size:13px; color:#6b6560; line-height:1.8; margin:0 0 12px; text-align:justify;">'
+          + '&bull; Construisez vos cahiers des charges et devis en quelques clics<br>'
+          + '&bull; Partagez et collaborez en temps reel avec vos clients<br>'
+          + '&bull; Faites signer vos devis electroniquement, sans quitter l\'outil<br>'
+          + '&bull; Generez des PDF professionnels avec certificat de signature</p>'
+          + authBtn(homeLink + '/deals/draft', 'Commencer')
+          + '<p style="font-size:12px; color:#b1ada1; margin:16px 0 0; text-align:center;">Merci de votre confiance.<br>L\'equipe deal-forge</p>'
+        ));
+
+      // Send verification email
+      var verifyLink = homeLink + '/login?verify=' + verifyToken;
+      await sendAuthEmail(cleanedEmail, 'Verifiez votre email - deal-forge',
+        authEmailLayout(
+          '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Verifiez votre adresse email</h2>'
+          + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 6px; text-align:justify;">Une derniere etape pour securiser votre compte. Cliquez sur le bouton ci-dessous pour confirmer votre adresse email.</p>'
           + authBtn(verifyLink, 'Verifier mon email')
           + '<p style="font-size:11px; color:#b1ada1; margin:0; text-align:center;">Ce lien expire dans 24 heures.</p>'
         ));
@@ -270,9 +287,11 @@ export default async function handler(req, res) {
       var sessions = await sql`SELECT user_id FROM sessions WHERE token = ${auth} AND expires_at > NOW()`;
       if (!sessions.length) return res.status(401).json({ error: 'Session expired' });
       var userId = sessions[0].user_id;
-      var user = await sql`SELECT account_id FROM users WHERE id = ${userId}`;
+      var user = await sql`SELECT account_id, email, name FROM users WHERE id = ${userId}`;
       if (!user.length) return res.status(404).json({ error: 'User not found' });
       var accountId = user[0].account_id;
+      var deletedEmail = user[0].email;
+      var deletedName = user[0].name;
       // Delete in order: sessions, presence, payment_methods, addresses, then user, then account (if no other users)
       await sql`DELETE FROM sessions WHERE user_id = ${userId}`;
       await sql`DELETE FROM presence WHERE user_id = ${userId}`;
@@ -287,6 +306,16 @@ export default async function handler(req, res) {
       // Delete account if no other users
       var remaining = await sql`SELECT COUNT(*) as c FROM users WHERE account_id = ${accountId}`;
       if (parseInt(remaining[0].c) === 0) await sql`DELETE FROM accounts WHERE id = ${accountId}`;
+
+      // Send confirmation email
+      await sendAuthEmail(deletedEmail, 'Votre compte a ete supprime - deal-forge',
+        authEmailLayout(
+          '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Compte supprime</h2>'
+          + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 12px; text-align:justify;">' + deletedName + ', votre compte deal-forge a bien ete supprime. Toutes vos donnees personnelles ont ete effacees conformement au RGPD.</p>'
+          + '<p style="font-size:13px; color:#6b6560; line-height:1.7; margin:0; text-align:justify;">Les documents partages avec d\'autres utilisateurs restent accessibles uniquement par ces derniers.</p>'
+          + '<p style="font-size:12px; color:#b1ada1; margin:20px 0 0; text-align:center;">Merci d\'avoir utilise deal-forge.<br>L\'equipe deal-forge</p>'
+        ));
+
       return res.json({ ok: true });
     }
 
