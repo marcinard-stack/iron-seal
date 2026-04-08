@@ -213,20 +213,18 @@ export default async function handler(req, res) {
       if (!code) return res.status(400).json({ error: 'code required' });
 
       // Exchange code for access token
-      var redirectUri = (req.headers.origin || 'https://deal-forge-tawny.vercel.app') + '/login';
       var tokenRes = await fetch('https://github.com/login/oauth/access_token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
-          client_id: process.env.GITHUB_CLIENT_ID,
-          client_secret: process.env.GITHUB_CLIENT_SECRET,
-          code: code,
-          redirect_uri: redirectUri
+          client_id: 'Ov23liLfEe1OFq3vpdpA',
+          client_secret: '7c8db798c499153626485b7d5063c59bf9b85e0c',
+          code: code
         })
       });
       var tokenText = await tokenRes.text();
       var tokenData; try { tokenData = JSON.parse(tokenText); } catch(e) { return res.status(400).json({ error: 'GitHub response parse error', raw: tokenText.substring(0, 200) }); }
-      if (!tokenData.access_token) return res.status(400).json({ error: 'GitHub authentication failed', github_error: tokenData.error_description || tokenData.error, redirect_used: redirectUri });
+      if (!tokenData.access_token) return res.status(400).json({ error: 'GitHub authentication failed', github_error: tokenData.error_description || tokenData.error, code_received: code.substring(0, 8) + '...' });
 
       // Get user profile
       var ghUserRes = await fetch('https://api.github.com/user', {
