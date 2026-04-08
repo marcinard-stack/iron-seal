@@ -2089,6 +2089,14 @@
         checkScroll();
     }
 
+    function updateVersionDisplay() {
+        var vLabel = 'Version ' + (PROJECT_DATA.version || '1.0');
+        var cdcV = document.getElementById('cdcVersion');
+        var propV = document.getElementById('propaleVersion');
+        if (cdcV) cdcV.textContent = cdcV.textContent.replace(/Version [0-9.]+/, vLabel);
+        if (propV) propV.textContent = propV.textContent.replace(/Version [0-9.]+/, vLabel);
+    }
+
     function changeStatus(newStatus) {
         return fetch('/api/projects', {
             method: 'PUT',
@@ -2096,6 +2104,7 @@
             body: JSON.stringify({ slug: SLUG, status: newStatus })
         }).then(function(r) { return r.json(); }).then(function(p) {
             PROJECT_DATA = p;
+            updateVersionDisplay();
             setupStatusActions();
             showSaved();
         }).catch(function() { showSaveError(); });
