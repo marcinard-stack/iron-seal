@@ -161,19 +161,39 @@ export default async function handler(req, res) {
       `;
 
       var user;
+      var isNewUser = false;
       if (existing.length) {
         user = existing[0];
+        // Mark email as verified (Google verified it)
+        await sql`UPDATE users SET email_verified = true WHERE id = ${user.id} AND email_verified = false`;
       } else {
-        // Create account + user
+        isNewUser = true;
+        // Create account + user (email already verified by Google)
         var accounts = await sql`
           INSERT INTO accounts (name, type, plan) VALUES (${name || cleanEmail}, 'solo', 'free') RETURNING id
         `;
         var users = await sql`
-          INSERT INTO users (account_id, email, name, role)
-          VALUES (${accounts[0].id}, ${cleanEmail}, ${name || cleanEmail}, 'owner')
+          INSERT INTO users (account_id, email, name, role, email_verified)
+          VALUES (${accounts[0].id}, ${cleanEmail}, ${name || cleanEmail}, 'owner', true)
           RETURNING id, email, name, role, account_id
         `;
         user = { ...users[0], account_name: name || cleanEmail, account_type: 'solo' };
+
+        // Send welcome email
+        var homeLink = req.headers.origin || 'https://deal-forge-tawny.vercel.app';
+        await sendAuthEmail(cleanEmail, 'Bienvenue sur deal-forge',
+          authEmailLayout(
+            '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Bienvenue sur deal-forge, ' + (name || '') + ' !</h2>'
+            + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 12px; text-align:justify;">Vous venez de rejoindre deal-forge, la plateforme qui simplifie la relation freelance-client, du cadrage du besoin a la signature du devis.</p>'
+            + '<p style="font-size:13px; color:#6b6560; line-height:1.7; margin:0 0 8px; text-align:justify;"><strong>Ce qui vous attend :</strong></p>'
+            + '<p style="font-size:13px; color:#6b6560; line-height:1.8; margin:0 0 12px; text-align:justify;">'
+            + '&bull; Construisez vos cahiers des charges et devis en quelques clics<br>'
+            + '&bull; Partagez et collaborez en temps reel avec vos clients<br>'
+            + '&bull; Faites signer vos devis electroniquement, sans quitter l\'outil<br>'
+            + '&bull; Generez des PDF professionnels avec certificat de signature</p>'
+            + authBtn(homeLink + '/deals/draft', 'Commencer')
+            + '<p style="font-size:12px; color:#b1ada1; margin:16px 0 0; text-align:center;">Merci de votre confiance.<br>L\'equipe deal-forge</p>'
+          ));
       }
 
       // Create session
