@@ -51,6 +51,16 @@
             background: #fef2f2; color: #dc2626; font-size: 12px; padding: 8px 12px;
             border-radius: 6px; margin-bottom: 14px; display: none;
         }
+        .auth-success {
+            background: #f0fdf4; color: #166534; font-size: 12px; padding: 8px 12px;
+            border-radius: 6px; margin-bottom: 14px; display: none;
+        }
+        .forgot-link { font-size: 12px; color: #8a8780; cursor: pointer; text-align: right; margin-top: -8px; margin-bottom: 14px; }
+        .forgot-link:hover { color: #c15f3c; }
+        .pw-rules { margin: -6px 0 14px; font-size: 11px; }
+        .pw-rule { color: #b1ada1; display: flex; align-items: center; gap: 4px; margin-bottom: 2px; transition: color 0.15s; }
+        .pw-rule.pass { color: #166534; }
+        .pw-rule.fail { color: #dc2626; }
     </style>
 </head>
 <body>
@@ -67,6 +77,7 @@
         <input type="email" id="loginEmail" placeholder="ex : vous@exemple.com">
         <label>Mot de passe</label>
         <input type="password" id="loginPassword" placeholder="••••••••">
+        <div class="forgot-link" id="showForgot">Mot de passe oublié ?</div>
         <button id="loginBtn">Se connecter</button>
 
         <div style="display:flex; align-items:center; gap:12px; margin:20px 0 16px;">
@@ -95,7 +106,13 @@
         <label>Email</label>
         <input type="email" id="signupEmail" placeholder="ex : vous@exemple.com">
         <label>Mot de passe</label>
-        <input type="password" id="signupPassword" placeholder="6 caractères minimum">
+        <input type="password" id="signupPassword" placeholder="9 caractères minimum">
+        <div class="pw-rules" id="pwRules">
+            <div class="pw-rule" data-rule="length">● 9 caractères minimum</div>
+            <div class="pw-rule" data-rule="upper">● Une majuscule</div>
+            <div class="pw-rule" data-rule="lower">● Une minuscule</div>
+            <div class="pw-rule" data-rule="number">● Un chiffre</div>
+        </div>
         <button id="signupBtn">Créer mon compte</button>
 
         <div style="display:flex; align-items:center; gap:12px; margin:20px 0 16px;">
@@ -111,25 +128,79 @@
 
         <div class="auth-toggle">Déjà un compte ? <a id="showLogin">Se connecter</a></div>
     </div>
+
+    <!-- FORGOT PASSWORD -->
+    <div id="forgotView" style="display:none;">
+        <h2>Mot de passe oublié</h2>
+        <p>Entrez votre email, nous vous enverrons un lien de réinitialisation.</p>
+        <div class="auth-error" id="forgotError"></div>
+        <div class="auth-success" id="forgotSuccess"></div>
+        <label>Email</label>
+        <input type="email" id="forgotEmail" placeholder="ex : vous@exemple.com">
+        <button id="forgotBtn">Envoyer le lien</button>
+        <div class="auth-toggle"><a id="backToLogin">Retour à la connexion</a></div>
+    </div>
+
+    <!-- RESET PASSWORD -->
+    <div id="resetView" style="display:none;">
+        <h2>Nouveau mot de passe</h2>
+        <p>Choisissez un nouveau mot de passe.</p>
+        <div class="auth-error" id="resetError"></div>
+        <div class="auth-success" id="resetSuccess"></div>
+        <label>Nouveau mot de passe</label>
+        <input type="password" id="resetPassword" placeholder="9 caractères minimum">
+        <div class="pw-rules" id="resetPwRules">
+            <div class="pw-rule" data-rule="length">● 9 caractères minimum</div>
+            <div class="pw-rule" data-rule="upper">● Une majuscule</div>
+            <div class="pw-rule" data-rule="lower">● Une minuscule</div>
+            <div class="pw-rule" data-rule="number">● Un chiffre</div>
+        </div>
+        <label>Confirmer le mot de passe</label>
+        <input type="password" id="resetPasswordConfirm" placeholder="••••••••">
+        <button id="resetBtn" disabled>Réinitialiser</button>
+    </div>
 </div>
 
 <script>
 (function() {
+    var params = new URLSearchParams(window.location.search);
+
+    // Handle email verification
+    if (params.get('verify')) {
+        fetch('/api/auth?action=verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: params.get('verify') }) })
+            .then(function(r) { return r.json(); })
+            .then(function() { window.history.replaceState({}, '', '/login'); });
+        // Show a success message
+        setTimeout(function() {
+            var el = document.getElementById('loginError');
+            el.style.display = 'block'; el.style.background = '#f0fdf4'; el.style.color = '#166534';
+            el.textContent = 'Email vérifié avec succès. Vous pouvez vous connecter.';
+        }, 100);
+    }
+
+    // Handle password reset token
+    var resetToken = params.get('reset');
+
     // If already logged in, redirect
-    if (localStorage.getItem('df_token')) {
+    if (localStorage.getItem('df_token') && !resetToken) {
         window.location.href = '/deals/draft';
         return;
     }
 
     var loginView = document.getElementById('loginView');
     var signupView = document.getElementById('signupView');
+    var forgotView = document.getElementById('forgotView');
+    var resetView = document.getElementById('resetView');
+    var allViews = [loginView, signupView, forgotView, resetView];
 
-    document.getElementById('showSignup').addEventListener('click', function() {
-        loginView.style.display = 'none'; signupView.style.display = 'block';
-    });
-    document.getElementById('showLogin').addEventListener('click', function() {
-        signupView.style.display = 'none'; loginView.style.display = 'block';
-    });
+    function showView(v) { allViews.forEach(function(el) { el.style.display = 'none'; }); v.style.display = 'block'; }
+
+    if (resetToken) { showView(resetView); }
+
+    document.getElementById('showSignup').addEventListener('click', function() { showView(signupView); });
+    document.getElementById('showLogin').addEventListener('click', function() { showView(loginView); });
+    document.getElementById('showForgot').addEventListener('click', function() { showView(forgotView); });
+    document.getElementById('backToLogin').addEventListener('click', function() { showView(loginView); });
 
     // LOGIN
     document.getElementById('loginBtn').addEventListener('click', doLogin);
@@ -168,6 +239,7 @@
         var email = document.getElementById('signupEmail').value.trim();
         var password = document.getElementById('signupPassword').value;
         if (!name || !email || !password) { showErr(err, 'Remplissez tous les champs obligatoires.'); return; }
+        if (!checkPwStrength(document.getElementById('signupPassword'), document.getElementById('pwRules'))) { showErr(err, 'Le mot de passe ne respecte pas les critères de sécurité.'); return; }
         btn.disabled = true; btn.textContent = 'Création...'; err.style.display = 'none';
 
         fetch('/api/auth?action=signup', {
@@ -184,6 +256,64 @@
     }
 
     function showErr(el, msg) { el.textContent = msg; el.style.display = 'block'; }
+
+    // ===== PASSWORD STRENGTH =====
+    function checkPwStrength(input, rulesContainer) {
+        var pw = input.value;
+        var rules = { length: pw.length >= 9, upper: /[A-Z]/.test(pw), lower: /[a-z]/.test(pw), number: /[0-9]/.test(pw) };
+        rulesContainer.querySelectorAll('.pw-rule').forEach(function(el) {
+            var r = el.dataset.rule;
+            el.classList.remove('pass', 'fail');
+            if (pw.length === 0) return;
+            el.classList.add(rules[r] ? 'pass' : 'fail');
+        });
+        return rules.length && rules.upper && rules.lower && rules.number;
+    }
+    document.getElementById('signupPassword').addEventListener('input', function() {
+        checkPwStrength(this, document.getElementById('pwRules'));
+    });
+    document.getElementById('resetPassword').addEventListener('input', function() {
+        var ok = checkPwStrength(this, document.getElementById('resetPwRules'));
+        var match = this.value === document.getElementById('resetPasswordConfirm').value;
+        document.getElementById('resetBtn').disabled = !(ok && match && this.value.length > 0);
+    });
+    document.getElementById('resetPasswordConfirm').addEventListener('input', function() {
+        var pw = document.getElementById('resetPassword').value;
+        var ok = checkPwStrength(document.getElementById('resetPassword'), document.getElementById('resetPwRules'));
+        document.getElementById('resetBtn').disabled = !(ok && pw === this.value && pw.length > 0);
+    });
+
+    // ===== FORGOT PASSWORD =====
+    document.getElementById('forgotBtn').addEventListener('click', function() {
+        var btn = this; var err = document.getElementById('forgotError'); var success = document.getElementById('forgotSuccess');
+        var email = document.getElementById('forgotEmail').value.trim();
+        if (!email) { showErr(err, 'Entrez votre email.'); return; }
+        btn.disabled = true; btn.textContent = 'Envoi...'; err.style.display = 'none';
+        fetch('/api/auth?action=forgot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email }) })
+            .then(function() {
+                btn.disabled = false; btn.textContent = 'Envoyer le lien';
+                success.textContent = 'Si un compte existe avec cet email, un lien de réinitialisation a été envoyé.';
+                success.style.display = 'block';
+            }).catch(function() { btn.disabled = false; btn.textContent = 'Envoyer le lien'; showErr(err, 'Erreur réseau'); });
+    });
+    document.getElementById('forgotEmail').addEventListener('keydown', function(e) { if (e.key === 'Enter') document.getElementById('forgotBtn').click(); });
+
+    // ===== RESET PASSWORD =====
+    document.getElementById('resetBtn').addEventListener('click', function() {
+        var btn = this; var err = document.getElementById('resetError'); var success = document.getElementById('resetSuccess');
+        var pw = document.getElementById('resetPassword').value;
+        var confirm = document.getElementById('resetPasswordConfirm').value;
+        if (pw !== confirm) { showErr(err, 'Les mots de passe ne correspondent pas.'); return; }
+        btn.disabled = true; btn.textContent = 'Réinitialisation...'; err.style.display = 'none';
+        fetch('/api/auth?action=reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: resetToken, password: pw }) })
+            .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+            .then(function(res) {
+                if (!res.ok) { showErr(err, res.data.error); btn.disabled = false; btn.textContent = 'Réinitialiser'; return; }
+                success.textContent = 'Mot de passe modifié. Vous allez être redirigé...';
+                success.style.display = 'block';
+                setTimeout(function() { window.location.href = '/login'; }, 2000);
+            }).catch(function() { btn.disabled = false; btn.textContent = 'Réinitialiser'; showErr(err, 'Erreur réseau'); });
+    });
 
     // ===== GOOGLE OAUTH =====
     function handleGoogleLogin() {

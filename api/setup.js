@@ -289,6 +289,11 @@ export default async function handler(req, res) {
     await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id)`;
 
+    // Migrate users
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT false`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(100)`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_expires TIMESTAMPTZ`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS verify_token VARCHAR(100)`;
     // Migrate users: add password_hash + email_prefs
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_prefs JSONB NOT NULL DEFAULT '{"proposal_received":true,"back_to_draft":true,"comment_added":true}'::jsonb`;

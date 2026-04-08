@@ -1,6 +1,37 @@
 import { neon } from '@neondatabase/serverless';
 import crypto from 'crypto';
 
+async function sendAuthEmail(to, subject, html) {
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.RESEND_KEY },
+    body: JSON.stringify({ from: 'deal-forge <notifications@mail.blueheronlab.com>', to: to, subject: subject, html: html })
+  });
+}
+
+function authEmailLayout(content) {
+  return '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>'
+    + '<body style="margin:0; padding:0; background:#f4f3ee; font-family:-apple-system,system-ui,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,sans-serif;">'
+    + '<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f3ee; padding:32px 16px;"><tr><td align="center">'
+    + '<table width="520" cellpadding="0" cellspacing="0" style="max-width:520px;">'
+    + '<tr><td style="padding:0 0 24px;"><table width="100%" cellpadding="0" cellspacing="0"><tr>'
+    + '<td style="font-size:16px; font-weight:700; color:#2d2b35; letter-spacing:-0.02em;">deal-forge</td>'
+    + '<td align="right" style="font-size:11px; color:#b1ada1;">Proposition &amp; signature en ligne</td>'
+    + '</tr></table></td></tr>'
+    + '<tr><td style="background:white; border-radius:10px; padding:32px 36px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">'
+    + content + '</td></tr>'
+    + '<tr><td style="padding:24px 0 0; text-align:center;">'
+    + '<p style="font-size:11px; color:#b1ada1; margin:0;">deal-forge par Blue Heron Lab</p>'
+    + '</td></tr></table></td></tr></table></body></html>';
+}
+
+function authBtn(href, label) {
+  return '<table cellpadding="0" cellspacing="0" width="100%" style="margin:28px 0 12px;"><tr><td align="center">'
+    + '<table cellpadding="0" cellspacing="0"><tr><td style="background:#c15f3c; border-radius:8px;">'
+    + '<a href="' + href + '" style="display:inline-block; padding:13px 32px; color:white; text-decoration:none; font-size:14px; font-weight:600;">' + label + '</a>'
+    + '</td></tr></table></td></tr></table>';
+}
+
 function hashPassword(password) {
   return new Promise(function(resolve, reject) {
     var salt = crypto.randomBytes(16);
@@ -46,11 +77,22 @@ export default async function handler(req, res) {
         INSERT INTO accounts (name, type, plan) VALUES (${company || name}, 'solo', 'free') RETURNING id
       `;
       var passwordHash = await hashPassword(password);
+      var verifyToken = crypto.randomBytes(32).toString('base64url');
       var users = await sql`
-        INSERT INTO users (account_id, email, name, password_hash, role)
-        VALUES (${accounts[0].id}, ${email.toLowerCase().trim()}, ${name}, ${passwordHash}, 'owner')
+        INSERT INTO users (account_id, email, name, password_hash, role, verify_token)
+        VALUES (${accounts[0].id}, ${email.toLowerCase().trim()}, ${name}, ${passwordHash}, 'owner', ${verifyToken})
         RETURNING id, email, name
       `;
+
+      // Send verification email
+      var verifyLink = (req.headers.origin || 'https://deal-forge-tawny.vercel.app') + '/login?verify=' + verifyToken;
+      await sendAuthEmail(email.toLowerCase().trim(), 'Vérifiez votre email — deal-forge',
+        authEmailLayout(
+          '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Bienvenue sur deal-forge</h2>'
+          + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 6px; text-align:justify;">Merci de vous etre inscrit. Cliquez sur le bouton ci-dessous pour verifier votre adresse email.</p>'
+          + authBtn(verifyLink, 'Verifier mon email')
+          + '<p style="font-size:11px; color:#b1ada1; margin:0; text-align:center;">Ce lien expire dans 24 heures.</p>'
+        ));
       var token = crypto.randomBytes(32).toString('base64url');
       await sql`INSERT INTO sessions (user_id, token) VALUES (${users[0].id}, ${token})`;
 
@@ -179,7 +221,76 @@ export default async function handler(req, res) {
       }
     }
 
-    return res.status(400).json({ error: 'Invalid action. Use ?action=signup|login|logout|me' });
+    // ── FORGOT PASSWORD ──
+    if (action === 'forgot' && req.method === 'POST') {
+      var { email } = req.body;
+      if (!email) return res.status(400).json({ error: 'email required' });
+      var users = await sql`SELECT id, email FROM users WHERE email = ${email.toLowerCase().trim()}`;
+      if (!users.length) return res.json({ ok: true }); // Don't reveal if email exists
+      var resetToken = crypto.randomBytes(32).toString('base64url');
+      var expires = new Date(Date.now() + 3600000).toISOString(); // 1 hour
+      await sql`UPDATE users SET reset_token = ${resetToken}, reset_expires = ${expires} WHERE id = ${users[0].id}`;
+      var resetLink = (req.headers.origin || 'https://deal-forge-tawny.vercel.app') + '/login?reset=' + resetToken;
+      await sendAuthEmail(users[0].email, 'Reinitialiser votre mot de passe — deal-forge',
+        authEmailLayout(
+          '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Mot de passe oublie</h2>'
+          + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0; text-align:justify;">Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe. Si vous n\'avez pas fait cette demande, ignorez cet email.</p>'
+          + authBtn(resetLink, 'Nouveau mot de passe')
+          + '<p style="font-size:11px; color:#b1ada1; margin:0; text-align:center;">Ce lien expire dans 1 heure.</p>'
+        ));
+      return res.json({ ok: true });
+    }
+
+    // ── RESET PASSWORD ──
+    if (action === 'reset' && req.method === 'POST') {
+      var { token, password } = req.body;
+      if (!token || !password) return res.status(400).json({ error: 'token and password required' });
+      if (password.length < 9) return res.status(400).json({ error: 'Password must be at least 9 characters' });
+      var users = await sql`SELECT id FROM users WHERE reset_token = ${token} AND reset_expires > NOW()`;
+      if (!users.length) return res.status(400).json({ error: 'Invalid or expired reset link' });
+      var newHash = await hashPassword(password);
+      await sql`UPDATE users SET password_hash = ${newHash}, reset_token = NULL, reset_expires = NULL WHERE id = ${users[0].id}`;
+      return res.json({ ok: true });
+    }
+
+    // ── VERIFY EMAIL ──
+    if (action === 'verify' && req.method === 'POST') {
+      var { token } = req.body;
+      if (!token) return res.status(400).json({ error: 'token required' });
+      var users = await sql`SELECT id FROM users WHERE verify_token = ${token}`;
+      if (!users.length) return res.status(400).json({ error: 'Invalid verification link' });
+      await sql`UPDATE users SET email_verified = true, verify_token = NULL WHERE id = ${users[0].id}`;
+      return res.json({ ok: true });
+    }
+
+    // ── DELETE ACCOUNT ──
+    if (action === 'delete' && req.method === 'POST') {
+      var auth = (req.headers.authorization || '').replace('Bearer ', '');
+      if (!auth) return res.status(401).json({ error: 'Not authenticated' });
+      var sessions = await sql`SELECT user_id FROM sessions WHERE token = ${auth} AND expires_at > NOW()`;
+      if (!sessions.length) return res.status(401).json({ error: 'Session expired' });
+      var userId = sessions[0].user_id;
+      var user = await sql`SELECT account_id FROM users WHERE id = ${userId}`;
+      if (!user.length) return res.status(404).json({ error: 'User not found' });
+      var accountId = user[0].account_id;
+      // Delete in order: sessions, presence, payment_methods, addresses, then user, then account (if no other users)
+      await sql`DELETE FROM sessions WHERE user_id = ${userId}`;
+      await sql`DELETE FROM presence WHERE user_id = ${userId}`;
+      await sql`DELETE FROM payment_methods WHERE account_id = ${accountId}`;
+      await sql`DELETE FROM addresses WHERE account_id = ${accountId}`;
+      // Nullify project references but don't delete projects shared with others
+      await sql`UPDATE projects SET owner_account_id = NULL WHERE owner_account_id = ${accountId}`;
+      await sql`UPDATE projects SET freelance_account_id = NULL WHERE freelance_account_id = ${accountId}`;
+      await sql`UPDATE projects SET client_account_id = NULL WHERE client_account_id = ${accountId}`;
+      await sql`UPDATE comments SET user_id = NULL WHERE user_id = ${userId}`;
+      await sql`DELETE FROM users WHERE id = ${userId}`;
+      // Delete account if no other users
+      var remaining = await sql`SELECT COUNT(*) as c FROM users WHERE account_id = ${accountId}`;
+      if (parseInt(remaining[0].c) === 0) await sql`DELETE FROM accounts WHERE id = ${accountId}`;
+      return res.json({ ok: true });
+    }
+
+    return res.status(400).json({ error: 'Invalid action' });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: err.message });

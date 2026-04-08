@@ -224,6 +224,36 @@
         <button class="save-btn" id="saveBtn">Enregistrer</button>
         <span class="save-status" id="saveStatus">Enregistré</span>
     </div>
+
+    <div class="section-card" style="margin-top:40px; border: 1px solid #fecaca;">
+        <h2 style="color:#dc2626;">Zone de danger</h2>
+        <p style="font-size:13px; color:#6b6560; margin-bottom:14px;">La suppression de votre compte est définitive et irréversible.</p>
+        <button class="logout-btn" id="deleteStep1" style="color:#dc2626; border-color:#fecaca;">Supprimer mon compte</button>
+
+        <div id="deleteStep2" style="display:none; margin-top:16px; padding:16px; background:#fef2f2; border-radius:8px;">
+            <p style="font-size:13px; color:#dc2626; font-weight:600; margin-bottom:8px;">Êtes-vous sûr ?</p>
+            <p style="font-size:12px; color:#6b6560; margin-bottom:12px;">Cette action est irréversible. Toutes vos données personnelles seront supprimées.</p>
+            <div style="display:flex; gap:8px;">
+                <button class="logout-btn" id="deleteCancel1">Revenir en arrière</button>
+                <button class="logout-btn" id="deleteConfirm1" style="color:#dc2626; border-color:#fecaca;">Je confirme vouloir supprimer</button>
+            </div>
+        </div>
+
+        <div id="deleteStep3" style="display:none; margin-top:16px; padding:16px; background:#fef2f2; border-radius:8px;">
+            <p style="font-size:13px; color:#dc2626; font-weight:600; margin-bottom:8px;">Dernière étape</p>
+            <p style="font-size:12px; color:#6b6560; margin-bottom:6px;">En confirmant, les données suivantes seront supprimées :</p>
+            <ul style="font-size:12px; color:#6b6560; margin:0 0 8px 16px;">
+                <li>Votre compte et vos informations personnelles</li>
+                <li>Vos adresses et coordonnées bancaires</li>
+                <li>Vos sessions et préférences</li>
+            </ul>
+            <p style="font-size:12px; color:#6b6560; margin-bottom:12px;">Les devis liés à d'autres utilisateurs resteront accessibles uniquement par ces utilisateurs, de manière sécurisée. Conformément au RGPD.</p>
+            <div style="display:flex; gap:8px;">
+                <button class="logout-btn" id="deleteCancel2">Annuler</button>
+                <button class="save-btn" id="deleteFinal" style="background:#dc2626;">Supprimer définitivement mon compte</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -371,6 +401,23 @@
     document.getElementById('logoutBtn').addEventListener('click', function() {
         fetch('/api/auth?action=logout', { method: 'POST', headers: headers })
             .finally(function() {
+                localStorage.removeItem('df_token');
+                localStorage.removeItem('df_user');
+                window.location.href = '/login';
+            });
+    });
+
+    // ===== DELETE ACCOUNT =====
+    var s2 = document.getElementById('deleteStep2');
+    var s3 = document.getElementById('deleteStep3');
+    document.getElementById('deleteStep1').addEventListener('click', function() { this.style.display = 'none'; s2.style.display = 'block'; });
+    document.getElementById('deleteCancel1').addEventListener('click', function() { s2.style.display = 'none'; document.getElementById('deleteStep1').style.display = ''; });
+    document.getElementById('deleteConfirm1').addEventListener('click', function() { s2.style.display = 'none'; s3.style.display = 'block'; });
+    document.getElementById('deleteCancel2').addEventListener('click', function() { s3.style.display = 'none'; document.getElementById('deleteStep1').style.display = ''; });
+    document.getElementById('deleteFinal').addEventListener('click', function() {
+        this.disabled = true; this.textContent = 'Suppression...';
+        fetch('/api/auth?action=delete', { method: 'POST', headers: headers })
+            .then(function() {
                 localStorage.removeItem('df_token');
                 localStorage.removeItem('df_user');
                 window.location.href = '/login';
