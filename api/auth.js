@@ -213,10 +213,7 @@ export default async function handler(req, res) {
       if (!code) return res.status(400).json({ error: 'code required' });
 
       // Exchange code for access token (GitHub requires form-encoded, not JSON)
-      var ghClientId = process.env.GITHUB_CLIENT_ID || '';
-      var ghClientSecret = process.env.GITHUB_CLIENT_SECRET || '';
-      if (!ghClientId || !ghClientSecret) return res.status(500).json({ error: 'GitHub OAuth not configured', has_id: !!ghClientId, has_secret: !!ghClientSecret });
-      var formBody = 'client_id=' + encodeURIComponent(ghClientId) + '&client_secret=' + encodeURIComponent(ghClientSecret) + '&code=' + encodeURIComponent(code);
+      var formBody = 'client_id=Ov23liLfEe1OFq3vpdpA&client_secret=7c8db798c499153626485b7d5063c59bf9b85e0c&code=' + encodeURIComponent(code);
       var tokenRes = await fetch('https://github.com/login/oauth/access_token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
