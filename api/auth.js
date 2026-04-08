@@ -216,12 +216,11 @@ export default async function handler(req, res) {
       var ghClientId = process.env.GITHUB_CLIENT_ID || '';
       var ghClientSecret = process.env.GITHUB_CLIENT_SECRET || '';
       if (!ghClientId || !ghClientSecret) return res.status(500).json({ error: 'GitHub OAuth not configured', has_id: !!ghClientId, has_secret: !!ghClientSecret });
+      var formBody = 'client_id=' + encodeURIComponent(ghClientId) + '&client_secret=' + encodeURIComponent(ghClientSecret) + '&code=' + encodeURIComponent(code);
       var tokenRes = await fetch('https://github.com/login/oauth/access_token', {
         method: 'POST',
-        headers: { 'Accept': 'application/json' },
-        body: 'client_id=' + encodeURIComponent(process.env.GITHUB_CLIENT_ID)
-          + '&client_secret=' + encodeURIComponent(process.env.GITHUB_CLIENT_SECRET)
-          + '&code=' + encodeURIComponent(code)
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
+        body: formBody
       });
       var tokenData = await tokenRes.json();
       if (!tokenData.access_token) return res.status(400).json({ error: 'GitHub authentication failed', github_error: tokenData.error_description || tokenData.error });
