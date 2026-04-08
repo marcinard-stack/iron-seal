@@ -5,7 +5,7 @@ async function sendAuthEmail(to, subject, html) {
   await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.RESEND_KEY },
-    body: JSON.stringify({ from: 'deal-forge <notifications@mail.blueheronlab.com>', to: to, subject: subject, html: html })
+    body: JSON.stringify({ from: 'Iron Seal <notifications@mail.blueheronlab.com>', to: to, subject: subject, html: html })
   });
 }
 
@@ -15,13 +15,13 @@ function authEmailLayout(content) {
     + '<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f3ee; padding:32px 16px;"><tr><td align="center">'
     + '<table width="520" cellpadding="0" cellspacing="0" style="max-width:520px;">'
     + '<tr><td style="padding:0 0 24px;"><table width="100%" cellpadding="0" cellspacing="0"><tr>'
-    + '<td style="font-size:16px; font-weight:700; color:#2d2b35; letter-spacing:-0.02em;">deal-forge</td>'
+    + '<td style="font-size:16px; font-weight:700; color:#2d2b35; letter-spacing:-0.02em;">Iron Seal</td>'
     + '<td align="right" style="font-size:11px; color:#b1ada1;">Proposition &amp; signature en ligne</td>'
     + '</tr></table></td></tr>'
     + '<tr><td style="background:white; border-radius:10px; padding:32px 36px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">'
     + content + '</td></tr>'
     + '<tr><td style="padding:24px 0 0; text-align:center;">'
-    + '<p style="font-size:11px; color:#b1ada1; margin:0;">deal-forge par Blue Heron Lab</p>'
+    + '<p style="font-size:11px; color:#b1ada1; margin:0;">Iron Seal par Blue Heron Lab</p>'
     + '</td></tr></table></td></tr></table></body></html>';
 }
 
@@ -86,11 +86,11 @@ export default async function handler(req, res) {
 
       // Send welcome email
       var cleanedEmail = email.toLowerCase().trim();
-      var homeLink = req.headers.origin || 'https://deal-forge-tawny.vercel.app';
-      await sendAuthEmail(cleanedEmail, 'Bienvenue sur deal-forge',
+      var homeLink = req.headers.origin || 'https://Iron Seal-tawny.vercel.app';
+      await sendAuthEmail(cleanedEmail, 'Bienvenue sur Iron Seal',
         authEmailLayout(
-          '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Bienvenue sur deal-forge, ' + name + ' !</h2>'
-          + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 12px; text-align:justify;">Vous venez de rejoindre deal-forge, la plateforme qui simplifie la relation freelance-client, du cadrage du besoin a la signature du devis.</p>'
+          '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Bienvenue sur Iron Seal, ' + name + ' !</h2>'
+          + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 12px; text-align:justify;">Vous venez de rejoindre Iron Seal, la plateforme qui simplifie la relation freelance-client, du cadrage du besoin a la signature du devis.</p>'
           + '<p style="font-size:13px; color:#6b6560; line-height:1.7; margin:0 0 8px; text-align:justify;"><strong>Ce qui vous attend :</strong></p>'
           + '<p style="font-size:13px; color:#6b6560; line-height:1.8; margin:0 0 12px; text-align:justify;">'
           + '&bull; Construisez vos cahiers des charges et devis en quelques clics<br>'
@@ -98,12 +98,12 @@ export default async function handler(req, res) {
           + '&bull; Faites signer vos devis electroniquement, sans quitter l\'outil<br>'
           + '&bull; Generez des PDF professionnels avec certificat de signature</p>'
           + authBtn(homeLink + '/deals/draft', 'Commencer')
-          + '<p style="font-size:12px; color:#b1ada1; margin:16px 0 0; text-align:center;">Merci de votre confiance.<br>L\'equipe deal-forge</p>'
+          + '<p style="font-size:12px; color:#b1ada1; margin:16px 0 0; text-align:center;">Merci de votre confiance.<br>L\'equipe Iron Seal</p>'
         ));
 
       // Send verification email
       var verifyLink = homeLink + '/login?verify=' + verifyToken;
-      await sendAuthEmail(cleanedEmail, 'Verifiez votre email - deal-forge',
+      await sendAuthEmail(cleanedEmail, 'Verifiez votre email - Iron Seal',
         authEmailLayout(
           '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Verifiez votre adresse email</h2>'
           + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 6px; text-align:justify;">Une derniere etape pour securiser votre compte. Cliquez sur le bouton ci-dessous pour confirmer votre adresse email.</p>'
@@ -180,11 +180,11 @@ export default async function handler(req, res) {
         user = { ...users[0], account_name: name || cleanEmail, account_type: 'solo' };
 
         // Send welcome email
-        var homeLink = req.headers.origin || 'https://deal-forge-tawny.vercel.app';
-        await sendAuthEmail(cleanEmail, 'Bienvenue sur deal-forge',
+        var homeLink = req.headers.origin || 'https://Iron Seal-tawny.vercel.app';
+        await sendAuthEmail(cleanEmail, 'Bienvenue sur Iron Seal',
           authEmailLayout(
-            '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Bienvenue sur deal-forge, ' + (name || '') + ' !</h2>'
-            + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 12px; text-align:justify;">Vous venez de rejoindre deal-forge, la plateforme qui simplifie la relation freelance-client, du cadrage du besoin a la signature du devis.</p>'
+            '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Bienvenue sur Iron Seal, ' + (name || '') + ' !</h2>'
+            + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 12px; text-align:justify;">Vous venez de rejoindre Iron Seal, la plateforme qui simplifie la relation freelance-client, du cadrage du besoin a la signature du devis.</p>'
             + '<p style="font-size:13px; color:#6b6560; line-height:1.7; margin:0 0 8px; text-align:justify;"><strong>Ce qui vous attend :</strong></p>'
             + '<p style="font-size:13px; color:#6b6560; line-height:1.8; margin:0 0 12px; text-align:justify;">'
             + '&bull; Construisez vos cahiers des charges et devis en quelques clics<br>'
@@ -192,7 +192,7 @@ export default async function handler(req, res) {
             + '&bull; Faites signer vos devis electroniquement, sans quitter l\'outil<br>'
             + '&bull; Generez des PDF professionnels avec certificat de signature</p>'
             + authBtn(homeLink + '/deals/draft', 'Commencer')
-            + '<p style="font-size:12px; color:#b1ada1; margin:16px 0 0; text-align:center;">Merci de votre confiance.<br>L\'equipe deal-forge</p>'
+            + '<p style="font-size:12px; color:#b1ada1; margin:16px 0 0; text-align:center;">Merci de votre confiance.<br>L\'equipe Iron Seal</p>'
           ));
       }
 
@@ -224,7 +224,7 @@ export default async function handler(req, res) {
 
       // Get user profile
       var ghUserRes = await fetch('https://api.github.com/user', {
-        headers: { 'Authorization': 'Bearer ' + tokenData.access_token, 'User-Agent': 'deal-forge' }
+        headers: { 'Authorization': 'Bearer ' + tokenData.access_token, 'User-Agent': 'Iron Seal' }
       });
       var ghUser = await ghUserRes.json();
 
@@ -232,7 +232,7 @@ export default async function handler(req, res) {
       var ghEmail = ghUser.email;
       if (!ghEmail) {
         var emailsRes = await fetch('https://api.github.com/user/emails', {
-          headers: { 'Authorization': 'Bearer ' + tokenData.access_token, 'User-Agent': 'deal-forge' }
+          headers: { 'Authorization': 'Bearer ' + tokenData.access_token, 'User-Agent': 'Iron Seal' }
         });
         var emails = await emailsRes.json();
         var primary = emails.find(function(e) { return e.primary; }) || emails[0];
@@ -267,11 +267,11 @@ export default async function handler(req, res) {
         user = { ...users[0], account_name: ghName, account_type: 'solo' };
 
         // Send welcome email
-        var homeLink = req.headers.origin || 'https://deal-forge-tawny.vercel.app';
-        await sendAuthEmail(cleanEmail, 'Bienvenue sur deal-forge',
+        var homeLink = req.headers.origin || 'https://Iron Seal-tawny.vercel.app';
+        await sendAuthEmail(cleanEmail, 'Bienvenue sur Iron Seal',
           authEmailLayout(
-            '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Bienvenue sur deal-forge, ' + ghName + ' !</h2>'
-            + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 12px; text-align:justify;">Vous venez de rejoindre deal-forge, la plateforme qui simplifie la relation freelance-client, du cadrage du besoin a la signature du devis.</p>'
+            '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Bienvenue sur Iron Seal, ' + ghName + ' !</h2>'
+            + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 12px; text-align:justify;">Vous venez de rejoindre Iron Seal, la plateforme qui simplifie la relation freelance-client, du cadrage du besoin a la signature du devis.</p>'
             + '<p style="font-size:13px; color:#6b6560; line-height:1.7; margin:0 0 8px; text-align:justify;"><strong>Ce qui vous attend :</strong></p>'
             + '<p style="font-size:13px; color:#6b6560; line-height:1.8; margin:0 0 12px; text-align:justify;">'
             + '&bull; Construisez vos cahiers des charges et devis en quelques clics<br>'
@@ -279,7 +279,7 @@ export default async function handler(req, res) {
             + '&bull; Faites signer vos devis electroniquement, sans quitter l\'outil<br>'
             + '&bull; Generez des PDF professionnels avec certificat de signature</p>'
             + authBtn(homeLink + '/deals/draft', 'Commencer')
-            + '<p style="font-size:12px; color:#b1ada1; margin:16px 0 0; text-align:center;">Merci de votre confiance.<br>L\'equipe deal-forge</p>'
+            + '<p style="font-size:12px; color:#b1ada1; margin:16px 0 0; text-align:center;">Merci de votre confiance.<br>L\'equipe Iron Seal</p>'
           ));
       }
 
@@ -353,8 +353,8 @@ export default async function handler(req, res) {
       var resetToken = crypto.randomBytes(32).toString('base64url');
       var expires = new Date(Date.now() + 3600000).toISOString(); // 1 hour
       await sql`UPDATE users SET reset_token = ${resetToken}, reset_expires = ${expires} WHERE id = ${users[0].id}`;
-      var resetLink = (req.headers.origin || 'https://deal-forge-tawny.vercel.app') + '/login?reset=' + resetToken;
-      await sendAuthEmail(users[0].email, 'Reinitialiser votre mot de passe — deal-forge',
+      var resetLink = (req.headers.origin || 'https://Iron Seal-tawny.vercel.app') + '/login?reset=' + resetToken;
+      await sendAuthEmail(users[0].email, 'Reinitialiser votre mot de passe — Iron Seal',
         authEmailLayout(
           '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Mot de passe oublie</h2>'
           + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0; text-align:justify;">Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe. Si vous n\'avez pas fait cette demande, ignorez cet email.</p>'
@@ -414,12 +414,12 @@ export default async function handler(req, res) {
       if (parseInt(remaining[0].c) === 0) await sql`DELETE FROM accounts WHERE id = ${accountId}`;
 
       // Send confirmation email
-      await sendAuthEmail(deletedEmail, 'Votre compte a ete supprime - deal-forge',
+      await sendAuthEmail(deletedEmail, 'Votre compte a ete supprime - Iron Seal',
         authEmailLayout(
           '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Compte supprime</h2>'
-          + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 12px; text-align:justify;">' + deletedName + ', votre compte deal-forge a bien ete supprime. Toutes vos donnees personnelles ont ete effacees conformement au RGPD.</p>'
+          + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 12px; text-align:justify;">' + deletedName + ', votre compte Iron Seal a bien ete supprime. Toutes vos donnees personnelles ont ete effacees conformement au RGPD.</p>'
           + '<p style="font-size:13px; color:#6b6560; line-height:1.7; margin:0; text-align:justify;">Les documents partages avec d\'autres utilisateurs restent accessibles uniquement par ces derniers.</p>'
-          + '<p style="font-size:12px; color:#b1ada1; margin:20px 0 0; text-align:center;">Merci d\'avoir utilise deal-forge.<br>L\'equipe deal-forge</p>'
+          + '<p style="font-size:12px; color:#b1ada1; margin:20px 0 0; text-align:center;">Merci d\'avoir utilise Iron Seal.<br>L\'equipe Iron Seal</p>'
         ));
 
       return res.json({ ok: true });

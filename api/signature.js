@@ -3,7 +3,7 @@ import crypto from 'crypto';
 
 async function sendEmail(to, subject, html, attachments) {
   var payload = {
-    from: 'deal-forge <notifications@mail.blueheronlab.com>',
+    from: 'Iron Seal <notifications@mail.blueheronlab.com>',
     to: to,
     subject: subject,
     html: html
@@ -27,7 +27,7 @@ function signedEmail(projectTitle, signerName, signedAt, hash) {
     + '<table width="520" cellpadding="0" cellspacing="0" style="max-width:520px;">'
     + '<tr><td style="padding:0 0 24px;">'
     + '<table width="100%" cellpadding="0" cellspacing="0"><tr>'
-    + '<td style="font-size:16px; font-weight:700; color:#2d2b35; letter-spacing:-0.02em;">deal-forge</td>'
+    + '<td style="font-size:16px; font-weight:700; color:#2d2b35; letter-spacing:-0.02em;">Iron Seal</td>'
     + '<td align="right" style="font-size:11px; color:#b1ada1;">Proposition &amp; signature en ligne</td>'
     + '</tr></table></td></tr>'
     + '<tr><td style="background:white; border-radius:10px; padding:32px 36px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">'
@@ -41,12 +41,12 @@ function signedEmail(projectTitle, signerName, signedAt, hash) {
     + '<p style="font-size:13px; color:#4a4850; margin:0 0 6px;"><strong>Signataire :</strong> ' + signerName + '</p>'
     + '<p style="font-size:11px; color:#8a8780; margin:0; word-break:break-all;"><strong>Hash :</strong> ' + hash.substring(0, 32) + '...</p>'
     + '</td></tr></table>'
-    + '<p style="font-size:13px; color:#6b6560; line-height:1.6; margin:0;">Le PDF signe est joint a cet email et disponible depuis l\'interface deal-forge.</p>'
+    + '<p style="font-size:13px; color:#6b6560; line-height:1.6; margin:0;">Le PDF signe est joint a cet email et disponible depuis l\'interface Iron Seal.</p>'
     + '</td></tr>'
     + '<tr><td style="padding:24px 0 0; text-align:center;">'
-    + '<p style="font-size:11px; color:#b1ada1; margin:0 0 6px;">deal-forge par Blue Heron Lab</p>'
-    + '<p style="font-size:10px; color:#c4c2bc; margin:0;">Vous recevez cet email car vous etes partie prenante d\'un projet sur deal-forge.<br>'
-    + 'Pour ne plus recevoir ces notifications, modifiez vos <a href="https://deal-forge-tawny.vercel.app/settings" style="color:#c4c2bc;">preferences email</a>.</p>'
+    + '<p style="font-size:11px; color:#b1ada1; margin:0 0 6px;">Iron Seal par Blue Heron Lab</p>'
+    + '<p style="font-size:10px; color:#c4c2bc; margin:0;">Vous recevez cet email car vous etes partie prenante d\'un projet sur Iron Seal.<br>'
+    + 'Pour ne plus recevoir ces notifications, modifiez vos <a href="https://Iron Seal-tawny.vercel.app/settings" style="color:#c4c2bc;">preferences email</a>.</p>'
     + '</td></tr></table></td></tr></table></body></html>';
 }
 
