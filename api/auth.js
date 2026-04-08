@@ -224,8 +224,9 @@ export default async function handler(req, res) {
           redirect_uri: redirectUri
         })
       });
-      var tokenData = await tokenRes.json();
-      if (!tokenData.access_token) return res.status(400).json({ error: 'GitHub authentication failed', github_error: tokenData.error_description || tokenData.error, has_client_id: !!process.env.GITHUB_CLIENT_ID, has_secret: !!process.env.GITHUB_CLIENT_SECRET });
+      var tokenText = await tokenRes.text();
+      var tokenData; try { tokenData = JSON.parse(tokenText); } catch(e) { return res.status(400).json({ error: 'GitHub response parse error', raw: tokenText.substring(0, 200) }); }
+      if (!tokenData.access_token) return res.status(400).json({ error: 'GitHub authentication failed', github_error: tokenData.error_description || tokenData.error, redirect_used: redirectUri });
 
       // Get user profile
       var ghUserRes = await fetch('https://api.github.com/user', {
