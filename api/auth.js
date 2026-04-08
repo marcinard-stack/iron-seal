@@ -87,6 +87,47 @@ export default async function handler(req, res) {
       });
     }
 
+    // ── GOOGLE LOGIN ──
+    if (action === 'google' && req.method === 'POST') {
+      var { email, name, google_id } = req.body;
+      if (!email) return res.status(400).json({ error: 'email required' });
+      var cleanEmail = email.toLowerCase().trim();
+
+      // Find existing user
+      var existing = await sql`
+        SELECT u.id, u.email, u.name, u.account_id, u.role,
+               a.name as account_name, a.type as account_type
+        FROM users u JOIN accounts a ON a.id = u.account_id
+        WHERE u.email = ${cleanEmail}
+      `;
+
+      var user;
+      if (existing.length) {
+        user = existing[0];
+      } else {
+        // Create account + user
+        var accounts = await sql`
+          INSERT INTO accounts (name, type, plan) VALUES (${name || cleanEmail}, 'solo', 'free') RETURNING id
+        `;
+        var users = await sql`
+          INSERT INTO users (account_id, email, name, role)
+          VALUES (${accounts[0].id}, ${cleanEmail}, ${name || cleanEmail}, 'owner')
+          RETURNING id, email, name, role, account_id
+        `;
+        user = { ...users[0], account_name: name || cleanEmail, account_type: 'solo' };
+      }
+
+      // Create session
+      var token = crypto.randomBytes(32).toString('base64url');
+      await sql`INSERT INTO sessions (user_id, token) VALUES (${user.id}, ${token})`;
+
+      return res.json({
+        token: token,
+        user: { id: user.id, email: user.email, name: user.name, role: user.role },
+        account: { id: user.account_id, name: user.account_name, type: user.account_type }
+      });
+    }
+
     // ── LOGOUT ──
     if (action === 'logout' && req.method === 'POST') {
       var auth = (req.headers.authorization || '').replace('Bearer ', '');
