@@ -243,6 +243,20 @@ export default async function handler(req, res) {
     await sql`CREATE INDEX IF NOT EXISTS idx_project_guests_project ON project_guests(project_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_project_guests_email ON project_guests(email)`;
 
+    // ── DEVIS VERSIONS ──
+    await sql`
+      CREATE TABLE IF NOT EXISTS devis_versions (
+        id SERIAL PRIMARY KEY,
+        project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        version VARCHAR(20) NOT NULL,
+        data_json JSONB NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        proposed_at TIMESTAMPTZ,
+        status VARCHAR(50) NOT NULL DEFAULT 'proposed'
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_devis_versions_project ON devis_versions(project_id)`;
+
     // ── DEVIS SIGNATURES ──
     await sql`
       CREATE TABLE IF NOT EXISTS devis_signatures (
@@ -261,6 +275,8 @@ export default async function handler(req, res) {
     `;
     await sql`CREATE INDEX IF NOT EXISTS idx_signatures_project ON devis_signatures(project_id)`;
     await sql`ALTER TABLE devis_signatures ADD COLUMN IF NOT EXISTS city VARCHAR(200)`;
+    await sql`ALTER TABLE devis_signatures ADD COLUMN IF NOT EXISTS version_id INTEGER REFERENCES devis_versions(id)`;
+    await sql`ALTER TABLE devis_signatures ADD COLUMN IF NOT EXISTS status VARCHAR(50) NOT NULL DEFAULT 'active'`;
 
     // ── PRESENCE ──
     await sql`

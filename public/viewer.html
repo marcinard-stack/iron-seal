@@ -2063,14 +2063,17 @@
             // Show signed banner
             fetch('/api/signature?slug=' + encodeURIComponent(SLUG))
                 .then(function(r) { return r.json(); })
-                .then(function(sig) {
+                .then(function(data) {
+                    var sig = data.signature;
                     if (!sig) return;
                     var d = new Date(sig.signed_at);
                     var dateStr = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+                    var versionLabel = sig.version ? ' (v' + sig.version + ')' : '';
                     banner.className = 'status-banner signed';
                     banner.style.display = 'block';
-                    banner.innerHTML = 'Devis signé par <strong>' + sig.signer_name + '</strong> le ' + dateStr
-                        + '<div class="signed-info">Hash : ' + sig.devis_hash.substring(0, 16) + '...</div>';
+                    banner.innerHTML = 'Devis signé' + versionLabel + ' par <strong>' + sig.signer_name + '</strong> le ' + dateStr
+                        + '<div class="signed-info">Hash : ' + sig.devis_hash.substring(0, 16) + '...'
+                        + (data.versions && data.versions.length > 1 ? ' — ' + data.versions.length + ' versions' : '') + '</div>';
                 });
         }
     }

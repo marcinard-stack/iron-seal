@@ -66,11 +66,20 @@ export default async function handler(req, res) {
       var projects = await sql`SELECT id FROM projects WHERE slug = ${slug}`;
       if (!projects.length) return res.status(404).json({ error: 'project not found' });
       var sigs = await sql`
-        SELECT id, signer_name, signer_email, devis_hash, ip_address, signed_at
-        FROM devis_signatures WHERE project_id = ${projects[0].id}
-        ORDER BY signed_at DESC LIMIT 1
+        SELECT s.id, s.signer_name, s.signer_email, s.devis_hash, s.ip_address, s.signed_at, s.status,
+               v.version
+        FROM devis_signatures s
+        LEFT JOIN devis_versions v ON v.id = s.version_id
+        WHERE s.project_id = ${projects[0].id} AND s.status = 'active'
+        ORDER BY s.signed_at DESC LIMIT 1
       `;
-      return res.json(sigs.length ? sigs[0] : null);
+      // Also get version history
+      var versions = await sql`
+        SELECT id, version, status, created_at, proposed_at
+        FROM devis_versions WHERE project_id = ${projects[0].id}
+        ORDER BY created_at DESC
+      `;
+      return res.json({ signature: sigs.length ? sigs[0] : null, versions: versions });
     }
 
     // POST: sign the devis OR upload PDF
@@ -124,10 +133,20 @@ export default async function handler(req, res) {
       var ip = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.connection?.remoteAddress || 'unknown';
       if (typeof ip === 'string' && ip.includes(',')) ip = ip.split(',')[0].trim();
 
+      // Get current devis version
+      var currentVersion = await sql`SELECT id FROM devis_versions WHERE project_id = ${project.id} AND status = 'proposed' ORDER BY created_at DESC LIMIT 1`;
+      var versionId = currentVersion.length ? currentVersion[0].id : null;
+
+      // Mark previous signatures as superseded
+      await sql`UPDATE devis_signatures SET status = 'superseded' WHERE project_id = ${project.id} AND status = 'active'`;
+
+      // Mark current version as signed
+      if (versionId) await sql`UPDATE devis_versions SET status = 'signed' WHERE id = ${versionId}`;
+
       // Save signature
       var rows = await sql`
-        INSERT INTO devis_signatures (project_id, signer_user_id, signer_name, signer_email, devis_hash, ip_address, city)
-        VALUES (${project.id}, ${signer.id}, ${signer_name}, ${signer.email}, ${devis_hash}, ${ip}, ${city || null})
+        INSERT INTO devis_signatures (project_id, signer_user_id, signer_name, signer_email, devis_hash, ip_address, city, version_id, status)
+        VALUES (${project.id}, ${signer.id}, ${signer_name}, ${signer.email}, ${devis_hash}, ${ip}, ${city || null}, ${versionId}, 'active')
         RETURNING *
       `;
 

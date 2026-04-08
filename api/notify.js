@@ -95,6 +95,58 @@ function backToDraftEmail(projectTitle, requesterName, isClient, link, message) 
   );
 }
 
+async function createDevisVersion(sql, projectId) {
+  // Get all features + jobs
+  var features = await sql`SELECT id, position, code, title, description, is_transverse FROM features WHERE project_id = ${projectId} ORDER BY position`;
+  var featureIds = features.map(function(f) { return f.id; });
+  var jobs = [];
+  if (featureIds.length) {
+    jobs = await sql`SELECT id, feature_id, position, description, jh, type, priority, is_offered, included FROM jobs WHERE feature_id = ANY(${featureIds}) ORDER BY position`;
+  }
+  var exclusions = await sql`SELECT position, title, description FROM exclusions WHERE project_id = ${projectId} ORDER BY position`;
+
+  var data = {
+    features: features.map(function(f) {
+      return { ...f, jobs: jobs.filter(function(j) { return j.feature_id === f.id; }) };
+    }),
+    exclusions: exclusions
+  };
+
+  // Compute next version number
+  var prev = await sql`SELECT version FROM devis_versions WHERE project_id = ${projectId} ORDER BY created_at DESC LIMIT 1`;
+  var version = '1.0';
+  if (prev.length) {
+    var parts = prev[0].version.split('.');
+    // Check if scope changed significantly (features added/removed = major, else minor)
+    var prevData = await sql`SELECT data_json FROM devis_versions WHERE project_id = ${projectId} ORDER BY created_at DESC LIMIT 1`;
+    if (prevData.length) {
+      var oldFeats = prevData[0].data_json.features || [];
+      var oldCodes = oldFeats.map(function(f) { return f.code; }).sort().join(',');
+      var newCodes = features.map(function(f) { return f.code; }).sort().join(',');
+      if (oldCodes !== newCodes) {
+        version = (parseInt(parts[0]) + 1) + '.0';
+      } else {
+        version = parts[0] + '.' + (parseInt(parts[1]) + 1);
+      }
+    }
+  }
+
+  // Mark previous versions as superseded
+  await sql`UPDATE devis_versions SET status = 'superseded' WHERE project_id = ${projectId} AND status = 'proposed'`;
+
+  // Insert new version
+  var rows = await sql`
+    INSERT INTO devis_versions (project_id, version, data_json, proposed_at, status)
+    VALUES (${projectId}, ${version}, ${JSON.stringify(data)}::jsonb, NOW(), 'proposed')
+    RETURNING id, version
+  `;
+
+  // Update project version
+  await sql`UPDATE projects SET version = ${version} WHERE id = ${projectId}`;
+
+  return rows[0];
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
@@ -145,6 +197,9 @@ export default async function handler(req, res) {
       // Link client to project
       await sql`UPDATE projects SET client_account_id = ${clientAccountId}, updated_at = NOW() WHERE slug = ${slug}`;
 
+      // Create devis version snapshot
+      var devisVersion = await createDevisVersion(sql, project.id);
+
       // Send magic link email
       var senderName = sender ? sender.name : 'Un freelance';
       var magicToken = await createMagicToken(sql, cleanEmail);
@@ -158,6 +213,9 @@ export default async function handler(req, res) {
     }
 
     if (type === 'proposed') {
+      // Create devis version snapshot
+      var devisVersion = await createDevisVersion(sql, project.id);
+
       // Freelance proposes → notify client
       if (!project.client_account_id) return res.json({ ok: true, skipped: 'no client account on project' });
       var clients = await sql`SELECT email, name, email_prefs FROM users WHERE account_id = ${project.client_account_id}`;
