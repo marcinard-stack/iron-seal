@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
     <title>Iron Seal — CDC & Proposition</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&display=swap" rel="stylesheet">
@@ -393,7 +393,7 @@
         .project-action-bar {
             position: fixed; bottom: 0; left: 0; right: 0;
             background: linear-gradient(to bottom, rgba(244,243,238,0) 0%, #f4f3ee 30%);
-            padding: 32px 0 24px; text-align: right; z-index: 180;
+            padding: 32px 0 calc(24px + env(safe-area-inset-bottom, 0px)); text-align: right; z-index: 180;
             display: none; pointer-events: none;
         }
         .project-action-bar-inner {
@@ -621,6 +621,7 @@
             .email-gate-card { width: 95vw; padding: 24px 20px; }
 
             /* Action bar */
+            .project-action-bar { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
             .project-action-bar-inner { padding: 0 16px; }
             .action-btn { font-size: 14px; padding: 12px 20px; }
 
