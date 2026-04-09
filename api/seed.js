@@ -76,7 +76,8 @@ export default async function handler(req, res) {
       }
     }
 
-    // Reset ALL conversations for test project 2
+    // Clean conversations: delete empty messages + reset project 4 convos
+    await sql`DELETE FROM chat_messages WHERE TRIM(content) = '' OR content IS NULL`;
     await sql`DELETE FROM chat_messages WHERE conversation_id IN (SELECT id FROM conversations WHERE project_id = 4)`;
     await sql`DELETE FROM conversations WHERE project_id = 4`;
 
