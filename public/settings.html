@@ -78,8 +78,9 @@
         .save-bar {
             position: fixed; bottom: 0; left: 0; right: 0;
             background: linear-gradient(to bottom, rgba(244,243,238,0) 0%, #f4f3ee 30%);
-            padding: 24px 0 calc(20px + env(safe-area-inset-bottom, 0px));
-            z-index: 180; display: flex; justify-content: center; align-items: center; gap: 12px;
+            padding: 24px 36px calc(20px + env(safe-area-inset-bottom, 0px));
+            z-index: 180; display: flex; justify-content: flex-end; align-items: center; gap: 12px;
+            max-width: 640px; margin: 0 auto; left: 0; right: 0;
         }
         .save-bar .save-btn { transition: all 0.2s; }
         .save-bar .save-btn.idle { background: #b1ada1; cursor: default; }
@@ -477,6 +478,7 @@
 
     document.getElementById('avatarConfirm').addEventListener('click', function() {
         currentAvatar = selectedShape + '|' + selectedColor.primary + '|' + selectedColor.accent;
+        markChanged();
         // Update main preview
         loadSvg(selectedShape, function(svgText) {
             var colored = colorSvg(svgText, selectedColor.primary, selectedColor.accent);

@@ -19,11 +19,15 @@
         .topbar {
             position: fixed; top: 0; left: 0; width: 100%; height: 56px;
             background: white; border-bottom: 1px solid #e8e6e0;
-            z-index: 300; display: flex; align-items: center;
+            z-index: 300; display: flex; align-items: center; justify-content: space-between;
             padding: 0 16px; box-sizing: border-box;
         }
         .topbar-left { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-        .topbar-logo { flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px; text-decoration: none; min-width: 0; overflow: hidden; }
+        .topbar-logo {
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            display: flex; align-items: center; gap: 4px; text-decoration: none;
+            pointer-events: auto;
+        }
         .topbar-logo svg { flex-shrink: 0; }
         .topbar-logo span { white-space: nowrap; }
         .topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
