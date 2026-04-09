@@ -338,18 +338,40 @@ export default async function handler(req, res) {
         if (body.phone !== undefined) await sql`UPDATE users SET phone = ${body.phone} WHERE id = ${userId}`;
         if (body.phone_country !== undefined) await sql`UPDATE users SET phone_country = ${body.phone_country} WHERE id = ${userId}`;
         if (body.avatar_choice !== undefined) await sql`UPDATE users SET avatar_choice = ${body.avatar_choice} WHERE id = ${userId}`;
-        if (body.new_email !== undefined) {
-          var newEmail = body.new_email.toLowerCase().trim();
+        if (body.request_email_change !== undefined) {
+          var newEmail = body.request_email_change.toLowerCase().trim();
           var exists = await sql`SELECT id FROM users WHERE email = ${newEmail} AND id != ${userId}`;
           if (exists.length) return res.status(409).json({ error: 'Email already in use' });
-          var verifyToken = crypto.randomBytes(32).toString('base64url');
-          await sql`UPDATE users SET email = ${newEmail}, email_verified = false, verify_token = ${verifyToken} WHERE id = ${userId}`;
-          var verifyLink = (req.headers.origin || 'https://ironseal.vercel.app') + '/login?verify=' + verifyToken;
-          await sendAuthEmail(newEmail, 'Verifiez votre nouvelle adresse email - Iron Seal',
-            authEmailLayout('<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Confirmez votre nouvelle adresse</h2>'
-            + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 6px; text-align:justify;">Cliquez ci-dessous pour confirmer votre nouvelle adresse email.</p>'
-            + authBtn(verifyLink, 'Verifier mon email')
-            + '<p style="font-size:11px; color:#b1ada1; margin:0; text-align:center;">Ce lien expire dans 24 heures.</p>'));
+          // Generate 6-digit code, store in reset_token temporarily
+          var code = Math.floor(100000 + Math.random() * 900000).toString();
+          var expires = new Date(Date.now() + 600000).toISOString(); // 10 min
+          await sql`UPDATE users SET reset_token = ${code + ':' + newEmail}, reset_expires = ${expires} WHERE id = ${userId}`;
+          // Send code to CURRENT email
+          var currentUser = await sql`SELECT email FROM users WHERE id = ${userId}`;
+          await sendAuthEmail(currentUser[0].email, 'Code de verification - Iron Seal',
+            authEmailLayout('<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Modification d\'email</h2>'
+            + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 16px; text-align:justify;">Vous avez demande a changer votre adresse email. Saisissez ce code dans l\'interface pour confirmer :</p>'
+            + '<div style="text-align:center; margin:20px 0;"><span style="font-size:32px; font-weight:700; letter-spacing:8px; color:#2d2b35;">' + code + '</span></div>'
+            + '<p style="font-size:11px; color:#b1ada1; margin:0; text-align:center;">Ce code expire dans 10 minutes.</p>'));
+          return res.json({ ok: true, code_sent: true });
+        }
+        if (body.confirm_email_code !== undefined) {
+          var user = await sql`SELECT reset_token, reset_expires, email FROM users WHERE id = ${userId}`;
+          if (!user.length || !user[0].reset_token || !user[0].reset_token.includes(':')) return res.status(400).json({ error: 'No pending email change' });
+          if (new Date(user[0].reset_expires) < new Date()) return res.status(400).json({ error: 'Code expired' });
+          var parts = user[0].reset_token.split(':');
+          if (parts[0] !== body.confirm_email_code) return res.status(400).json({ error: 'Invalid code' });
+          var newEmail = parts.slice(1).join(':');
+          var oldEmail = user[0].email;
+          await sql`UPDATE users SET email = ${newEmail}, email_verified = true, reset_token = NULL, reset_expires = NULL WHERE id = ${userId}`;
+          // Notify both old and new email
+          await sendAuthEmail(oldEmail, 'Adresse email modifiee - Iron Seal',
+            authEmailLayout('<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Email modifie</h2>'
+            + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0; text-align:justify;">Votre adresse email Iron Seal a ete changee vers <strong>' + newEmail + '</strong>. Si vous n\'avez pas fait cette modification, contactez-nous immediatement.</p>'));
+          await sendAuthEmail(newEmail, 'Bienvenue sur votre nouvelle adresse - Iron Seal',
+            authEmailLayout('<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Email confirme</h2>'
+            + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0; text-align:justify;">Votre adresse email Iron Seal est maintenant <strong>' + newEmail + '</strong>.</p>'));
+          return res.json({ ok: true, email_changed: true });
         }
         if (body.resend_verify) {
           var u = await sql`SELECT email, verify_token FROM users WHERE id = ${userId}`;

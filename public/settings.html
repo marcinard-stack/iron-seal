@@ -65,6 +65,26 @@
         }
         .logout-btn:hover { background: #f4f3ee; color: #2d2b35; }
 
+        /* ---- TOAST ---- */
+        .toast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: #2d2b35; color: white; padding: 10px 24px; border-radius: 8px;
+            font-size: 13px; font-weight: 500; z-index: 800; opacity: 0;
+            transition: opacity 0.3s ease; pointer-events: none;
+        }
+        .toast.show { opacity: 1; }
+
+        /* ---- STICKY SAVE BAR ---- */
+        .save-bar {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: linear-gradient(to bottom, rgba(244,243,238,0) 0%, #f4f3ee 30%);
+            padding: 24px 0 calc(20px + env(safe-area-inset-bottom, 0px));
+            z-index: 180; display: flex; justify-content: center; align-items: center; gap: 12px;
+        }
+        .save-bar .save-btn { transition: all 0.2s; }
+        .save-bar .save-btn.idle { background: #b1ada1; cursor: default; }
+        .save-bar .save-hint { font-size: 12px; color: #8a8780; }
+
         /* ---- MOBILE RESPONSIVE ---- */
         @media (max-width: 768px) {
             .main { padding: 60px 16px 24px; }
@@ -291,10 +311,8 @@
         </div>
     </div>
 
-    <div style="display:flex; align-items:center; margin-top:4px;">
-        <button class="save-btn" id="saveBtn">Enregistrer</button>
-        <span class="save-status" id="saveStatus">Enregistré</span>
-    </div>
+    <div style="height:80px;"></div>
+
 
     <div class="section-card" style="margin-top:40px; border: 1px solid #fecaca;">
         <h2 style="color:#dc2626;">Zone de danger</h2>
@@ -327,8 +345,29 @@
     </div>
 </div>
 
+<div class="toast" id="toast"></div>
+<div class="save-bar">
+    <span class="save-hint" id="saveHint">Tout est à jour</span>
+    <button class="save-btn idle" id="saveBtn" disabled>Enregistrer</button>
+</div>
+
 <script>
 (function() {
+    function showToast(msg) {
+        var t = document.getElementById('toast');
+        t.textContent = msg; t.classList.add('show');
+        setTimeout(function() { t.classList.remove('show'); }, 2500);
+    }
+
+    var hasChanges = false;
+    function markChanged() {
+        if (hasChanges) return;
+        hasChanges = true;
+        var btn = document.getElementById('saveBtn');
+        btn.disabled = false; btn.classList.remove('idle');
+        document.getElementById('saveHint').textContent = '';
+    }
+
     var token = localStorage.getItem('df_token');
     if (!token) { window.location.href = '/login'; return; }
 
@@ -374,8 +413,8 @@
     function colorSvg(svgText, primary, accent) {
         return svgText
             .replace(/<\?xml[^?]*\?>/, '')
-            .replace(/id="primary" fill="[^"]*"/, 'id="primary" fill="' + primary + '"')
-            .replace(/id="accent" fill="[^"]*"/, 'id="accent" fill="' + accent + '"')
+            .replace(/id="skin" fill="[^"]*"/, 'id="skin" fill="' + primary + '"')
+            .replace(/id="details" fill="[^"]*"/, 'id="details" fill="' + accent + '"')
             .replace(/<rect id="background"[^/]*\/>/, '<rect id="background" width="100%" height="100%" fill="none"/>');
     }
     function svgToDataUrl(svgText) {
@@ -506,30 +545,61 @@
             .then(function() { this.textContent = 'Envoyé !'; }.bind(this));
     });
 
-    // Change email
-    document.getElementById('changeEmailBtn').addEventListener('click', function() {
-        var emailInput = document.getElementById('userEmail');
-        if (emailInput.disabled) {
+    // Change email — 3 steps: edit → code sent → enter code
+    var emailChangeState = 'view'; // view | edit | code
+    var pendingNewEmail = '';
+    var changeBtn = document.getElementById('changeEmailBtn');
+    var emailInput = document.getElementById('userEmail');
+
+    changeBtn.addEventListener('click', function() {
+        if (emailChangeState === 'view') {
+            emailChangeState = 'edit';
             emailInput.disabled = false; emailInput.style.background = 'white'; emailInput.focus();
-            this.textContent = 'Confirmer';
-        } else {
-            var newEmail = emailInput.value.trim();
-            if (newEmail && newEmail !== originalEmail) {
-                fetch('/api/auth?action=me', { method: 'PUT', headers: headers, body: JSON.stringify({ new_email: newEmail }) })
-                    .then(function(r) { return r.json(); })
-                    .then(function(d) {
-                        if (d.error) { alert(d.error); return; }
-                        originalEmail = newEmail;
-                        document.getElementById('avatarVerified').style.display = 'none';
-                        document.getElementById('avatarUnverified').style.display = 'block';
-                    });
+            changeBtn.textContent = 'Envoyer le code';
+        } else if (emailChangeState === 'edit') {
+            pendingNewEmail = emailInput.value.trim();
+            if (!pendingNewEmail || pendingNewEmail === originalEmail) {
+                emailChangeState = 'view'; emailInput.disabled = true; emailInput.style.background = '#f9f8f6';
+                changeBtn.textContent = 'Modifier'; return;
             }
-            emailInput.disabled = true; emailInput.style.background = '#f9f8f6';
-            this.textContent = 'Modifier';
+            changeBtn.disabled = true; changeBtn.textContent = 'Envoi...';
+            fetch('/api/auth?action=me', { method: 'PUT', headers: headers, body: JSON.stringify({ request_email_change: pendingNewEmail }) })
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if (d.error) { showToast(d.error); changeBtn.disabled = false; changeBtn.textContent = 'Envoyer le code'; return; }
+                    emailChangeState = 'code';
+                    emailInput.value = ''; emailInput.placeholder = 'Code à 6 chiffres'; emailInput.maxLength = 6; emailInput.type = 'text';
+                    changeBtn.disabled = false; changeBtn.textContent = 'Confirmer';
+                    showToast('Code envoyé sur votre email actuel');
+                });
+        } else if (emailChangeState === 'code') {
+            var code = emailInput.value.trim();
+            if (code.length !== 6) return;
+            changeBtn.disabled = true; changeBtn.textContent = 'Vérification...';
+            fetch('/api/auth?action=me', { method: 'PUT', headers: headers, body: JSON.stringify({ confirm_email_code: code }) })
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if (d.error) { showToast(d.error); changeBtn.disabled = false; changeBtn.textContent = 'Confirmer'; return; }
+                    originalEmail = pendingNewEmail;
+                    emailInput.type = 'email'; emailInput.value = pendingNewEmail; emailInput.placeholder = '';
+                    emailInput.maxLength = ''; emailInput.disabled = true; emailInput.style.background = '#f9f8f6';
+                    emailChangeState = 'view'; changeBtn.textContent = 'Modifier'; changeBtn.disabled = false;
+                    document.getElementById('avatarVerified').style.display = 'block';
+                    document.getElementById('avatarUnverified').style.display = 'none';
+                    showToast('Adresse email modifiée');
+                });
         }
     });
-    document.getElementById('userEmail').disabled = true;
-    document.getElementById('userEmail').style.background = '#f9f8f6';
+    emailInput.disabled = true; emailInput.style.background = '#f9f8f6';
+
+    // Track changes on all inputs
+    document.querySelectorAll('.section-card input:not([type=checkbox]), .section-card select').forEach(function(el) {
+        el.addEventListener('input', markChanged);
+        el.addEventListener('change', markChanged);
+    });
+    document.querySelectorAll('.section-card input[type=checkbox]').forEach(function(el) {
+        el.addEventListener('change', markChanged);
+    });
 
     // Save
     document.getElementById('saveBtn').addEventListener('click', function() {
@@ -562,9 +632,17 @@
                 }
             })
         }).then(function(r) {
-            btn.disabled = false; btn.textContent = 'Enregistrer';
-            if (r.ok) { status.style.display = 'inline'; setTimeout(function() { status.style.display = 'none'; }, 2500); }
-        }).catch(function() { btn.disabled = false; btn.textContent = 'Enregistrer'; });
+            btn.textContent = 'Enregistrer';
+            if (r.ok) {
+                hasChanges = false; btn.disabled = true; btn.classList.add('idle');
+                document.getElementById('saveHint').textContent = 'Tout est à jour';
+                showToast('Préférences enregistrées');
+                // Update localStorage user
+                var fn = document.getElementById('userFirstName').value.trim();
+                var ln = document.getElementById('userLastName').value.trim();
+                localStorage.setItem('df_user', JSON.stringify({ id: (JSON.parse(localStorage.getItem('df_user')||'{}').id), email: originalEmail, name: (fn + ' ' + ln).trim(), avatar_choice: currentAvatar }));
+            }
+        }).catch(function() { btn.disabled = false; btn.classList.remove('idle'); btn.textContent = 'Enregistrer'; });
     });
 
     // ===== ADDRESSES =====

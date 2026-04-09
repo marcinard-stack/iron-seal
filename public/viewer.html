@@ -1244,12 +1244,33 @@
         window.showOnboarding = function(cb) { onboardCallback = cb || null; overlay.classList.add('show'); };
     })();
 
+    // ===== AVATAR HELPERS =====
+    function colorSvgViewer(svgText, primary, accent) {
+        return svgText.replace(/<\?xml[^?]*\?>/, '')
+            .replace(/id="skin" fill="[^"]*"/, 'id="skin" fill="' + primary + '"')
+            .replace(/id="details" fill="[^"]*"/, 'id="details" fill="' + accent + '"')
+            .replace(/<rect id="background"[^/]*\/>/, '<rect id="background" width="100%" height="100%" fill="none"/>');
+    }
+    function svgToDataUrlViewer(svgText) { return 'data:image/svg+xml,' + encodeURIComponent(svgText.trim()); }
+    function renderAvatar(el, avatarChoice, fallbackInitials) {
+        if (avatarChoice && avatarChoice.includes('|')) {
+            var parts = avatarChoice.split('|');
+            fetch('/avatars/' + parts[0] + '.svg').then(function(r) { return r.text(); }).then(function(svgText) {
+                var colored = colorSvgViewer(svgText, parts[1], parts[2]);
+                el.innerHTML = '<img src="' + svgToDataUrlViewer(colored) + '" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">';
+            });
+        } else {
+            el.textContent = fallbackInitials || '?';
+        }
+    }
+
     // ===== USER PROFILE (sidebar) =====
     var dfUser = null;
     try { dfUser = JSON.parse(localStorage.getItem('df_user')); } catch(e) {}
     if (dfUser && !IS_SHARED) {
         var initials = dfUser.name ? dfUser.name.split(' ').map(function(w) { return w[0]; }).join('').toUpperCase().substring(0,2) : '?';
-        document.getElementById('sidebarAvatar').textContent = initials;
+        var sidebarAv = document.getElementById('sidebarAvatar');
+        renderAvatar(sidebarAv, dfUser.avatar_choice, initials);
         document.getElementById('sidebarUserName').textContent = dfUser.name || 'Utilisateur';
     }
 
@@ -1298,7 +1319,12 @@
 
             var el = document.createElement('div');
             el.dataset.uid = u.user_id;
-            el.style.cssText = 'height:28px; border-radius:14px; background:' + theme.bg + '; color:' + theme.color + '; font-size:10px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; border:2px solid white; cursor:pointer; transition:all 0.25s ease; overflow:hidden; margin-right:-8px; position:relative; z-index:' + (10 - i) + ';';
+            el.style.cssText = 'height:28px; min-width:28px; border-radius:14px; background:' + theme.bg + '; color:' + theme.color + '; font-size:10px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; border:2px solid white; cursor:pointer; transition:all 0.25s ease; overflow:hidden; margin-right:-8px; position:relative; z-index:' + (10 - i) + ';';
+
+            // Render avatar if available
+            if (u.avatar_choice && u.avatar_choice.includes('|') && !isExpanded) {
+                renderAvatar(el, u.avatar_choice, init);
+            }
 
             if (isExpanded) {
                 el.style.width = 'auto';

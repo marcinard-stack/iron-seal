@@ -64,7 +64,7 @@ export default async function handler(req, res) {
     // Clean stale presence (>15s) and get all online users (including self)
     await sql`DELETE FROM presence WHERE last_seen < NOW() - INTERVAL '15 seconds'`;
     var online = await sql`
-      SELECT p.user_id, u.name FROM presence p
+      SELECT p.user_id, u.name, u.avatar_choice FROM presence p
       JOIN users u ON u.id = p.user_id
       WHERE p.project_slug = ${slug} AND p.user_id IS NOT NULL
     `;
