@@ -31,7 +31,7 @@
             z-index: 300; display: flex; align-items: center; justify-content: space-between;
             padding: 0 16px; box-sizing: border-box;
         }
-        .topbar-left { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .topbar-left { display: flex; align-items: center; gap: 0; flex-shrink: 0; width: 56px; justify-content: center; }
         .topbar-logo {
             position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
             display: flex; align-items: center; gap: 4px; text-decoration: none;
@@ -79,12 +79,15 @@
             padding: 12px 0; cursor: pointer;
         }
         .left-sidebar .mini-strip .mini-icon {
-            width: 36px; height: 36px; border-radius: 8px; display: flex;
+            width: 34px; height: 34px; border-radius: 8px; display: flex;
             align-items: center; justify-content: center; margin-bottom: 4px;
-            color: #8a8780; transition: background 0.15s;
+            color: #a09c96; transition: background 0.15s;
         }
-        .left-sidebar .mini-strip .mini-icon:hover { background: rgba(255,255,255,0.06); }
-        .left-sidebar .mini-strip .mini-icon svg { width: 16px; height: 16px; opacity: 0.6; }
+        .left-sidebar .mini-strip .mini-icon:hover { background: rgba(255,255,255,0.08); }
+        .left-sidebar .mini-strip .mini-icon svg { width: 16px; height: 16px; }
+        .left-sidebar .mini-strip .mini-icon.mini-cta {
+            border: 1px solid rgba(255,255,255,0.15); margin-bottom: 12px;
+        }
         .left-sidebar .mini-strip .mini-avatar {
             width: 32px; height: 32px; border-radius: 50%; overflow: hidden;
             margin-top: auto; margin-bottom: 12px; cursor: pointer;
@@ -858,7 +861,7 @@
 <div class="left-sidebar" id="leftSidebar">
     <!-- Mini strip (visible when collapsed) -->
     <div class="mini-strip" id="miniStrip">
-        <div class="mini-icon" title="Créer">
+        <div class="mini-icon mini-cta" title="Créer un projet">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>
         </div>
         <div class="mini-icon" title="Brouillons">
@@ -1431,6 +1434,12 @@
     document.getElementById('miniStrip').addEventListener('click', function() {
         leftSidebar.classList.add('open');
     });
+
+    // Open sidebar and comments by default
+    if (!IS_SHARED) {
+        leftSidebar.classList.add('open');
+        document.getElementById('commentPanel').classList.add('open');
+    }
 
     // ===== SIDENAV =====
     var nav = document.getElementById('sidenav');
