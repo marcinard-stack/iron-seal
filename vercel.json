@@ -3,6 +3,7 @@
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/login", "destination": "/login.html" },
     { "source": "/settings", "destination": "/settings.html" },
+    { "source": "/discovery/:slug", "destination": "/chat.html" },
     { "source": "/view/:token", "destination": "/viewer.html" },
     { "source": "/deals/:status/:slug", "destination": "/viewer.html" },
     { "source": "/deals/:status", "destination": "/dashboard.html" },

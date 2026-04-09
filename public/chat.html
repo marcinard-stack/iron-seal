@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+    <title>Discovery — Iron Seal</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&display=swap" rel="stylesheet">
+    <meta name="description" content="Discovery de projet assistée par IA sur Iron Seal.">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        ::placeholder { color: #c4c2bc; font-style: italic; }
+        body {
+            font-family: -apple-system, system-ui, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            color: #2d2b35; background: #f4f3ee; line-height: 1.6;
+            height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+        }
+
+        /* ---- TOP BAR ---- */
+        .topbar {
+            height: 56px; background: white; border-bottom: 1px solid #e8e6e0;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 16px; flex-shrink: 0; position: relative;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 8px; }
+        .topbar-btn {
+            background: none; border: none; cursor: pointer; padding: 8px;
+            border-radius: 6px; color: #6b6560; display: flex; align-items: center;
+            justify-content: center; transition: all 0.15s; font-family: inherit; font-size: 13px;
+            text-decoration: none;
+        }
+        .topbar-btn:hover { background: #edecea; color: #2d2b35; }
+        .topbar-logo {
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            display: flex; align-items: center; gap: 4px; text-decoration: none;
+        }
+        .topbar-right { display: flex; align-items: center; gap: 8px; }
+
+        /* ---- CHAT AREA ---- */
+        .chat-container {
+            flex: 1; display: flex; flex-direction: column; overflow: hidden;
+        }
+        .chat-messages {
+            flex: 1; overflow-y: auto; padding: 24px 0;
+        }
+        .chat-messages::-webkit-scrollbar { width: 4px; }
+        .chat-messages::-webkit-scrollbar-thumb { background: #e8e6e0; border-radius: 2px; }
+
+        .msg-wrap {
+            max-width: 720px; margin: 0 auto; padding: 0 24px;
+        }
+        .msg {
+            margin-bottom: 24px; display: flex; gap: 12px;
+        }
+        .msg-avatar {
+            width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 600; margin-top: 2px;
+        }
+        .msg-avatar.assistant {
+            background: #2d2b35; color: white;
+        }
+        .msg-avatar.user {
+            background: #c15f3c; color: white;
+        }
+        .msg-body {
+            flex: 1; min-width: 0;
+        }
+        .msg-name {
+            font-size: 12px; font-weight: 600; color: #6b6560; margin-bottom: 2px;
+        }
+        .msg-text {
+            font-size: 14px; color: #2d2b35; line-height: 1.7;
+            white-space: pre-wrap; word-wrap: break-word;
+        }
+        .msg-text p { margin-bottom: 8px; }
+        .msg-time {
+            font-size: 10px; color: #b1ada1; margin-top: 4px;
+        }
+
+        /* Typing indicator */
+        .typing-indicator {
+            display: none; margin-bottom: 24px;
+        }
+        .typing-indicator.show { display: flex; }
+        .typing-dots {
+            display: flex; gap: 4px; padding: 8px 0;
+        }
+        .typing-dots span {
+            width: 6px; height: 6px; border-radius: 50%; background: #b1ada1;
+            animation: typingBounce 1.2s ease-in-out infinite;
+        }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingBounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-4px); }
+        }
+
+        /* ---- INPUT BAR ---- */
+        .chat-input-bar {
+            border-top: 1px solid #e8e6e0; background: white;
+            padding: 16px 24px calc(16px + env(safe-area-inset-bottom, 0px));
+            flex-shrink: 0;
+        }
+        .chat-input-wrap {
+            max-width: 720px; margin: 0 auto; display: flex; gap: 10px; align-items: flex-end;
+        }
+        .chat-input {
+            flex: 1; border: 1px solid #e8e6e0; border-radius: 12px;
+            padding: 12px 16px; font-size: 14px; font-family: inherit;
+            color: #2d2b35; outline: none; resize: none;
+            min-height: 24px; max-height: 120px; line-height: 1.5;
+        }
+        .chat-input:focus { border-color: #c15f3c; box-shadow: 0 0 0 2px rgba(193,95,60,0.12); }
+        .chat-send {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: #2d2b35; color: white; border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; transition: background 0.15s;
+        }
+        .chat-send:hover { background: #c15f3c; }
+        .chat-send:disabled { background: #e8e6e0; cursor: default; }
+        .chat-send svg { width: 16px; height: 16px; }
+
+        /* ---- STEP INDICATOR ---- */
+        .step-bar {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 10px 16px; background: #f9f8f6; border-bottom: 1px solid #e8e6e0;
+            font-size: 11px; color: #8a8780; flex-shrink: 0;
+        }
+        .step-dot {
+            width: 8px; height: 8px; border-radius: 50%; background: #e8e6e0;
+            transition: background 0.3s;
+        }
+        .step-dot.active { background: #c15f3c; }
+        .step-dot.done { background: #166534; }
+        .step-label { font-weight: 500; }
+
+        @media (max-width: 768px) {
+            .msg-wrap { padding: 0 16px; }
+            .chat-input-bar { padding: 12px 16px; }
+            .topbar-logo span { font-size: 18px !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <div class="topbar-left">
+        <a href="/deals/draft" class="topbar-btn">← Projets</a>
+    </div>
+    <a href="/deals/draft" class="topbar-logo">
+        <svg width="28" height="28" viewBox="5600 3800 4000 4000" style="flex-shrink:0;"><g transform="scale(1,-1) translate(0,-11520)"><g fill="#2d2b35"><path d="M6550 6288 c0 -772 4 -1409 9 -1417 7 -11 52 -12 242 -8 265 5 299 12 444 82 163 79 281 197 360 360 69 142 79 191 79 405 1 205 -4 225 -67 290 -53 55 -108 73 -212 72 -134 -2 -214 14 -282 54 -120 73 -161 151 -198 374 -39 237 -36 240 232 240 122 0 186 4 203 13 14 7 77 81 140 164 142 187 148 194 218 231 87 45 148 56 286 49 254 -13 444 -91 616 -253 119 -112 193 -232 243 -389 45 -142 49 -223 44 -860 -3 -503 -6 -600 -20 -657 -83 -339 -330 -595 -663 -685 -99 -27 -99 -27 -880 -31 -781 -3 -781 -3 -788 -49 -3 -25 -6 -135 -6 -244 l0 -199 734 0 c755 0 872 5 1026 41 328 77 610 263 815 539 72 97 165 279 204 403 62 196 63 206 68 860 3 367 1 642 -6 710 -19 213 -58 352 -146 530 -195 391 -561 667 -1001 753 -79 16 -179 18 -892 21 l-802 4 0 -1403z"/><path d="M7707 6812 c-34 -21 -67 -86 -67 -133 0 -65 68 -149 122 -149 31 0 75 27 99 61 31 43 31 132 1 181 -36 57 -100 74 -155 40z"/></g><g fill="white"><path d="M8100 7683 c330 -24 645 -170 884 -409 208 -207 336 -453 391 -749 11 -61 13 11 14 548 l1 617 -667 -2 c-368 -1 -648 -3 -623 -5z"/><path d="M7809 7186 c-59 -17 -142 -62 -171 -93 -13 -13 -75 -92 -138 -176 -63 -83 -126 -157 -140 -164 -17 -9 -81 -13 -203 -13 -268 0 -271 -3 -232 -240 37 -223 78 -301 198 -374 68 -40 148 -56 282 -54 104 1 159 -17 212 -72 63 -65 68 -85 67 -290 0 -214 -10 -263 -79 -405 -79 -163 -197 -281 -360 -360 -145 -70 -179 -77 -444 -82 -190 -4 -235 -3 -242 8 -5 8 -8 -122 -7 -301 1 -173 3 -301 5 -283 4 32 4 32 786 35 782 4 782 4 881 31 333 90 580 346 663 685 14 57 17 154 20 657 5 637 1 718 -44 860 -50 157 -124 277 -243 389 -120 113 -257 188 -412 226 -107 27 -332 36 -399 16z m6 -368 c66 -30 93 -161 46 -227 -24 -34 -68 -61 -99 -61 -29 0 -83 41 -103 80 -24 45 -24 93 1 144 32 67 94 92 155 64z"/><path d="M9373 4987 c-28 -175 -136 -427 -248 -577 -228 -308 -553 -503 -935 -563 -14 -3 251 -5 588 -6 l612 -1 0 610 c0 336 -1 610 -3 610 -1 0 -8 -33 -14 -73z"/></g><g fill="#c15f3c"><path d="M5777 5146 c2 -171 3 -176 32 -241 28 -62 106 -155 130 -155 5 0 11 -4 13 -9 2 -5 56 -39 121 -76 64 -36 117 -70 117 -74 0 -4 -44 -31 -97 -61 -195 -106 -252 -160 -297 -280 -22 -58 -29 -367 -9 -375 19 -7 389 43 453 61 135 38 242 147 289 296 8 23 13 149 16 352 4 287 3 320 -14 369 -37 108 -86 177 -161 231 -81 59 -136 74 -367 106 -120 17 -220 30 -223 30 -3 0 -4 -78 -3 -174z"/></g></g></svg>
+        <span style="font-family:'Sora',sans-serif; font-size:24px; font-weight:700; color:#2d2b35; letter-spacing:-0.03em;">iron seal</span>
+    </a>
+    <div class="topbar-right">
+        <span style="font-size:12px; color:#8a8780;" id="stepName">Étape 1 — Comprendre</span>
+    </div>
+</div>
+
+<!-- Step progress -->
+<div class="step-bar">
+    <span class="step-dot active" data-step="comprendre"></span>
+    <span class="step-dot" data-step="promesse"></span>
+    <span class="step-dot" data-step="parcours"></span>
+    <span class="step-dot" data-step="materialiser"></span>
+    <span class="step-label" id="stepLabel">Comprendre</span>
+</div>
+
+<!-- Chat messages -->
+<div class="chat-container">
+    <div class="chat-messages" id="chatMessages">
+        <div class="msg-wrap" id="msgList">
+            <!-- Messages rendered here -->
+            <div class="msg typing-indicator" id="typingIndicator">
+                <div class="msg-avatar assistant">IS</div>
+                <div class="msg-body">
+                    <div class="typing-dots"><span></span><span></span><span></span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-input-bar">
+        <div class="chat-input-wrap">
+            <textarea class="chat-input" id="chatInput" rows="1" placeholder="Décrivez votre projet..."></textarea>
+            <button class="chat-send" id="chatSend" disabled>
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="14" x2="8" y2="2"/><polyline points="2,8 8,2 14,8"/></svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    var dfToken = localStorage.getItem('df_token');
+    if (!dfToken) { window.location.href = '/login'; return; }
+    var headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken };
+    var dfUser = null;
+    try { dfUser = JSON.parse(localStorage.getItem('df_user')); } catch(e) {}
+
+    var slug = window.location.pathname.split('/').filter(Boolean)[1] || '';
+    var conversationId = null;
+    var isStreaming = false;
+
+    var msgList = document.getElementById('msgList');
+    var chatMessages = document.getElementById('chatMessages');
+    var chatInput = document.getElementById('chatInput');
+    var chatSend = document.getElementById('chatSend');
+    var typingIndicator = document.getElementById('typingIndicator');
+
+    // Auto-resize textarea
+    chatInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        chatSend.disabled = !this.value.trim() || isStreaming;
+    });
+
+    // Send on Enter (Shift+Enter for newline)
+    chatInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (!chatSend.disabled) chatSend.click();
+        }
+    });
+
+    function addMessage(role, content, userName) {
+        var div = document.createElement('div');
+        div.className = 'msg';
+        var initials = role === 'assistant' ? 'IS' : (dfUser && dfUser.name ? dfUser.name.split(' ').map(function(w){return w[0];}).join('').toUpperCase().substring(0,2) : '?');
+        var name = role === 'assistant' ? 'Iron Seal' : (userName || (dfUser ? dfUser.name : 'Vous'));
+        div.innerHTML = '<div class="msg-avatar ' + role + '">' + initials + '</div>'
+            + '<div class="msg-body"><div class="msg-name">' + name + '</div>'
+            + '<div class="msg-text">' + escHtml(content) + '</div></div>';
+        msgList.insertBefore(div, typingIndicator);
+        scrollToBottom();
+        return div;
+    }
+
+    function createStreamingMessage() {
+        var div = document.createElement('div');
+        div.className = 'msg';
+        div.innerHTML = '<div class="msg-avatar assistant">IS</div>'
+            + '<div class="msg-body"><div class="msg-name">Iron Seal</div>'
+            + '<div class="msg-text" id="streamingText"></div></div>';
+        msgList.insertBefore(div, typingIndicator);
+        return document.getElementById('streamingText');
+    }
+
+    function scrollToBottom() {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function escHtml(s) {
+        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+    }
+
+    // Send message
+    chatSend.addEventListener('click', function() {
+        var msg = chatInput.value.trim();
+        if (!msg || isStreaming) return;
+
+        addMessage('user', msg);
+        chatInput.value = ''; chatInput.style.height = 'auto';
+        chatSend.disabled = true;
+        isStreaming = true;
+        typingIndicator.classList.add('show');
+        scrollToBottom();
+
+        // Stream the response
+        fetch('/api/chat?conversation_id=' + conversationId, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({ message: msg })
+        }).then(function(response) {
+            typingIndicator.classList.remove('show');
+            var streamEl = createStreamingMessage();
+            var reader = response.body.getReader();
+            var decoder = new TextDecoder();
+            var buffer = '';
+
+            function readChunk() {
+                reader.read().then(function(result) {
+                    if (result.done) {
+                        isStreaming = false;
+                        chatSend.disabled = !chatInput.value.trim();
+                        // Remove the streaming id
+                        if (streamEl) streamEl.removeAttribute('id');
+                        return;
+                    }
+                    buffer += decoder.decode(result.value, { stream: true });
+                    var lines = buffer.split('\n');
+                    buffer = lines.pop();
+                    for (var i = 0; i < lines.length; i++) {
+                        var line = lines[i];
+                        if (line.startsWith('data: ')) {
+                            var data = line.slice(6);
+                            if (data === '[DONE]') continue;
+                            try {
+                                var parsed = JSON.parse(data);
+                                if (parsed.text) {
+                                    streamEl.innerHTML += escHtml(parsed.text);
+                                    scrollToBottom();
+                                }
+                            } catch(e) {}
+                        }
+                    }
+                    readChunk();
+                });
+            }
+            readChunk();
+        }).catch(function(err) {
+            typingIndicator.classList.remove('show');
+            isStreaming = false;
+            addMessage('assistant', 'Erreur de connexion. Réessayez.');
+        });
+    });
+
+    // Initialize: get or create conversation for this project
+    function init() {
+        // First get the project
+        fetch('/api/projects?slug=' + encodeURIComponent(slug), { headers: headers })
+            .then(function(r) { return r.json(); })
+            .then(function(project) {
+                if (!project || project.error) {
+                    msgList.innerHTML = '<p style="text-align:center; color:#8a8780; padding:40px;">Projet non trouvé.</p>';
+                    return;
+                }
+                document.title = (project.title || 'Discovery') + ' — Iron Seal';
+
+                // Check if conversation exists
+                // For now, create a new one
+                fetch('/api/chat', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({ action: 'create', project_id: project.id })
+                }).then(function(r) { return r.json(); })
+                .then(function(data) {
+                    conversationId = data.conversation.id;
+                    if (data.initial_message) {
+                        addMessage('assistant', data.initial_message);
+                    }
+                    chatInput.focus();
+                });
+            });
+    }
+
+    init();
+})();
+</script>
+
+</body>
+</html>

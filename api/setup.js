@@ -243,6 +243,34 @@ export default async function handler(req, res) {
     await sql`CREATE INDEX IF NOT EXISTS idx_project_guests_project ON project_guests(project_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_project_guests_email ON project_guests(email)`;
 
+    // ── CONVERSATIONS ──
+    await sql`
+      CREATE TABLE IF NOT EXISTS conversations (
+        id SERIAL PRIMARY KEY,
+        project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+        created_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        current_step VARCHAR(50) NOT NULL DEFAULT 'comprendre',
+        context_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_conversations_project ON conversations(project_id)`;
+
+    // ── CHAT MESSAGES ──
+    await sql`
+      CREATE TABLE IF NOT EXISTS chat_messages (
+        id SERIAL PRIMARY KEY,
+        conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+        role VARCHAR(20) NOT NULL,
+        content TEXT NOT NULL DEFAULT '',
+        tool_calls_json JSONB,
+        user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_chat_messages_conv ON chat_messages(conversation_id)`;
+
     // ── DEVIS VERSIONS ──
     await sql`
       CREATE TABLE IF NOT EXISTS devis_versions (

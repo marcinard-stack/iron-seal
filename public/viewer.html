@@ -2835,7 +2835,7 @@
         var authH = dfToken ? { 'Authorization': 'Bearer ' + dfToken } : {};
         Promise.all([
             fetch('/api/features?slug=' + encodeURIComponent(slug)).then(function(r) { return r.json(); }),
-            fetch('/api/exclusions?slug=' + encodeURIComponent(slug)).then(function(r) { return r.json(); }),
+            fetch('/api/features?type=exclusions&slug=' + encodeURIComponent(slug)).then(function(r) { return r.json(); }),
             fetch('/api/projects?slug=' + encodeURIComponent(slug)).then(function(r) { return r.json(); }),
             dfToken ? fetch('/api/auth?action=me', { headers: authH }).then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; }) : Promise.resolve(null)
         ]).then(function(results) {

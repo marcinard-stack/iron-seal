@@ -27,6 +27,14 @@ export default async function handler(req, res) {
         }
       }
     }
+    // GET exclusions (via ?type=exclusions)
+    if (req.method === 'GET' && req.query.type === 'exclusions') {
+      var projects = await sql`SELECT id FROM projects WHERE slug = ${slug}`;
+      if (!projects.length) return res.status(404).json({ error: 'project not found' });
+      var rows = await sql`SELECT id, position, title, description FROM exclusions WHERE project_id = ${projects[0].id} ORDER BY position`;
+      return res.json(rows);
+    }
+
     // PUT: update a job's included state
     if (req.method === 'PUT') {
       const { job_id, included } = req.body;
