@@ -315,7 +315,7 @@ export default async function handler(req, res) {
         var rows = await sql`
           SELECT u.id, u.email, u.name, u.first_name, u.last_name, u.phone, u.phone_country, u.avatar_choice, u.role, u.avatar_url, u.email_prefs, u.email_verified,
                  a.id as account_id, a.name as account_name, a.type as account_type,
-                 a.legal_name, a.siren, a.tva_intra, a.default_tjm, a.default_weekly_cap, a.plan
+                 a.legal_name, a.siren, a.tva_intra, a.default_tjm, a.default_weekly_cap, a.plan, a.legal_form, a.capital, a.rcs_city, a.currency, a.default_vat_rate, a.payment_terms, a.quote_validity, a.created_at as account_created_at
           FROM users u JOIN accounts a ON a.id = u.account_id WHERE u.id = ${userId}
         `;
         if (!rows.length) return res.status(404).json({ error: 'User not found' });
@@ -325,7 +325,11 @@ export default async function handler(req, res) {
           account: {
             id: r.account_id, name: r.account_name, type: r.account_type,
             legal_name: r.legal_name, siren: r.siren, tva_intra: r.tva_intra,
-            default_tjm: r.default_tjm, default_weekly_cap: r.default_weekly_cap, plan: r.plan
+            default_tjm: r.default_tjm, default_weekly_cap: r.default_weekly_cap, plan: r.plan,
+            legal_form: r.legal_form, capital: r.capital, rcs_city: r.rcs_city,
+            currency: r.currency, default_vat_rate: r.default_vat_rate,
+            payment_terms: r.payment_terms, quote_validity: r.quote_validity,
+            created_at: r.account_created_at
           }
         });
       }
@@ -373,6 +377,17 @@ export default async function handler(req, res) {
             + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0; text-align:justify;">Votre adresse email Iron Seal est maintenant <strong>' + newEmail + '</strong>.</p>'));
           return res.json({ ok: true, email_changed: true });
         }
+        if (body.change_password) {
+          var userPw = await sql`SELECT password_hash FROM users WHERE id = ${userId}`;
+          if (userPw.length && userPw[0].password_hash) {
+            var validOld = await verifyPassword(body.change_password.old_password, userPw[0].password_hash);
+            if (!validOld) return res.status(400).json({ error: 'Mot de passe actuel incorrect' });
+          }
+          if (!body.change_password.new_password || body.change_password.new_password.length < 9) return res.status(400).json({ error: 'Le nouveau mot de passe doit contenir au moins 9 caractères' });
+          var newHash = await hashPassword(body.change_password.new_password);
+          await sql`UPDATE users SET password_hash = ${newHash} WHERE id = ${userId}`;
+          return res.json({ ok: true, password_changed: true });
+        }
         if (body.resend_verify) {
           var u = await sql`SELECT email, verify_token FROM users WHERE id = ${userId}`;
           if (u.length && !u[0].verify_token) {
@@ -394,6 +409,13 @@ export default async function handler(req, res) {
         if (body.tva_intra !== undefined) await sql`UPDATE accounts SET tva_intra = ${body.tva_intra}, updated_at = NOW() WHERE id = ${accountId}`;
         if (body.default_tjm !== undefined) await sql`UPDATE accounts SET default_tjm = ${body.default_tjm}, updated_at = NOW() WHERE id = ${accountId}`;
         if (body.default_weekly_cap !== undefined) await sql`UPDATE accounts SET default_weekly_cap = ${body.default_weekly_cap}, updated_at = NOW() WHERE id = ${accountId}`;
+        if (body.legal_form !== undefined) await sql`UPDATE accounts SET legal_form = ${body.legal_form}, updated_at = NOW() WHERE id = ${accountId}`;
+        if (body.capital !== undefined) await sql`UPDATE accounts SET capital = ${body.capital}, updated_at = NOW() WHERE id = ${accountId}`;
+        if (body.rcs_city !== undefined) await sql`UPDATE accounts SET rcs_city = ${body.rcs_city}, updated_at = NOW() WHERE id = ${accountId}`;
+        if (body.currency !== undefined) await sql`UPDATE accounts SET currency = ${body.currency}, updated_at = NOW() WHERE id = ${accountId}`;
+        if (body.default_vat_rate !== undefined) await sql`UPDATE accounts SET default_vat_rate = ${body.default_vat_rate}, updated_at = NOW() WHERE id = ${accountId}`;
+        if (body.payment_terms !== undefined) await sql`UPDATE accounts SET payment_terms = ${body.payment_terms}, updated_at = NOW() WHERE id = ${accountId}`;
+        if (body.quote_validity !== undefined) await sql`UPDATE accounts SET quote_validity = ${body.quote_validity}, updated_at = NOW() WHERE id = ${accountId}`;
         return res.json({ ok: true });
       }
     }

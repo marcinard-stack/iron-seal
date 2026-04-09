@@ -13,6 +13,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         ::placeholder { color: #c4c2bc; font-style: italic; }
@@ -23,7 +24,7 @@
             color: #2d2b35; background: #f4f3ee; line-height: 1.6;
         }
         .topbar {
-            position: fixed; top: 0; left: 0; right: 0; height: 48px;
+            position: fixed; top: 0; left: 0; right: 0; height: 56px;
             background: white; border-bottom: 1px solid #e8e6e0;
             z-index: 300; display: flex; align-items: center; justify-content: space-between;
             padding: 0 16px;
@@ -110,10 +111,12 @@
 <div class="topbar">
     <div class="topbar-left">
         <a href="/deals/draft" class="topbar-btn" style="text-decoration:none;">← Projets</a>
-        <span class="topbar-title">Paramètres</span>
     </div>
+    <a href="/deals/draft" style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); display:flex; align-items:center; gap:4px; text-decoration:none;">
+        <span style="font-family:'Sora',sans-serif; font-size:18px; font-weight:700; color:#2d2b35; letter-spacing:-0.03em;">iron seal</span>
+    </a>
     <div class="topbar-right">
-        <button class="logout-btn" id="logoutBtn">Déconnexion</button>
+        <button class="logout-btn" id="logoutBtn" style="font-size:12px; padding:6px 12px;">Déconnexion</button>
     </div>
 </div>
 
@@ -192,12 +195,13 @@
                 <input type="tel" id="userPhone" placeholder="ex : 6 12 34 56 78" style="flex:1;">
             </div>
         </div>
+        <div id="memberSince" style="font-size:11px; color:#8a8780; margin-top:8px;"></div>
     </div>
 
     <div class="section-card">
-        <h2>Structure</h2>
+        <h2>Informations légales</h2>
         <div class="field">
-            <label>Nom commercial</label>
+            <label>Nom de la structure</label>
             <input type="text" id="accountName" placeholder="ex : Studio XYZ">
         </div>
         <div class="field">
@@ -214,13 +218,37 @@
                 <input type="text" id="tvaIntra" placeholder="ex : FR12345678901">
             </div>
         </div>
+        <div class="field-row">
+            <div class="field">
+                <label>Forme juridique</label>
+                <select id="legalForm" style="width:100%; padding:9px 12px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none; background:white;">
+                    <option value="">—</option>
+                    <option value="SAS">SAS</option>
+                    <option value="SARL">SARL</option>
+                    <option value="EURL">EURL</option>
+                    <option value="EI">Entreprise Individuelle</option>
+                    <option value="AE">Auto-entrepreneur</option>
+                    <option value="SA">SA</option>
+                    <option value="SCI">SCI</option>
+                    <option value="Other">Autre</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Capital social</label>
+                <input type="text" id="capital" placeholder="ex : 10 000 €">
+            </div>
+        </div>
+        <div class="field">
+            <label>RCS / Ville d'immatriculation</label>
+            <input type="text" id="rcsCity" placeholder="ex : RCS Paris">
+        </div>
     </div>
 
     <div class="section-card">
         <h2>Paramètres devis</h2>
         <div class="field-row">
             <div class="field">
-                <label>TJM par défaut (€ HT)</label>
+                <label>TJM par défaut (HT)</label>
                 <input type="number" id="defaultTjm" placeholder="ex : 500">
                 <div class="hint">Tarif journalier appliqué aux nouveaux projets</div>
             </div>
@@ -228,6 +256,38 @@
                 <label>Capacité hebdo (J/H)</label>
                 <input type="number" id="defaultCap" placeholder="ex : 3" step="0.5">
                 <div class="hint">Jours disponibles par semaine sur un projet</div>
+            </div>
+        </div>
+        <div class="field-row">
+            <div class="field">
+                <label>Devise</label>
+                <select id="currency" style="width:100%; padding:9px 12px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none; background:white;">
+                    <option value="EUR">EUR (€)</option>
+                    <option value="GBP">GBP (£)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="CHF">CHF</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Taux de TVA par défaut (%)</label>
+                <input type="number" id="vatRate" placeholder="ex : 20" step="0.1">
+                <div class="hint">0 pour auto-entrepreneurs exonérés</div>
+            </div>
+        </div>
+        <div class="field-row">
+            <div class="field">
+                <label>Conditions de paiement</label>
+                <select id="paymentTerms" style="width:100%; padding:9px 12px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none; background:white;">
+                    <option value="À réception">À réception</option>
+                    <option value="15 jours">15 jours</option>
+                    <option value="30 jours">30 jours</option>
+                    <option value="45 jours">45 jours</option>
+                    <option value="60 jours">60 jours</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Validité du devis (jours)</label>
+                <input type="number" id="quoteValidity" placeholder="ex : 30">
             </div>
         </div>
     </div>
@@ -271,7 +331,7 @@
     </div>
 
     <div class="section-card">
-        <h2>Coordonnées bancaires</h2>
+        <h2>Coordonnées bancaires (freelance)</h2>
         <div id="ibanList"></div>
         <div id="ibanForm" style="display:none;">
             <div class="field">
@@ -279,9 +339,13 @@
                 <input type="text" id="ibanLabel" placeholder="ex : Compte principal">
             </div>
             <div class="field">
+                <label>Titulaire du compte</label>
+                <input type="text" id="ibanHolder" placeholder="ex : Jean Dupont">
+            </div>
+            <div class="field">
                 <label>IBAN</label>
                 <input type="text" id="ibanValue" placeholder="ex : FR76 3000 1007 9412 3456 7890 185">
-                <div class="hint">Chiffré en AES-256 avant stockage. Jamais visible en clair dans la base de données.</div>
+                <div class="hint">Vos coordonnées bancaires sont stockées de manière sécurisée.</div>
             </div>
             <div class="field">
                 <label>BIC / SWIFT</label>
@@ -323,6 +387,25 @@
 
     <div style="height:80px;"></div>
 
+
+    <div class="section-card">
+        <h2>Sécurité</h2>
+        <div id="pwChangeForm">
+            <div class="field">
+                <label>Mot de passe actuel</label>
+                <input type="password" id="oldPassword" placeholder="••••••••">
+            </div>
+            <div class="field">
+                <label>Nouveau mot de passe</label>
+                <input type="password" id="newPassword" placeholder="ex : 9 caractères minimum">
+            </div>
+            <div class="field">
+                <label>Confirmer le nouveau mot de passe</label>
+                <input type="password" id="confirmNewPassword" placeholder="••••••••">
+            </div>
+            <button class="logout-btn" id="changePwBtn" style="margin-top:4px;">Modifier le mot de passe</button>
+        </div>
+    </div>
 
     <div class="section-card" style="margin-top:40px; border: 1px solid #fecaca;">
         <h2 style="color:#dc2626;">Zone de danger</h2>
@@ -539,6 +622,18 @@
             document.getElementById('tvaIntra').value = data.account.tva_intra || '';
             document.getElementById('defaultTjm').value = data.account.default_tjm || '';
             document.getElementById('defaultCap').value = data.account.default_weekly_cap || '';
+            document.getElementById('legalForm').value = data.account.legal_form || '';
+            document.getElementById('capital').value = data.account.capital || '';
+            document.getElementById('rcsCity').value = data.account.rcs_city || '';
+            document.getElementById('currency').value = data.account.currency || 'EUR';
+            document.getElementById('vatRate').value = data.account.default_vat_rate || '20';
+            document.getElementById('paymentTerms').value = data.account.payment_terms || '30 jours';
+            document.getElementById('quoteValidity').value = data.account.quote_validity || '30';
+            // Member since
+            if (data.account.created_at) {
+                var d = new Date(data.account.created_at);
+                document.getElementById('memberSince').textContent = 'Membre depuis ' + d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+            }
             var prefs = data.user.email_prefs || {};
             document.getElementById('prefProposal').checked = prefs.proposal_received !== false;
             document.getElementById('prefBackDraft').checked = prefs.back_to_draft !== false;
@@ -636,6 +731,13 @@
                 tva_intra: document.getElementById('tvaIntra').value.trim(),
                 default_tjm: parseFloat(document.getElementById('defaultTjm').value) || null,
                 default_weekly_cap: parseFloat(document.getElementById('defaultCap').value) || null,
+                legal_form: document.getElementById('legalForm').value,
+                capital: document.getElementById('capital').value.trim(),
+                rcs_city: document.getElementById('rcsCity').value.trim(),
+                currency: document.getElementById('currency').value,
+                default_vat_rate: parseFloat(document.getElementById('vatRate').value) || null,
+                payment_terms: document.getElementById('paymentTerms').value,
+                quote_validity: parseInt(document.getElementById('quoteValidity').value) || null,
                 email_prefs: {
                     proposal_received: document.getElementById('prefProposal').checked,
                     back_to_draft: document.getElementById('prefBackDraft').checked,
@@ -674,7 +776,9 @@
     loadAddresses();
 
     window.deleteAddr = function(id) {
-        fetch('/api/account?entity=addresses', { method: 'DELETE', headers: headers, body: JSON.stringify({ id: id }) }).then(loadAddresses);
+        if (confirm('Supprimer cette adresse ?')) {
+            fetch('/api/account?entity=addresses', { method: 'DELETE', headers: headers, body: JSON.stringify({ id: id }) }).then(loadAddresses);
+        }
     };
 
     document.getElementById('addrAdd').addEventListener('click', function() { addrForm.style.display = 'block'; this.style.display = 'none'; });
@@ -764,6 +868,28 @@
                 localStorage.removeItem('df_user');
                 window.location.href = '/login';
             });
+    });
+
+    // Password change
+    document.getElementById('changePwBtn').addEventListener('click', function() {
+        var oldPw = document.getElementById('oldPassword').value;
+        var newPw = document.getElementById('newPassword').value;
+        var confirmPw = document.getElementById('confirmNewPassword').value;
+        if (!newPw || newPw.length < 9) { showToast('9 caractères minimum'); return; }
+        if (newPw !== confirmPw) { showToast('Les mots de passe ne correspondent pas'); return; }
+        this.disabled = true; this.textContent = 'Modification...';
+        var self = this;
+        fetch('/api/auth?action=me', {
+            method: 'PUT', headers: headers,
+            body: JSON.stringify({ change_password: { old_password: oldPw, new_password: newPw } })
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            self.disabled = false; self.textContent = 'Modifier le mot de passe';
+            if (d.error) { showToast(d.error); return; }
+            showToast('Mot de passe modifié');
+            document.getElementById('oldPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmNewPassword').value = '';
+        }).catch(function() { self.disabled = false; self.textContent = 'Modifier le mot de passe'; });
     });
 })();
 </script>

@@ -320,6 +320,15 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_prefs JSONB NOT NULL DEFAULT '{"proposal_received":true,"back_to_draft":true,"comment_added":true}'::jsonb`;
 
+    // Migrate accounts: add new fields
+    await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS legal_form VARCHAR(50)`;
+    await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS capital VARCHAR(50)`;
+    await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS rcs_city VARCHAR(100)`;
+    await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'EUR'`;
+    await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS default_vat_rate NUMERIC(5,2) DEFAULT 20.00`;
+    await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS payment_terms VARCHAR(200) DEFAULT '30 jours'`;
+    await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS quote_validity INTEGER DEFAULT 30`;
+
     return res.json({ ok: true, message: 'All tables created successfully' });
   } catch (err) {
     console.error(err);
