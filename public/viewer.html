@@ -66,9 +66,9 @@
 
         /* ---- LEFT SIDEBAR ---- */
         .left-sidebar {
-            position: fixed; left: 0; top: 56px; bottom: 0; width: 260px;
+            position: fixed; left: 0; top: 56px; bottom: 0; width: 300px;
             background: #2d2b35; z-index: 250; display: flex; flex-direction: column;
-            transform: translateX(-204px); transition: transform 0.25s ease;
+            transform: translateX(-244px); transition: transform 0.25s ease;
         }
         .left-sidebar.open { transform: translateX(0); }
 
@@ -189,8 +189,8 @@
 
         /* ---- COMMENT PANEL (right) ---- */
         .comment-panel {
-            position: fixed; right: -260px; top: 56px; bottom: 0;
-            width: 260px; background: white; z-index: 190;
+            position: fixed; right: -300px; top: 56px; bottom: 0;
+            width: 300px; background: white; z-index: 190;
             box-shadow: -4px 0 24px rgba(0,0,0,0.08); border-left: 1px solid #e8e6e0;
             transition: right 0.25s ease; display: flex; flex-direction: column;
         }
@@ -653,8 +653,14 @@
             .project-action-bar-inner { padding: 0 16px; }
             .action-btn { font-size: 14px; padding: 12px 20px; }
 
+            /* Sidebar: no mini strip on mobile, full slide from left */
+            .left-sidebar { transform: translateX(-300px); }
+            .left-sidebar .mini-strip { display: none; }
+            .left-sidebar:not(.open) .left-sidebar-content { visibility: visible; }
+            .left-sidebar:not(.open) .left-sidebar-user-section { visibility: visible; }
+
             /* Topbar compact */
-            .topbar { overflow: hidden; }
+            .topbar-left { margin-left: 0; width: auto; }
             .topbar-logo span { font-size: 18px !important; }
             .topbar-logo svg { width: 22px !important; height: 22px !important; }
             .topbar-right .notes-btn span:not(.count) { display: none; }
@@ -1439,11 +1445,8 @@
         leftSidebar.classList.add('open');
     });
 
-    // Open sidebar and comments by default
-    if (!IS_SHARED) {
-        leftSidebar.classList.add('open');
-        document.getElementById('commentPanel').classList.add('open');
-    }
+    // Open comments by default only if there are comments (handled after load)
+    // Sidebar closed by default
 
     // ===== SIDENAV =====
     var nav = document.getElementById('sidenav');
@@ -2864,6 +2867,10 @@
                     spawnPin(c);
                 });
                 updateCount(); renderCards();
+                // Open comment panel if there are comments
+                if (comments.some(function(c) { return c.text; }) && !IS_SHARED) {
+                    panel.classList.add('open');
+                }
             }).catch(function() {});
         }).catch(function(err) {
             console.warn('API load failed:', err);
