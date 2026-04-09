@@ -46,7 +46,7 @@ function signedEmail(projectTitle, signerName, signedAt, hash) {
     + '<tr><td style="padding:24px 0 0; text-align:center;">'
     + '<p style="font-size:11px; color:#b1ada1; margin:0 0 6px;">Iron Seal par Blue Heron Lab</p>'
     + '<p style="font-size:10px; color:#c4c2bc; margin:0;">Vous recevez cet email car vous etes partie prenante d\'un projet sur Iron Seal.<br>'
-    + 'Pour ne plus recevoir ces notifications, modifiez vos <a href="https://Iron Seal-tawny.vercel.app/settings" style="color:#c4c2bc;">preferences email</a>.</p>'
+    + 'Pour ne plus recevoir ces notifications, modifiez vos <a href="https://ironseal.vercel.app/settings" style="color:#c4c2bc;">preferences email</a>.</p>'
     + '</td></tr></table></td></tr></table></body></html>';
 }
 

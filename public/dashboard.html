@@ -81,7 +81,8 @@
             background: #c15f3c; color: white; font-size: 12px; font-weight: 600;
             display: flex; align-items: center; justify-content: center; flex-shrink: 0;
         }
-        .left-sidebar-user .user-name { font-size: 13px; font-weight: 500; color: #e8e6e0; flex: 1; }
+        .left-sidebar-user .user-info { flex: 1; min-width: 0; }
+        .left-sidebar-user .user-name { font-size: 13px; font-weight: 500; color: #e8e6e0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .left-sidebar-user .user-plan { font-size: 11px; color: #8a8780; }
         .left-sidebar-user .settings-icon { color: #6b6560; flex-shrink: 0; }
         .left-sidebar-user:hover .settings-icon { color: #b1ada1; }
@@ -216,11 +217,11 @@
 <div class="topbar">
     <div class="topbar-left">
         <button class="topbar-btn" id="leftToggle" title="Menu">
-            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="14" height="14" rx="2"/><line x1="7" y1="2" x2="7" y2="16"/><polyline points="10,7 12.5,9 10,11"/></svg>
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="14" height="14" rx="2.5"/><line x1="7" y1="2.5" x2="7" y2="15.5"/></svg>
         </button>
-        <a href="/deals/draft" style="display:flex; align-items:center; gap:5px; text-decoration:none;">
-            <svg width="48" height="48" viewBox="0 0 1536 1152" style="flex-shrink:0;"><g transform="translate(0,1152) scale(0.1,-0.1)"><g fill="#2d2b35"><path d="M6550 6288 c0 -772 4 -1409 9 -1417 7 -11 52 -12 242 -8 265 5 299 12 444 82 163 79 281 197 360 360 69 142 79 191 79 405 1 205 -4 225 -67 290 -53 55 -108 73 -212 72 -134 -2 -214 14 -282 54 -120 73 -161 151 -198 374 -39 237 -36 240 232 240 122 0 186 4 203 13 14 7 77 81 140 164 142 187 148 194 218 231 87 45 148 56 286 49 254 -13 444 -91 616 -253 119 -112 193 -232 243 -389 45 -142 49 -223 44 -860 -3 -503 -6 -600 -20 -657 -83 -339 -330 -595 -663 -685 -99 -27 -99 -27 -880 -31 -781 -3 -781 -3 -788 -49 -3 -25 -6 -135 -6 -244 l0 -199 734 0 c755 0 872 5 1026 41 328 77 610 263 815 539 72 97 165 279 204 403 62 196 63 206 68 860 3 367 1 642 -6 710 -19 213 -58 352 -146 530 -195 391 -561 667 -1001 753 -79 16 -179 18 -892 21 l-802 4 0 -1403z"/><path d="M7707 6812 c-34 -21 -67 -86 -67 -133 0 -65 68 -149 122 -149 31 0 75 27 99 61 31 43 31 132 1 181 -36 57 -100 74 -155 40z"/></g><g fill="#f4f3ee"><path d="M8100 7683 c330 -24 645 -170 884 -409 208 -207 336 -453 391 -749 11 -61 13 11 14 548 l1 617 -667 -2 c-368 -1 -648 -3 -623 -5z"/><path d="M7809 7186 c-59 -17 -142 -62 -171 -93 -13 -13 -75 -92 -138 -176 -63 -83 -126 -157 -140 -164 -17 -9 -81 -13 -203 -13 -268 0 -271 -3 -232 -240 37 -223 78 -301 198 -374 68 -40 148 -56 282 -54 104 1 159 -17 212 -72 63 -65 68 -85 67 -290 0 -214 -10 -263 -79 -405 -79 -163 -197 -281 -360 -360 -145 -70 -179 -77 -444 -82 -190 -4 -235 -3 -242 8 -5 8 -8 -122 -7 -301 1 -173 3 -301 5 -283 4 32 4 32 786 35 782 4 782 4 881 31 333 90 580 346 663 685 14 57 17 154 20 657 5 637 1 718 -44 860 -50 157 -124 277 -243 389 -120 113 -257 188 -412 226 -107 27 -332 36 -399 16z m6 -368 c66 -30 93 -161 46 -227 -24 -34 -68 -61 -99 -61 -29 0 -83 41 -103 80 -24 45 -24 93 1 144 32 67 94 92 155 64z"/><path d="M9373 4987 c-28 -175 -136 -427 -248 -577 -228 -308 -553 -503 -935 -563 -14 -3 251 -5 588 -6 l612 -1 0 610 c0 336 -1 610 -3 610 -1 0 -8 -33 -14 -73z"/></g><g fill="#c15f3c"><path d="M5777 5146 c2 -171 3 -176 32 -241 28 -62 106 -155 130 -155 5 0 11 -4 13 -9 2 -5 56 -39 121 -76 64 -36 117 -70 117 -74 0 -4 -44 -31 -97 -61 -195 -106 -252 -160 -297 -280 -22 -58 -29 -367 -9 -375 19 -7 389 43 453 61 135 38 242 147 289 296 8 23 13 149 16 352 4 287 3 320 -14 369 -37 108 -86 177 -161 231 -81 59 -136 74 -367 106 -120 17 -220 30 -223 30 -3 0 -4 -78 -3 -174z"/></g></g></svg>
-            <span style="font-family:'Sora',sans-serif; font-size:20px; font-weight:700; color:#2d2b35; letter-spacing:-0.03em;">iron seal</span>
+        <a href="/deals/draft" style="display:flex; align-items:center; gap:4px; text-decoration:none;">
+            <svg width="28" height="28" viewBox="5600 3800 4000 4000" style="flex-shrink:0;"><g transform="scale(1,-1) translate(0,-11520)"><g fill="#2d2b35"><path d="M6550 6288 c0 -772 4 -1409 9 -1417 7 -11 52 -12 242 -8 265 5 299 12 444 82 163 79 281 197 360 360 69 142 79 191 79 405 1 205 -4 225 -67 290 -53 55 -108 73 -212 72 -134 -2 -214 14 -282 54 -120 73 -161 151 -198 374 -39 237 -36 240 232 240 122 0 186 4 203 13 14 7 77 81 140 164 142 187 148 194 218 231 87 45 148 56 286 49 254 -13 444 -91 616 -253 119 -112 193 -232 243 -389 45 -142 49 -223 44 -860 -3 -503 -6 -600 -20 -657 -83 -339 -330 -595 -663 -685 -99 -27 -99 -27 -880 -31 -781 -3 -781 -3 -788 -49 -3 -25 -6 -135 -6 -244 l0 -199 734 0 c755 0 872 5 1026 41 328 77 610 263 815 539 72 97 165 279 204 403 62 196 63 206 68 860 3 367 1 642 -6 710 -19 213 -58 352 -146 530 -195 391 -561 667 -1001 753 -79 16 -179 18 -892 21 l-802 4 0 -1403z"/><path d="M7707 6812 c-34 -21 -67 -86 -67 -133 0 -65 68 -149 122 -149 31 0 75 27 99 61 31 43 31 132 1 181 -36 57 -100 74 -155 40z"/></g><g fill="#f4f3ee"><path d="M8100 7683 c330 -24 645 -170 884 -409 208 -207 336 -453 391 -749 11 -61 13 11 14 548 l1 617 -667 -2 c-368 -1 -648 -3 -623 -5z"/><path d="M7809 7186 c-59 -17 -142 -62 -171 -93 -13 -13 -75 -92 -138 -176 -63 -83 -126 -157 -140 -164 -17 -9 -81 -13 -203 -13 -268 0 -271 -3 -232 -240 37 -223 78 -301 198 -374 68 -40 148 -56 282 -54 104 1 159 -17 212 -72 63 -65 68 -85 67 -290 0 -214 -10 -263 -79 -405 -79 -163 -197 -281 -360 -360 -145 -70 -179 -77 -444 -82 -190 -4 -235 -3 -242 8 -5 8 -8 -122 -7 -301 1 -173 3 -301 5 -283 4 32 4 32 786 35 782 4 782 4 881 31 333 90 580 346 663 685 14 57 17 154 20 657 5 637 1 718 -44 860 -50 157 -124 277 -243 389 -120 113 -257 188 -412 226 -107 27 -332 36 -399 16z m6 -368 c66 -30 93 -161 46 -227 -24 -34 -68 -61 -99 -61 -29 0 -83 41 -103 80 -24 45 -24 93 1 144 32 67 94 92 155 64z"/><path d="M9373 4987 c-28 -175 -136 -427 -248 -577 -228 -308 -553 -503 -935 -563 -14 -3 251 -5 588 -6 l612 -1 0 610 c0 336 -1 610 -3 610 -1 0 -8 -33 -14 -73z"/></g><g fill="#c15f3c"><path d="M5777 5146 c2 -171 3 -176 32 -241 28 -62 106 -155 130 -155 5 0 11 -4 13 -9 2 -5 56 -39 121 -76 64 -36 117 -70 117 -74 0 -4 -44 -31 -97 -61 -195 -106 -252 -160 -297 -280 -22 -58 -29 -367 -9 -375 19 -7 389 43 453 61 135 38 242 147 289 296 8 23 13 149 16 352 4 287 3 320 -14 369 -37 108 -86 177 -161 231 -81 59 -136 74 -367 106 -120 17 -220 30 -223 30 -3 0 -4 -78 -3 -174z"/></g></g></svg>
+            <span style="font-family:'Sora',sans-serif; font-size:24px; font-weight:700; color:#2d2b35; letter-spacing:-0.03em;">iron seal</span>
         </a>
     </div>
 </div>
@@ -256,19 +257,38 @@
             </a>
         </div>
     </div>
-    <a class="left-sidebar-user" href="/settings" style="text-decoration:none;">
-        <div class="avatar">?</div>
-        <div style="flex:1; min-width:0;">
-            <div class="user-name">...</div>
-            <div class="user-plan">Free</div>
+    <div class="left-sidebar-user-section">
+        <div class="left-sidebar-user" id="sidebarUserToggle" style="cursor:pointer;">
+            <div class="avatar" id="sidebarAvatar">?</div>
+            <div class="user-info">
+                <div class="user-name" id="sidebarUserName">...</div>
+                <div class="user-plan" id="sidebarUserPlan">Free</div>
+            </div>
+            <div class="settings-icon" style="transition:transform 0.2s;">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,6 8,10 12,6"/></svg>
+            </div>
         </div>
-        <div class="settings-icon">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="8" cy="8" r="2"/>
-                <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/>
-            </svg>
+        <div class="sidebar-user-menu" id="sidebarUserMenu" style="display:none; padding:4px 12px 8px;">
+            <div style="font-size:12px; color:#6b6560; padding:6px 0 4px; border-bottom:1px solid rgba(255,255,255,0.06); margin-bottom:4px;" id="sidebarUserEmail">...</div>
+            <a href="/settings" style="display:flex; align-items:center; gap:8px; padding:6px 0; color:#b1ada1; font-size:13px; text-decoration:none; transition:color 0.15s;">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M6.86 1.33h2.28l.32 1.93a5.5 5.5 0 011.32.77l1.84-.74.98 1.7-1.52 1.19a5.6 5.6 0 010 1.54l1.52 1.19-.98 1.7-1.84-.74a5.5 5.5 0 01-1.32.77l-.32 1.93H6.86l-.32-1.93a5.5 5.5 0 01-1.32-.77l-1.84.74-.98-1.7 1.52-1.19a5.6 5.6 0 010-1.54L2.4 5l.98-1.7 1.84.74a5.5 5.5 0 011.32-.77l.32-1.93z"/><circle cx="8" cy="8" r="2.2"/></svg>
+                Paramètres
+            </a>
+            <div style="display:flex; align-items:center; gap:8px; padding:6px 0; color:#6b6560; font-size:12px;">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><line x1="1.5" y1="8" x2="14.5" y2="8"/><ellipse cx="8" cy="8" rx="3" ry="6.5"/></svg>
+                Langue
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; padding:6px 0; color:#6b6560; font-size:12px;">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><line x1="8" y1="5" x2="8" y2="8.5"/><circle cx="8" cy="11" r="0.5" fill="currentColor"/></svg>
+                En savoir plus
+            </div>
+            <div style="height:1px; background:rgba(255,255,255,0.08); margin:6px 0;"></div>
+            <a href="#" id="sidebarLogout" style="display:flex; align-items:center; gap:8px; padding:6px 0; color:#b1ada1; font-size:13px; text-decoration:none; transition:color 0.15s;">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14H3a1 1 0 01-1-1V3a1 1 0 011-1h3"/><polyline points="10,11 14,8 10,5"/><line x1="14" y1="8" x2="6" y2="8"/></svg>
+                Se déconnecter
+            </a>
         </div>
-    </a>
+    </div>
 </div>
 
 <div class="modal-overlay" id="modalOverlay">
@@ -302,9 +322,30 @@
     try { dfUser = JSON.parse(localStorage.getItem('df_user')); } catch(e) {}
     if (dfUser) {
         var initials = dfUser.name ? dfUser.name.split(' ').map(function(w) { return w[0]; }).join('').toUpperCase().substring(0,2) : '?';
-        document.querySelector('.left-sidebar-user .avatar').textContent = initials;
-        document.querySelector('.left-sidebar-user .user-name').textContent = dfUser.name || 'Utilisateur';
+        document.getElementById('sidebarAvatar').textContent = initials;
+        document.getElementById('sidebarUserName').textContent = dfUser.name || 'Utilisateur';
     }
+
+    // Sidebar user menu toggle
+    document.getElementById('sidebarUserToggle').addEventListener('click', function() {
+        var menu = document.getElementById('sidebarUserMenu');
+        var arrow = this.querySelector('.settings-icon');
+        if (menu.style.display === 'none') {
+            menu.style.display = 'block';
+            arrow.style.transform = 'rotate(180deg)';
+        } else {
+            menu.style.display = 'none';
+            arrow.style.transform = '';
+        }
+    });
+    // Populate email
+    if (dfUser) document.getElementById('sidebarUserEmail').textContent = dfUser.email || '';
+    // Logout
+    document.getElementById('sidebarLogout').addEventListener('click', function(e) {
+        e.preventDefault();
+        fetch('/api/auth?action=logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + localStorage.getItem('df_token') } })
+            .finally(function() { localStorage.removeItem('df_token'); localStorage.removeItem('df_user'); window.location.href = '/login'; });
+    });
 
     var path = window.location.pathname.replace(/\/$/, '');
     var currentTab = 'draft';
@@ -392,8 +433,8 @@
         .then(function(data) {
             localStorage.setItem('df_user', JSON.stringify(data.user));
             var initials = data.user.name ? data.user.name.split(' ').map(function(w) { return w[0]; }).join('').toUpperCase().substring(0,2) : '?';
-            document.querySelector('.left-sidebar-user .avatar').textContent = initials;
-            document.querySelector('.left-sidebar-user .user-name').textContent = data.user.name;
+            document.getElementById('sidebarAvatar').textContent = initials;
+            document.getElementById('sidebarUserName').textContent = data.user.name;
         })
         .catch(function() {
             localStorage.removeItem('df_token');

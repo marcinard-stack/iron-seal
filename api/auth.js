@@ -86,7 +86,7 @@ export default async function handler(req, res) {
 
       // Send welcome email
       var cleanedEmail = email.toLowerCase().trim();
-      var homeLink = req.headers.origin || 'https://Iron Seal-tawny.vercel.app';
+      var homeLink = req.headers.origin || 'https://ironseal.vercel.app';
       await sendAuthEmail(cleanedEmail, 'Bienvenue sur Iron Seal',
         authEmailLayout(
           '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Bienvenue sur Iron Seal, ' + name + ' !</h2>'
@@ -180,7 +180,7 @@ export default async function handler(req, res) {
         user = { ...users[0], account_name: name || cleanEmail, account_type: 'solo' };
 
         // Send welcome email
-        var homeLink = req.headers.origin || 'https://Iron Seal-tawny.vercel.app';
+        var homeLink = req.headers.origin || 'https://ironseal.vercel.app';
         await sendAuthEmail(cleanEmail, 'Bienvenue sur Iron Seal',
           authEmailLayout(
             '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Bienvenue sur Iron Seal, ' + (name || '') + ' !</h2>'
@@ -267,7 +267,7 @@ export default async function handler(req, res) {
         user = { ...users[0], account_name: ghName, account_type: 'solo' };
 
         // Send welcome email
-        var homeLink = req.headers.origin || 'https://Iron Seal-tawny.vercel.app';
+        var homeLink = req.headers.origin || 'https://ironseal.vercel.app';
         await sendAuthEmail(cleanEmail, 'Bienvenue sur Iron Seal',
           authEmailLayout(
             '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Bienvenue sur Iron Seal, ' + ghName + ' !</h2>'
@@ -353,7 +353,7 @@ export default async function handler(req, res) {
       var resetToken = crypto.randomBytes(32).toString('base64url');
       var expires = new Date(Date.now() + 3600000).toISOString(); // 1 hour
       await sql`UPDATE users SET reset_token = ${resetToken}, reset_expires = ${expires} WHERE id = ${users[0].id}`;
-      var resetLink = (req.headers.origin || 'https://Iron Seal-tawny.vercel.app') + '/login?reset=' + resetToken;
+      var resetLink = (req.headers.origin || 'https://ironseal.vercel.app') + '/login?reset=' + resetToken;
       await sendAuthEmail(users[0].email, 'Reinitialiser votre mot de passe — Iron Seal',
         authEmailLayout(
           '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Mot de passe oublie</h2>'
