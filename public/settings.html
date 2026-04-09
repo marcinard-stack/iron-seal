@@ -92,13 +92,60 @@
 
     <div class="section-card">
         <h2>Profil</h2>
-        <div class="field">
-            <label>Nom</label>
-            <input type="text" id="userName">
+        <div style="display:flex; align-items:center; gap:16px; margin-bottom:18px;">
+            <div id="avatarPreview" style="width:56px; height:56px; border-radius:50%; background:#f4f3ee; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; flex-shrink:0; border:2px solid #e8e6e0; transition:border-color 0.15s;" title="Choisir un avatar">
+                <span id="avatarInitials" style="font-size:18px; font-weight:600; color:#8a8780;">?</span>
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:12px; color:#8a8780; margin-bottom:2px;">Cliquez sur l'avatar pour le personnaliser</div>
+                <div id="avatarVerified" style="display:none; font-size:11px; color:#166534;">
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#166534" stroke-width="2" style="vertical-align:middle; margin-right:2px;"><polyline points="3,8 6.5,11.5 13,4.5"/></svg>
+                    Email vérifié
+                </div>
+                <div id="avatarUnverified" style="display:none; font-size:11px; color:#c15f3c;">
+                    Email non vérifié — <a href="#" id="resendVerify" style="color:#c15f3c;">Renvoyer</a>
+                </div>
+            </div>
+        </div>
+        <!-- Avatar picker modal -->
+        <div id="avatarPicker" style="display:none; background:#f9f8f6; border-radius:8px; padding:12px; margin-bottom:16px;">
+            <div style="font-size:12px; font-weight:600; color:#4a4850; margin-bottom:8px;">Choisir un avatar</div>
+            <div style="display:flex; flex-wrap:wrap; gap:8px;" id="avatarGrid"></div>
+        </div>
+        <div class="field-row">
+            <div class="field">
+                <label>Prénom</label>
+                <input type="text" id="userFirstName" placeholder="ex : Jean">
+            </div>
+            <div class="field">
+                <label>Nom</label>
+                <input type="text" id="userLastName" placeholder="ex : Dupont">
+            </div>
         </div>
         <div class="field">
             <label>Email</label>
-            <input type="email" id="userEmail" disabled style="background:#f9f8f6; cursor:default;">
+            <div style="display:flex; gap:8px;">
+                <input type="email" id="userEmail" style="flex:1;">
+                <button class="logout-btn" id="changeEmailBtn" style="flex-shrink:0; font-size:12px; padding:8px 12px;">Modifier</button>
+            </div>
+        </div>
+        <div class="field">
+            <label>Téléphone</label>
+            <div style="display:flex; gap:8px;">
+                <select id="phoneCountry" style="width:90px; padding:9px 6px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none; background:white;">
+                    <option value="+33">🇫🇷 +33</option>
+                    <option value="+1">🇺🇸 +1</option>
+                    <option value="+44">🇬🇧 +44</option>
+                    <option value="+49">🇩🇪 +49</option>
+                    <option value="+34">🇪🇸 +34</option>
+                    <option value="+39">🇮🇹 +39</option>
+                    <option value="+41">🇨🇭 +41</option>
+                    <option value="+32">🇧🇪 +32</option>
+                    <option value="+352">🇱🇺 +352</option>
+                    <option value="+212">🇲🇦 +212</option>
+                </select>
+                <input type="tel" id="userPhone" placeholder="ex : 6 12 34 56 78" style="flex:1;">
+            </div>
         </div>
     </div>
 
@@ -272,12 +319,56 @@
 
     var headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
 
+    // Avatar picker
+    var AVATARS = ['seal-1','seal-2','seal-3','seal-4','seal-5','seal-6','seal-7','seal-8'];
+    var avatarGrid = document.getElementById('avatarGrid');
+    var currentAvatar = null;
+    AVATARS.forEach(function(name) {
+        var img = document.createElement('img');
+        img.src = '/avatars/' + name + '.svg';
+        img.style.cssText = 'width:48px; height:48px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:border-color 0.15s;';
+        img.dataset.avatar = name;
+        img.addEventListener('click', function() {
+            currentAvatar = name;
+            avatarGrid.querySelectorAll('img').forEach(function(i) { i.style.borderColor = 'transparent'; });
+            img.style.borderColor = '#c15f3c';
+            document.getElementById('avatarPreview').innerHTML = '<img src="/avatars/' + name + '.svg" style="width:100%; height:100%; object-fit:cover;">';
+        });
+        avatarGrid.appendChild(img);
+    });
+    document.getElementById('avatarPreview').addEventListener('click', function() {
+        var picker = document.getElementById('avatarPicker');
+        picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
+    });
+
+    var originalEmail = '';
+
     // Load profile
     fetch('/api/auth?action=me', { headers: headers })
         .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
         .then(function(data) {
-            document.getElementById('userName').value = data.user.name || '';
+            document.getElementById('userFirstName').value = data.user.first_name || '';
+            document.getElementById('userLastName').value = data.user.last_name || '';
             document.getElementById('userEmail').value = data.user.email || '';
+            originalEmail = data.user.email || '';
+            document.getElementById('userPhone').value = data.user.phone || '';
+            document.getElementById('phoneCountry').value = data.user.phone_country || '+33';
+            // Avatar
+            if (data.user.avatar_choice) {
+                currentAvatar = data.user.avatar_choice;
+                document.getElementById('avatarPreview').innerHTML = '<img src="/avatars/' + data.user.avatar_choice + '.svg" style="width:100%; height:100%; object-fit:cover;">';
+                var sel = avatarGrid.querySelector('[data-avatar="' + data.user.avatar_choice + '"]');
+                if (sel) sel.style.borderColor = '#c15f3c';
+            } else {
+                var initials = ((data.user.first_name || data.user.name || '?')[0] + (data.user.last_name || '')[0]).toUpperCase();
+                document.getElementById('avatarInitials').textContent = initials || '?';
+            }
+            // Email verified badge
+            if (data.user.email_verified) {
+                document.getElementById('avatarVerified').style.display = 'block';
+            } else {
+                document.getElementById('avatarUnverified').style.display = 'block';
+            }
             document.getElementById('accountName').value = data.account.name || '';
             document.getElementById('legalName').value = data.account.legal_name || '';
             document.getElementById('siren').value = data.account.siren || '';
@@ -294,17 +385,56 @@
             window.location.href = '/login';
         });
 
+    // Resend verification
+    document.getElementById('resendVerify').addEventListener('click', function(e) {
+        e.preventDefault();
+        fetch('/api/auth?action=me', { method: 'PUT', headers: headers, body: JSON.stringify({ resend_verify: true }) })
+            .then(function() { this.textContent = 'Envoyé !'; }.bind(this));
+    });
+
+    // Change email
+    document.getElementById('changeEmailBtn').addEventListener('click', function() {
+        var emailInput = document.getElementById('userEmail');
+        if (emailInput.disabled) {
+            emailInput.disabled = false; emailInput.style.background = 'white'; emailInput.focus();
+            this.textContent = 'Confirmer';
+        } else {
+            var newEmail = emailInput.value.trim();
+            if (newEmail && newEmail !== originalEmail) {
+                fetch('/api/auth?action=me', { method: 'PUT', headers: headers, body: JSON.stringify({ new_email: newEmail }) })
+                    .then(function(r) { return r.json(); })
+                    .then(function(d) {
+                        if (d.error) { alert(d.error); return; }
+                        originalEmail = newEmail;
+                        document.getElementById('avatarVerified').style.display = 'none';
+                        document.getElementById('avatarUnverified').style.display = 'block';
+                    });
+            }
+            emailInput.disabled = true; emailInput.style.background = '#f9f8f6';
+            this.textContent = 'Modifier';
+        }
+    });
+    document.getElementById('userEmail').disabled = true;
+    document.getElementById('userEmail').style.background = '#f9f8f6';
+
     // Save
     document.getElementById('saveBtn').addEventListener('click', function() {
         var btn = this;
         var status = document.getElementById('saveStatus');
         btn.disabled = true; btn.textContent = 'Enregistrement...';
 
+        var firstName = document.getElementById('userFirstName').value.trim();
+        var lastName = document.getElementById('userLastName').value.trim();
         fetch('/api/auth?action=me', {
             method: 'PUT',
             headers: headers,
             body: JSON.stringify({
-                name: document.getElementById('userName').value.trim(),
+                name: (firstName + ' ' + lastName).trim(),
+                first_name: firstName,
+                last_name: lastName,
+                phone: document.getElementById('userPhone').value.trim(),
+                phone_country: document.getElementById('phoneCountry').value,
+                avatar_choice: currentAvatar,
                 account_name: document.getElementById('accountName').value.trim(),
                 legal_name: document.getElementById('legalName').value.trim(),
                 siren: document.getElementById('siren').value.trim(),

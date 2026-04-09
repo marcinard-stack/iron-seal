@@ -310,6 +310,12 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(100)`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_expires TIMESTAMPTZ`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS verify_token VARCHAR(100)`;
+    // Migrate users: add profile fields
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name VARCHAR(200)`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name VARCHAR(200)`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30)`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_country VARCHAR(5) DEFAULT '+33'`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_choice VARCHAR(50)`;
     // Migrate users: add password_hash + email_prefs
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_prefs JSONB NOT NULL DEFAULT '{"proposal_received":true,"back_to_draft":true,"comment_added":true}'::jsonb`;

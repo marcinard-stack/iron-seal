@@ -313,7 +313,7 @@ export default async function handler(req, res) {
 
       if (req.method === 'GET') {
         var rows = await sql`
-          SELECT u.id, u.email, u.name, u.role, u.avatar_url, u.email_prefs,
+          SELECT u.id, u.email, u.name, u.first_name, u.last_name, u.phone, u.phone_country, u.avatar_choice, u.role, u.avatar_url, u.email_prefs, u.email_verified,
                  a.id as account_id, a.name as account_name, a.type as account_type,
                  a.legal_name, a.siren, a.tva_intra, a.default_tjm, a.default_weekly_cap, a.plan
           FROM users u JOIN accounts a ON a.id = u.account_id WHERE u.id = ${userId}
@@ -321,7 +321,7 @@ export default async function handler(req, res) {
         if (!rows.length) return res.status(404).json({ error: 'User not found' });
         var r = rows[0];
         return res.json({
-          user: { id: r.id, email: r.email, name: r.name, role: r.role, avatar_url: r.avatar_url, email_prefs: r.email_prefs },
+          user: { id: r.id, email: r.email, name: r.name, first_name: r.first_name, last_name: r.last_name, phone: r.phone, phone_country: r.phone_country, avatar_choice: r.avatar_choice, role: r.role, avatar_url: r.avatar_url, email_prefs: r.email_prefs, email_verified: r.email_verified },
           account: {
             id: r.account_id, name: r.account_name, type: r.account_type,
             legal_name: r.legal_name, siren: r.siren, tva_intra: r.tva_intra,
@@ -333,6 +333,36 @@ export default async function handler(req, res) {
       if (req.method === 'PUT') {
         var body = req.body;
         if (body.name !== undefined) await sql`UPDATE users SET name = ${body.name} WHERE id = ${userId}`;
+        if (body.first_name !== undefined) await sql`UPDATE users SET first_name = ${body.first_name} WHERE id = ${userId}`;
+        if (body.last_name !== undefined) await sql`UPDATE users SET last_name = ${body.last_name} WHERE id = ${userId}`;
+        if (body.phone !== undefined) await sql`UPDATE users SET phone = ${body.phone} WHERE id = ${userId}`;
+        if (body.phone_country !== undefined) await sql`UPDATE users SET phone_country = ${body.phone_country} WHERE id = ${userId}`;
+        if (body.avatar_choice !== undefined) await sql`UPDATE users SET avatar_choice = ${body.avatar_choice} WHERE id = ${userId}`;
+        if (body.new_email !== undefined) {
+          var newEmail = body.new_email.toLowerCase().trim();
+          var exists = await sql`SELECT id FROM users WHERE email = ${newEmail} AND id != ${userId}`;
+          if (exists.length) return res.status(409).json({ error: 'Email already in use' });
+          var verifyToken = crypto.randomBytes(32).toString('base64url');
+          await sql`UPDATE users SET email = ${newEmail}, email_verified = false, verify_token = ${verifyToken} WHERE id = ${userId}`;
+          var verifyLink = (req.headers.origin || 'https://ironseal.vercel.app') + '/login?verify=' + verifyToken;
+          await sendAuthEmail(newEmail, 'Verifiez votre nouvelle adresse email - Iron Seal',
+            authEmailLayout('<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Confirmez votre nouvelle adresse</h2>'
+            + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 6px; text-align:justify;">Cliquez ci-dessous pour confirmer votre nouvelle adresse email.</p>'
+            + authBtn(verifyLink, 'Verifier mon email')
+            + '<p style="font-size:11px; color:#b1ada1; margin:0; text-align:center;">Ce lien expire dans 24 heures.</p>'));
+        }
+        if (body.resend_verify) {
+          var u = await sql`SELECT email, verify_token FROM users WHERE id = ${userId}`;
+          if (u.length && !u[0].verify_token) {
+            var vt = crypto.randomBytes(32).toString('base64url');
+            await sql`UPDATE users SET verify_token = ${vt} WHERE id = ${userId}`;
+            var vl = (req.headers.origin || 'https://ironseal.vercel.app') + '/login?verify=' + vt;
+            await sendAuthEmail(u[0].email, 'Verifiez votre email - Iron Seal',
+              authEmailLayout('<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Verifiez votre adresse email</h2>'
+              + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0;">Cliquez ci-dessous pour confirmer votre adresse email.</p>'
+              + authBtn(vl, 'Verifier mon email')));
+          }
+        }
         if (body.email_prefs !== undefined) await sql`UPDATE users SET email_prefs = ${JSON.stringify(body.email_prefs)}::jsonb WHERE id = ${userId}`;
         var user = await sql`SELECT account_id FROM users WHERE id = ${userId}`;
         var accountId = user[0].account_id;
