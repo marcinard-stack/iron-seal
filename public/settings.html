@@ -108,9 +108,24 @@
             </div>
         </div>
         <!-- Avatar picker modal -->
-        <div id="avatarPicker" style="display:none; background:#f9f8f6; border-radius:8px; padding:12px; margin-bottom:16px;">
-            <div style="font-size:12px; font-weight:600; color:#4a4850; margin-bottom:8px;">Choisir un avatar</div>
-            <div style="display:flex; flex-wrap:wrap; gap:8px;" id="avatarGrid"></div>
+        <div id="avatarPicker" style="display:none; background:#f9f8f6; border-radius:10px; padding:16px; margin-bottom:16px;">
+            <!-- Step 1: Choose shape -->
+            <div id="avatarStep1">
+                <div style="font-size:12px; font-weight:600; color:#4a4850; margin-bottom:10px;">1. Choisir un avatar</div>
+                <div style="display:flex; flex-wrap:wrap; gap:10px;" id="avatarGrid"></div>
+            </div>
+            <!-- Step 2: Choose color -->
+            <div id="avatarStep2" style="display:none;">
+                <div style="font-size:12px; font-weight:600; color:#4a4850; margin-bottom:10px;">2. Choisir une couleur</div>
+                <div style="display:flex; align-items:center; gap:16px; margin-bottom:14px;">
+                    <div id="avatarColorPreview" style="width:64px; height:64px; border-radius:50%; overflow:hidden; flex-shrink:0; border:2px solid #e8e6e0;"></div>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px; flex:1;" id="colorPalette"></div>
+                </div>
+                <div style="display:flex; gap:8px; justify-content:flex-end;">
+                    <button class="logout-btn" id="avatarBack" style="font-size:12px; padding:6px 14px;">Retour</button>
+                    <button class="save-btn" id="avatarConfirm" style="font-size:12px; padding:6px 14px; background:#c15f3c;">Valider</button>
+                </div>
+            </div>
         </div>
         <div class="field-row">
             <div class="field">
@@ -319,26 +334,122 @@
 
     var headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
 
-    // Avatar picker
-    var AVATARS = ['seal-1','seal-2','seal-3','seal-4','seal-5','seal-6','seal-7','seal-8'];
-    var avatarGrid = document.getElementById('avatarGrid');
+    // Avatar picker — 2 step: shape then color
+    var AVATARS = [
+        { id: 'avatar-1-phoque-face', label: 'Phoque face' },
+        { id: 'avatar-2-phoque-ballon', label: 'Phoque ballon' },
+        { id: 'avatar-3-phoque-chapeau', label: 'Phoque chapeau' },
+        { id: 'avatar-4-narval-lunettes', label: 'Narval lunettes' },
+        { id: 'avatar-5-narval-couronne', label: 'Narval couronne' },
+        { id: 'avatar-6-narval-noeudpap', label: 'Narval noeud pap' }
+    ];
+    var COLOR_COMBOS = [
+        { primary: '#1e3a5f', accent: '#7fb3e0', label: 'Bleu' },
+        { primary: '#2d6a4f', accent: '#95d5b2', label: 'Vert' },
+        { primary: '#7b2d8b', accent: '#d4a5e0', label: 'Violet' },
+        { primary: '#92400e', accent: '#fbbf24', label: 'Ambre' },
+        { primary: '#9d174d', accent: '#f9a8d4', label: 'Rose' },
+        { primary: '#2d2b35', accent: '#c15f3c', label: 'Iron Seal' },
+        { primary: '#1e40af', accent: '#93c5fd', label: 'Ciel' },
+        { primary: '#065f46', accent: '#6ee7b7', label: 'Menthe' }
+    ];
+
+    var selectedShape = null;
+    var selectedColor = COLOR_COMBOS[0];
     var currentAvatar = null;
-    AVATARS.forEach(function(name) {
-        var img = document.createElement('img');
-        img.src = '/avatars/' + name + '.svg';
-        img.style.cssText = 'width:48px; height:48px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:border-color 0.15s;';
-        img.dataset.avatar = name;
-        img.addEventListener('click', function() {
-            currentAvatar = name;
-            avatarGrid.querySelectorAll('img').forEach(function(i) { i.style.borderColor = 'transparent'; });
-            img.style.borderColor = '#c15f3c';
-            document.getElementById('avatarPreview').innerHTML = '<img src="/avatars/' + name + '.svg" style="width:100%; height:100%; object-fit:cover;">';
+    var avatarGrid = document.getElementById('avatarGrid');
+    var step1 = document.getElementById('avatarStep1');
+    var step2 = document.getElementById('avatarStep2');
+    var colorPalette = document.getElementById('colorPalette');
+    var colorPreview = document.getElementById('avatarColorPreview');
+
+    // Fetch and cache SVG content for color manipulation
+    var svgCache = {};
+    function loadSvg(id, cb) {
+        if (svgCache[id]) return cb(svgCache[id]);
+        fetch('/avatars/' + id + '.svg').then(function(r) { return r.text(); }).then(function(t) {
+            svgCache[id] = t; cb(t);
         });
-        avatarGrid.appendChild(img);
+    }
+    function colorSvg(svgText, primary, accent) {
+        return svgText
+            .replace(/id="primary" fill="[^"]*"/, 'id="primary" fill="' + primary + '"')
+            .replace(/id="accent" fill="[^"]*"/, 'id="accent" fill="' + accent + '"')
+            .replace(/id="background" [^/]*\/>/, 'id="background" width="100%" height="100%" fill="none"/>');
+    }
+    function svgToDataUrl(svgText) {
+        return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgText)));
+    }
+
+    // Step 1: render avatar grid
+    AVATARS.forEach(function(av) {
+        var wrap = document.createElement('div');
+        wrap.style.cssText = 'width:56px; height:56px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:border-color 0.15s; overflow:hidden; background:#f4f3ee;';
+        wrap.dataset.avatarId = av.id;
+        // Load with default color
+        loadSvg(av.id, function(svgText) {
+            var colored = colorSvg(svgText, COLOR_COMBOS[0].primary, COLOR_COMBOS[0].accent);
+            wrap.innerHTML = '<img src="' + svgToDataUrl(colored) + '" style="width:100%; height:100%; object-fit:cover;">';
+        });
+        wrap.addEventListener('click', function() {
+            selectedShape = av.id;
+            avatarGrid.querySelectorAll('div').forEach(function(d) { d.style.borderColor = 'transparent'; });
+            wrap.style.borderColor = '#c15f3c';
+            showStep2();
+        });
+        avatarGrid.appendChild(wrap);
     });
+
+    function showStep2() {
+        step1.style.display = 'none';
+        step2.style.display = 'block';
+        updateColorPreview();
+        renderColorPalette();
+    }
+
+    function updateColorPreview() {
+        loadSvg(selectedShape, function(svgText) {
+            var colored = colorSvg(svgText, selectedColor.primary, selectedColor.accent);
+            colorPreview.innerHTML = '<img src="' + svgToDataUrl(colored) + '" style="width:100%; height:100%; object-fit:cover;">';
+        });
+    }
+
+    function renderColorPalette() {
+        colorPalette.innerHTML = '';
+        COLOR_COMBOS.forEach(function(combo) {
+            var pill = document.createElement('div');
+            pill.title = combo.label;
+            pill.style.cssText = 'width:28px; height:28px; border-radius:50%; cursor:pointer; border:2px solid ' + (combo === selectedColor ? '#2d2b35' : 'transparent') + '; overflow:hidden; transition:border-color 0.15s; position:relative;';
+            pill.innerHTML = '<div style="position:absolute; top:0; left:0; width:50%; height:100%; background:' + combo.primary + ';"></div>'
+                + '<div style="position:absolute; top:0; right:0; width:50%; height:100%; background:' + combo.accent + ';"></div>';
+            pill.addEventListener('click', function() {
+                selectedColor = combo;
+                renderColorPalette();
+                updateColorPreview();
+            });
+            colorPalette.appendChild(pill);
+        });
+    }
+
+    document.getElementById('avatarBack').addEventListener('click', function() {
+        step2.style.display = 'none'; step1.style.display = 'block';
+    });
+
+    document.getElementById('avatarConfirm').addEventListener('click', function() {
+        currentAvatar = selectedShape + '|' + selectedColor.primary + '|' + selectedColor.accent;
+        // Update main preview
+        loadSvg(selectedShape, function(svgText) {
+            var colored = colorSvg(svgText, selectedColor.primary, selectedColor.accent);
+            document.getElementById('avatarPreview').innerHTML = '<img src="' + svgToDataUrl(colored) + '" style="width:100%; height:100%; object-fit:cover;">';
+        });
+        document.getElementById('avatarPicker').style.display = 'none';
+        step2.style.display = 'none'; step1.style.display = 'block';
+    });
+
     document.getElementById('avatarPreview').addEventListener('click', function() {
         var picker = document.getElementById('avatarPicker');
         picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
+        step1.style.display = 'block'; step2.style.display = 'none';
     });
 
     var originalEmail = '';
@@ -354,11 +465,13 @@
             document.getElementById('userPhone').value = data.user.phone || '';
             document.getElementById('phoneCountry').value = data.user.phone_country || '+33';
             // Avatar
-            if (data.user.avatar_choice) {
+            if (data.user.avatar_choice && data.user.avatar_choice.includes('|')) {
                 currentAvatar = data.user.avatar_choice;
-                document.getElementById('avatarPreview').innerHTML = '<img src="/avatars/' + data.user.avatar_choice + '.svg" style="width:100%; height:100%; object-fit:cover;">';
-                var sel = avatarGrid.querySelector('[data-avatar="' + data.user.avatar_choice + '"]');
-                if (sel) sel.style.borderColor = '#c15f3c';
+                var parts = data.user.avatar_choice.split('|');
+                loadSvg(parts[0], function(svgText) {
+                    var colored = colorSvg(svgText, parts[1], parts[2]);
+                    document.getElementById('avatarPreview').innerHTML = '<img src="' + svgToDataUrl(colored) + '" style="width:100%; height:100%; object-fit:cover;">';
+                });
             } else {
                 var initials = ((data.user.first_name || data.user.name || '?')[0] + (data.user.last_name || '')[0]).toUpperCase();
                 document.getElementById('avatarInitials').textContent = initials || '?';
