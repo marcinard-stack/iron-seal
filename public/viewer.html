@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
-    <title>Iron Seal — CDC & Proposition</title>
+    <title>Iron Seal</title>
+    <meta name="description" content="Cahier des charges et proposition commerciale sur Iron Seal.">
+    <meta property="og:title" content="Iron Seal — Proposition commerciale">
+    <meta property="og:description" content="Consultez, commentez et signez votre devis en ligne.">
+    <meta property="og:image" content="/apple-touch-icon.png">
+    <meta property="og:type" content="website">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
@@ -2802,6 +2807,7 @@
             var propV = document.getElementById('propaleVersion');
             if (cdcV) cdcV.textContent = cdcV.textContent.replace(/Version [0-9.]+/, vLabel);
             if (propV) propV.textContent = propV.textContent.replace(/Version [0-9.]+/, vLabel);
+            document.title = (PROJECT_DATA.title || 'Projet') + ' — Iron Seal';
             var featData = results[0];
             allFeatures = featData.features || featData;
             if (featData.presence) updatePresence(featData.presence);

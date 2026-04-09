@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iron Seal</title>
+    <title>Brouillons — Iron Seal</title>
+    <meta name="description" content="Gérez vos projets et devis sur Iron Seal.">
+    <meta property="og:title" content="Iron Seal — Propositions & signatures en ligne">
+    <meta property="og:description" content="La plateforme qui simplifie la relation freelance-client, du cadrage du besoin à la signature du devis.">
+    <meta property="og:image" content="/apple-touch-icon.png">
+    <meta property="og:type" content="website">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
@@ -396,6 +401,7 @@
 
     var tab = TABS[currentTab];
     document.getElementById('pageTitle').textContent = tab.title;
+    document.title = tab.title + ' — Iron Seal';
     document.getElementById('pageSubtitle').textContent = tab.subtitle;
 
     // Highlight sidebar
