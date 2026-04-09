@@ -106,7 +106,9 @@
             width: 32px; height: 32px; border-radius: 50%;
             background: #c15f3c; color: white; font-size: 13px; font-weight: 600;
             display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            overflow: hidden;
         }
+        .left-sidebar-user .avatar img { width: 100%; height: 100%; object-fit: cover; }
         .left-sidebar-user .user-info {
             flex: 1; min-width: 0;
         }
@@ -1255,9 +1257,14 @@
     function renderAvatar(el, avatarChoice, fallbackInitials) {
         if (avatarChoice && avatarChoice.includes('|')) {
             var parts = avatarChoice.split('|');
+            el.style.overflow = 'hidden';
             fetch('/avatars/' + parts[0] + '.svg').then(function(r) { return r.text(); }).then(function(svgText) {
                 var colored = colorSvgViewer(svgText, parts[1], parts[2]);
-                el.innerHTML = '<img src="' + svgToDataUrlViewer(colored) + '" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">';
+                var img = document.createElement('img');
+                img.src = svgToDataUrlViewer(colored);
+                img.style.cssText = 'width:100%; height:100%; object-fit:cover; display:block;';
+                el.innerHTML = '';
+                el.appendChild(img);
             });
         } else {
             el.textContent = fallbackInitials || '?';
@@ -1314,7 +1321,14 @@
         others.forEach(function(u, i) {
             var name = u.name || 'Anonyme';
             var init = name.split(' ').map(function(w) { return w[0]; }).join('').toUpperCase().substring(0,2);
-            var theme = PRESENCE_THEMES[i % PRESENCE_THEMES.length];
+            // Use avatar colors if available, otherwise fallback to theme palette
+            var theme;
+            if (u.avatar_choice && u.avatar_choice.includes('|')) {
+                var avParts = u.avatar_choice.split('|');
+                theme = { bg: avParts[2], color: avParts[1] }; // accent as bg, primary as text
+            } else {
+                theme = PRESENCE_THEMES[i % PRESENCE_THEMES.length];
+            }
             var isExpanded = prevExpanded === u.user_id;
 
             var el = document.createElement('div');
