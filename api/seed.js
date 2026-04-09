@@ -76,6 +76,34 @@ export default async function handler(req, res) {
       }
     }
 
+    // Duplicate features/jobs to test project 2
+    const testProj2 = await sql`SELECT id FROM projects WHERE slug = 'cdc-cockpit-sales-carjager-test-2-bqqrmo'`;
+    if (testProj2.length) {
+      const t2id = testProj2[0].id;
+      const t2feats = await sql`SELECT COUNT(*) as c FROM features WHERE project_id = ${t2id}`;
+      if (parseInt(t2feats[0].c) === 0) {
+        const sf = await sql`SELECT * FROM features WHERE project_id = ${projectId} ORDER BY position`;
+        for (const f of sf) {
+          const nf = await sql`INSERT INTO features (project_id, position, code, title, description, is_transverse) VALUES (${t2id}, ${f.position}, ${f.code}, ${f.title}, ${f.description}, ${f.is_transverse}) RETURNING id`;
+          const sj = await sql`SELECT * FROM jobs WHERE feature_id = ${f.id} ORDER BY position`;
+          for (const j of sj) { await sql`INSERT INTO jobs (feature_id, position, description, jh, type, priority, is_offered, included) VALUES (${nf[0].id}, ${j.position}, ${j.description}, ${j.jh}, ${j.type}, ${j.priority}, ${j.is_offered}, ${j.included})`; }
+        }
+        const se = await sql`SELECT * FROM exclusions WHERE project_id = ${projectId} ORDER BY position`;
+        for (const e of se) { await sql`INSERT INTO exclusions (project_id, position, title, description) VALUES (${t2id}, ${e.position}, ${e.title}, ${e.description})`; }
+      }
+      // Link charlotte as client if not linked
+      const t2p = await sql`SELECT client_account_id FROM projects WHERE id = ${t2id}`;
+      if (t2p.length && !t2p[0].client_account_id) {
+        let charlotteAcc = await sql`SELECT account_id FROM users WHERE email = 'jarosz.charlotte@gmail.com'`;
+        if (!charlotteAcc.length) {
+          const ca = await sql`INSERT INTO accounts (name, type, plan) VALUES ('Charlotte Jarosz', 'solo', 'free') RETURNING id`;
+          await sql`INSERT INTO users (account_id, email, name, role) VALUES (${ca[0].id}, 'jarosz.charlotte@gmail.com', 'Charlotte Jarosz', 'owner')`;
+          charlotteAcc = [{ account_id: ca[0].id }];
+        }
+        await sql`UPDATE projects SET client_account_id = ${charlotteAcc[0].account_id} WHERE id = ${t2id}`;
+      }
+    }
+
     // Duplicate features/jobs to test project if it exists
     const testProj = await sql`SELECT id FROM projects WHERE slug = 'cdc-cockpit-sales-carjager-test-gdkaar'`;
     if (testProj.length) {
