@@ -68,9 +68,31 @@
         .left-sidebar {
             position: fixed; left: 0; top: 56px; bottom: 0; width: 260px;
             background: #2d2b35; z-index: 250; display: flex; flex-direction: column;
-            transform: translateX(-260px); transition: transform 0.25s ease;
+            transform: translateX(-204px); transition: transform 0.25s ease;
         }
         .left-sidebar.open { transform: translateX(0); }
+
+        /* Collapsed mini sidebar (56px strip with icons only) */
+        .left-sidebar .mini-strip {
+            position: absolute; right: 0; top: 0; bottom: 0; width: 56px;
+            display: flex; flex-direction: column; align-items: center;
+            padding: 12px 0; cursor: pointer;
+        }
+        .left-sidebar .mini-strip .mini-icon {
+            width: 36px; height: 36px; border-radius: 8px; display: flex;
+            align-items: center; justify-content: center; margin-bottom: 4px;
+            color: #8a8780; transition: background 0.15s;
+        }
+        .left-sidebar .mini-strip .mini-icon:hover { background: rgba(255,255,255,0.06); }
+        .left-sidebar .mini-strip .mini-icon svg { width: 16px; height: 16px; opacity: 0.6; }
+        .left-sidebar .mini-strip .mini-avatar {
+            width: 32px; height: 32px; border-radius: 50%; overflow: hidden;
+            margin-top: auto; margin-bottom: 12px; cursor: pointer;
+            background: #c15f3c; display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 11px; font-weight: 600;
+        }
+        .left-sidebar .mini-strip .mini-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .left-sidebar.open .mini-strip { display: none; }
         .left-sidebar-content { flex: 1 1 0; padding: 12px; overflow-y: auto; min-height: 0; }
         .left-sidebar-content::-webkit-scrollbar { width: 4px; }
         .left-sidebar-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
@@ -127,12 +149,7 @@
         .left-sidebar-user:hover .settings-icon { color: #e8e6e0; }
         .left-sidebar-user .settings-icon svg { width: 16px; height: 16px; }
 
-        /* Left sidebar overlay */
-        .left-overlay {
-            position: fixed; top: 56px; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.3); z-index: 240; display: none;
-        }
-        .left-overlay.show { display: block; }
+        /* Left sidebar overlay — removed, no shadow, no blocking */
 
         /* ---- SIDENAV (table of contents) ---- */
         .sidenav {
@@ -166,8 +183,8 @@
 
         /* ---- COMMENT PANEL (right) ---- */
         .comment-panel {
-            position: fixed; right: -340px; top: 56px; bottom: 0;
-            width: 340px; background: white; z-index: 190;
+            position: fixed; right: -260px; top: 56px; bottom: 0;
+            width: 260px; background: white; z-index: 190;
             box-shadow: -4px 0 24px rgba(0,0,0,0.08); border-left: 1px solid #e8e6e0;
             transition: right 0.25s ease; display: flex; flex-direction: column;
         }
@@ -265,7 +282,7 @@
 
         /* ---- MAIN CONTENT ---- */
         .main-content {
-            padding: 76px 36px 36px 36px;
+            padding: 76px 36px 36px 76px;
             max-width: 1100px; margin: 0 auto; position: relative;
         }
         .header {
@@ -838,8 +855,26 @@
 </div>
 
 <!-- LEFT SIDEBAR -->
-<div class="left-overlay" id="leftOverlay"></div>
 <div class="left-sidebar" id="leftSidebar">
+    <!-- Mini strip (visible when collapsed) -->
+    <div class="mini-strip" id="miniStrip">
+        <div class="mini-icon" title="Créer">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>
+        </div>
+        <div class="mini-icon" title="Brouillons">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2.5l.5.5-8.5 8.5L2 13l1.5-3L12 1.5l1 1z"/><line x1="9.5" y1="6" x2="11" y2="7.5"/></svg>
+        </div>
+        <div class="mini-icon" title="Proposés">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8l5 5 7-9"/></svg>
+        </div>
+        <div class="mini-icon" title="En cours">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><polyline points="8,5 8,8 10.5,9.5"/></svg>
+        </div>
+        <div class="mini-icon" title="Terminés">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,8.5 7,11.5 12,5"/><circle cx="8" cy="8" r="6"/></svg>
+        </div>
+        <div class="mini-avatar" id="miniAvatar">?</div>
+    </div>
     <div class="left-sidebar-content">
         <button class="sidebar-cta" id="createProjectBtn">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>
@@ -1280,6 +1315,9 @@
         var sidebarAv = document.getElementById('sidebarAvatar');
         renderAvatar(sidebarAv, dfUser.avatar_choice, initials);
         document.getElementById('sidebarUserName').textContent = dfUser.name || 'Utilisateur';
+        // Mini avatar
+        var miniAv = document.getElementById('miniAvatar');
+        if (miniAv) renderAvatar(miniAv, dfUser.avatar_choice, initials);
     }
 
     // Sidebar user menu toggle
@@ -1383,16 +1421,15 @@
 
     // ===== TOP BAR & SIDEBARS =====
     var leftSidebar = document.getElementById('leftSidebar');
-    var leftOverlay = document.getElementById('leftOverlay');
     var leftToggle = document.getElementById('leftSidebarToggle');
 
     leftToggle.addEventListener('click', function() {
         leftSidebar.classList.toggle('open');
-        leftOverlay.classList.toggle('show');
     });
-    leftOverlay.addEventListener('click', function() {
-        leftSidebar.classList.remove('open');
-        leftOverlay.classList.remove('show');
+
+    // Mini strip click → expand sidebar
+    document.getElementById('miniStrip').addEventListener('click', function() {
+        leftSidebar.classList.add('open');
     });
 
     // ===== SIDENAV =====
