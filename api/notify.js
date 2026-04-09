@@ -36,7 +36,9 @@ function emailLayout(content) {
     + '<table width="520" cellpadding="0" cellspacing="0" style="max-width:520px;">'
     + '<tr><td style="padding:0 0 24px;">'
     + '<table width="100%" cellpadding="0" cellspacing="0"><tr>'
-    + '<td style="font-size:16px; font-weight:700; color:#2d2b35; letter-spacing:-0.02em;">Iron Seal</td>'
+    + '<td style="font-size:18px; font-weight:700; color:#2d2b35; letter-spacing:-0.03em; font-family:Helvetica Neue,Arial,sans-serif;">'
+    + '<img src="https://deal-forge-tawny.vercel.app/seal-logo.png" width="22" height="22" alt="" style="vertical-align:middle; margin-right:5px;">'
+    + 'iron seal</td>'
     + '<td align="right" style="font-size:11px; color:#b1ada1;">Proposition &amp; signature en ligne</td>'
     + '</tr></table>'
     + '</td></tr>'
@@ -70,7 +72,7 @@ function emailTag(label, color) {
 
 function proposalEmail(projectTitle, freelanceName, viewLink) {
   return emailLayout(
-    '<p style="margin:0 0 14px;">' + emailTag('Nouvelle proposition', 'orange') + '</p>'
+    '<p style="margin:0 0 14px; text-align:center;">' + emailTag('Nouvelle proposition', 'orange') + '</p>'
     + '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 20px; line-height:1.3;">' + projectTitle + '</h2>'
     + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0 0 10px; text-align:justify;">'
     + '<strong>' + freelanceName + '</strong> vous a envoy\u00e9 une proposition commerciale.</p>'
@@ -85,7 +87,7 @@ function backToDraftEmail(projectTitle, requesterName, isClient, link, message) 
   var action = isClient ? 'a demand\u00e9 des modifications sur' : 'a repass\u00e9 en brouillon';
   var msgBlock = message ? '<div style="background:#f9f8f6; border-left:3px solid #c15f3c; border-radius:0 6px 6px 0; padding:12px 16px; margin:16px 0 0; font-size:13px; color:#4a4850; line-height:1.6; white-space:pre-wrap;">' + message.replace(/</g, '&lt;') + '</div>' : '';
   return emailLayout(
-    '<p style="margin:0 0 14px;">' + emailTag('Retour en brouillon', 'gray') + '</p>'
+    '<p style="margin:0 0 14px; text-align:center;">' + emailTag('Retour en brouillon', 'gray') + '</p>'
     + '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 20px; line-height:1.3;">' + projectTitle + '</h2>'
     + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0; text-align:justify;">'
     + '<strong>' + requesterName + '</strong> ' + action + ' ce projet.</p>'
