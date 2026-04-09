@@ -76,12 +76,8 @@ export default async function handler(req, res) {
       }
     }
 
-    // Reset conversations for test project 2
-    const convs = await sql`SELECT id FROM conversations WHERE project_id = 4`;
-    for (const c of convs) {
-      await sql`DELETE FROM chat_messages WHERE conversation_id = ${c.id}`;
-    }
-    await sql`DELETE FROM conversations WHERE project_id = 4`;
+    // Clean empty messages in conversations
+    await sql`DELETE FROM chat_messages WHERE content = '' OR content IS NULL`;
 
     // Duplicate features/jobs to test project 2
     const testProj2 = await sql`SELECT id FROM projects WHERE slug = 'cdc-cockpit-sales-carjager-test-2-bqqrmo'`;

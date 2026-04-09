@@ -275,10 +275,23 @@ export default async function handler(req, res) {
         }
       }
 
-      // Save assistant response
-      if (fullText || toolResults.length) {
-        await sql`INSERT INTO chat_messages (conversation_id, role, content, tool_calls_json) VALUES (${conversationId}, 'assistant', ${fullText}, ${toolResults.length ? JSON.stringify(toolResults) : null})`;
+      // Save assistant response (only if we got content)
+      if (fullText.trim() || toolResults.length) {
+        await sql`INSERT INTO chat_messages (conversation_id, role, content, tool_calls_json) VALUES (${conversationId}, 'assistant', ${fullText.trim()}, ${toolResults.length ? JSON.stringify(toolResults) : null})`;
         await sql`UPDATE conversations SET updated_at = NOW() WHERE id = ${conversationId}`;
+      }
+
+      // If Claude only did tool calls with no text, we need a follow-up to get the actual response
+      if (!fullText.trim() && toolResults.length) {
+        // Claude used tools but didn't write text — call again with tool results to get the text response
+        var followUpMsgs = recentMsgs.map(function(m) { return { role: m.role === 'user' ? 'user' : 'assistant', content: m.content }; });
+        followUpMsgs.push({ role: 'assistant', content: '(J\'ai mis à jour le contexte du projet.)' });
+        followUpMsgs.push({ role: 'user', content: 'Continue.' });
+        var followUp = await callClaudeWithTools(sql, parseInt(conversationId), currentStep, followUpMsgs, contextStr);
+        if (followUp.text.trim()) {
+          res.write('data: ' + JSON.stringify({ text: followUp.text }) + '\n\n');
+          await sql`INSERT INTO chat_messages (conversation_id, role, content) VALUES (${conversationId}, 'assistant', ${followUp.text.trim()})`;
+        }
       }
 
       res.write('data: [DONE]\n\n');
