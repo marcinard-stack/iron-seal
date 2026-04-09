@@ -352,60 +352,66 @@
         typingIndicator.classList.add('show');
         scrollToBottom();
 
-        // Stream the response
         fetch('/api/chat?conversation_id=' + conversationId, {
             method: 'POST',
             headers: headers,
             body: JSON.stringify({ message: msg })
-        }).then(function(response) {
+        }).then(function(r) { return r.json(); })
+        .then(function(data) {
             typingIndicator.classList.remove('show');
-            var streamEl = createStreamingMessage();
-            var reader = response.body.getReader();
-            var decoder = new TextDecoder();
-            var buffer = '';
 
-            function readChunk() {
-                reader.read().then(function(result) {
-                    if (result.done) {
-                        isStreaming = false;
-                        chatSend.disabled = !chatInput.value.trim();
-                        // Remove the streaming id
-                        if (streamEl) streamEl.removeAttribute('id');
-                        return;
-                    }
-                    buffer += decoder.decode(result.value, { stream: true });
-                    var lines = buffer.split('\n');
-                    buffer = lines.pop();
-                    for (var i = 0; i < lines.length; i++) {
-                        var line = lines[i];
-                        if (line.startsWith('data: ')) {
-                            var data = line.slice(6);
-                            if (data === '[DONE]') continue;
-                            try {
-                                var parsed = JSON.parse(data);
-                                if (parsed.text) {
-                                    streamEl.innerHTML += escHtml(parsed.text);
-                                    scrollToBottom();
-                                } else if (parsed.choices) {
-                                    renderChoices(parsed.choices.question, parsed.choices.options);
-                                } else if (parsed.transition) {
-                                    renderTransition(parsed.transition.next_step, parsed.transition.summary);
-                                } else if (parsed.context_update) {
-                                    updateSidePanel(parsed.context_update.section, parsed.context_update.data);
-                                }
-                            } catch(e) {}
-                        }
-                    }
-                    readChunk();
+            // Render text with typewriter effect
+            if (data.text && data.text.trim()) {
+                typewriterMessage(data.text.trim(), function() {
+                    // After text, render tool results
+                    renderToolResults(data.tool_results);
+                    isStreaming = false;
+                    chatSend.disabled = !chatInput.value.trim();
                 });
+            } else {
+                renderToolResults(data.tool_results);
+                isStreaming = false;
+                chatSend.disabled = !chatInput.value.trim();
             }
-            readChunk();
+
+            // Update step
+            if (data.step) updateStepIndicator(data.step);
         }).catch(function(err) {
             typingIndicator.classList.remove('show');
             isStreaming = false;
+            chatSend.disabled = false;
             addMessage('assistant', 'Erreur de connexion. Réessayez.');
         });
     });
+
+    function typewriterMessage(text, onDone) {
+        var streamEl = createStreamingMessage();
+        var i = 0;
+        var speed = 12; // ms per character
+        function type() {
+            if (i < text.length) {
+                // Add characters in chunks for performance
+                var chunk = text.substring(i, Math.min(i + 3, text.length));
+                streamEl.innerHTML += escHtml(chunk);
+                i += chunk.length;
+                scrollToBottom();
+                setTimeout(type, speed);
+            } else {
+                if (streamEl) streamEl.removeAttribute('id');
+                if (onDone) onDone();
+            }
+        }
+        type();
+    }
+
+    function renderToolResults(toolResults) {
+        if (!toolResults) return;
+        toolResults.forEach(function(tr) {
+            if (tr.tool === 'propose_choices') renderChoices(tr.question, tr.options);
+            if (tr.tool === 'transition_step') renderTransition(tr.next_step, tr.summary);
+            if (tr.tool === 'context_update' || tr.tool === 'update_context') updateSidePanel(tr.section, tr.data);
+        });
+    }
 
     // Initialize: get or create conversation for this project
     function init() {

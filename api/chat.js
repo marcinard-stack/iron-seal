@@ -201,102 +201,16 @@ export default async function handler(req, res) {
       var currentStep = conv[0].current_step || 'comprendre';
       var contextStr = JSON.stringify(conv[0].context_json || {});
 
-      // Stream response with tool call handling
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
+      // Use non-streaming approach (reliable, handles tool calls properly)
+      var response = await callClaudeWithTools(sql, parseInt(conversationId), currentStep, recentMsgs, contextStr);
 
-      var systemPrompt = (SYSTEM_PROMPTS[currentStep] || SYSTEM_PROMPTS.comprendre) + '\n\nContexte accumulé du projet :\n' + contextStr;
-      var anthropicMessages = recentMsgs.map(function(m) { return { role: m.role === 'user' ? 'user' : 'assistant', content: m.content }; });
-
-      // Call Claude with streaming
-      var anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4096, system: systemPrompt, messages: anthropicMessages, tools: TOOLS, stream: true })
-      });
-
-      var fullText = '';
-      var toolCalls = [];
-      var currentToolCall = null;
-      var reader = anthropicRes.body.getReader();
-      var decoder = new TextDecoder();
-      var buffer = '';
-
-      while (true) {
-        var { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        var lines = buffer.split('\n');
-        buffer = lines.pop();
-
-        for (var line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          var data = line.slice(6);
-          if (data === '[DONE]') continue;
-          try {
-            var ev = JSON.parse(data);
-            if (ev.type === 'content_block_start' && ev.content_block) {
-              if (ev.content_block.type === 'tool_use') {
-                currentToolCall = { id: ev.content_block.id, name: ev.content_block.name, input_json: '' };
-              }
-            } else if (ev.type === 'content_block_delta' && ev.delta) {
-              if (ev.delta.type === 'text_delta' && ev.delta.text) {
-                fullText += ev.delta.text;
-                res.write('data: ' + JSON.stringify({ text: ev.delta.text }) + '\n\n');
-              } else if (ev.delta.type === 'input_json_delta' && ev.delta.partial_json && currentToolCall) {
-                currentToolCall.input_json += ev.delta.partial_json;
-              }
-            } else if (ev.type === 'content_block_stop' && currentToolCall) {
-              try { currentToolCall.input = JSON.parse(currentToolCall.input_json); } catch(e) { currentToolCall.input = {}; }
-              toolCalls.push(currentToolCall);
-              currentToolCall = null;
-            }
-          } catch (e) {}
-        }
-      }
-
-      // Process tool calls
-      var toolResults = [];
-      for (var tc of toolCalls) {
-        if (tc.name === 'update_context') {
-          var ctx = conv[0].context_json || {};
-          ctx[tc.input.section] = tc.input.data;
-          await sql`UPDATE conversations SET context_json = ${JSON.stringify(ctx)}::jsonb, updated_at = NOW() WHERE id = ${conversationId}`;
-          toolResults.push({ tool: 'update_context', section: tc.input.section });
-          res.write('data: ' + JSON.stringify({ context_update: { section: tc.input.section, data: tc.input.data } }) + '\n\n');
-        } else if (tc.name === 'propose_choices') {
-          toolResults.push({ tool: 'propose_choices', question: tc.input.question, options: tc.input.options });
-          res.write('data: ' + JSON.stringify({ choices: { question: tc.input.question, options: tc.input.options } }) + '\n\n');
-        } else if (tc.name === 'transition_step') {
-          await sql`UPDATE conversations SET current_step = ${tc.input.next_step}, updated_at = NOW() WHERE id = ${conversationId}`;
-          toolResults.push({ tool: 'transition_step', next_step: tc.input.next_step, summary: tc.input.summary });
-          res.write('data: ' + JSON.stringify({ transition: { next_step: tc.input.next_step, summary: tc.input.summary } }) + '\n\n');
-        }
-      }
-
-      // Save assistant response (only if we got content)
-      if (fullText.trim() || toolResults.length) {
-        await sql`INSERT INTO chat_messages (conversation_id, role, content, tool_calls_json) VALUES (${conversationId}, 'assistant', ${fullText.trim()}, ${toolResults.length ? JSON.stringify(toolResults) : null})`;
+      // Return as JSON (frontend will handle display)
+      if (response.text.trim() || (response.toolResults && response.toolResults.length)) {
+        await sql`INSERT INTO chat_messages (conversation_id, role, content, tool_calls_json) VALUES (${conversationId}, 'assistant', ${response.text.trim()}, ${response.toolResults ? JSON.stringify(response.toolResults) : null})`;
         await sql`UPDATE conversations SET updated_at = NOW() WHERE id = ${conversationId}`;
       }
 
-      // If Claude only did tool calls with no text, we need a follow-up to get the actual response
-      if (!fullText.trim() && toolResults.length) {
-        // Claude used tools but didn't write text — call again with tool results to get the text response
-        var followUpMsgs = recentMsgs.map(function(m) { return { role: m.role === 'user' ? 'user' : 'assistant', content: m.content }; });
-        followUpMsgs.push({ role: 'assistant', content: '(J\'ai mis à jour le contexte du projet.)' });
-        followUpMsgs.push({ role: 'user', content: 'Continue.' });
-        var followUp = await callClaudeWithTools(sql, parseInt(conversationId), currentStep, followUpMsgs, contextStr);
-        if (followUp.text.trim()) {
-          res.write('data: ' + JSON.stringify({ text: followUp.text }) + '\n\n');
-          await sql`INSERT INTO chat_messages (conversation_id, role, content) VALUES (${conversationId}, 'assistant', ${followUp.text.trim()})`;
-        }
-      }
-
-      res.write('data: [DONE]\n\n');
-      res.end();
-      return;
+      return res.json({ text: response.text, tool_results: response.toolResults, step: currentStep });
     }
 
     return res.status(405).json({ error: 'method not allowed' });
