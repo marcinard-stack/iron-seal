@@ -97,6 +97,8 @@
         }
         .left-sidebar .mini-strip .mini-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .left-sidebar.open .mini-strip { display: none; }
+        .left-sidebar:not(.open) .left-sidebar-content { visibility: hidden; }
+        .left-sidebar:not(.open) .left-sidebar-user-section { visibility: hidden; }
         .left-sidebar-content { flex: 1 1 0; padding: 12px; overflow-y: auto; min-height: 0; }
         .left-sidebar-content::-webkit-scrollbar { width: 4px; }
         .left-sidebar-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
@@ -157,7 +159,7 @@
 
         /* ---- SIDENAV (table of contents) ---- */
         .sidenav {
-            position: fixed; left: 68px; top: 50%; transform: translateY(-50%);
+            position: fixed; left: 80px; top: 50%; transform: translateY(-50%);
             z-index: 100; display: flex; flex-direction: column; gap: 0;
             opacity: 0; transition: opacity 0.15s ease;
         }
