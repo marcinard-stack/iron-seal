@@ -373,12 +373,13 @@
     }
     function colorSvg(svgText, primary, accent) {
         return svgText
+            .replace(/<\?xml[^?]*\?>/, '')
             .replace(/id="primary" fill="[^"]*"/, 'id="primary" fill="' + primary + '"')
             .replace(/id="accent" fill="[^"]*"/, 'id="accent" fill="' + accent + '"')
-            .replace(/id="background" [^/]*\/>/, 'id="background" width="100%" height="100%" fill="none"/>');
+            .replace(/<rect id="background"[^/]*\/>/, '<rect id="background" width="100%" height="100%" fill="none"/>');
     }
     function svgToDataUrl(svgText) {
-        return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgText)));
+        return 'data:image/svg+xml,' + encodeURIComponent(svgText.trim());
     }
 
     // Step 1: render avatar grid
