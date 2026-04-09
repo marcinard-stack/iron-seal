@@ -259,6 +259,87 @@
         return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
     }
 
+    function renderChoices(question, options) {
+        var div = document.createElement('div');
+        div.className = 'msg';
+        var html = '<div class="msg-avatar assistant">IS</div><div class="msg-body">'
+            + '<div class="msg-name">Iron Seal</div>'
+            + '<div class="msg-text" style="margin-bottom:12px;">' + escHtml(question) + '</div>'
+            + '<div style="display:flex; flex-direction:column; gap:6px;">';
+        options.forEach(function(opt) {
+            html += '<button class="choice-btn" style="text-align:left; padding:10px 14px; background:#f9f8f6; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; color:#2d2b35; cursor:pointer; font-family:inherit; transition:all 0.15s;"'
+                + ' onmouseover="this.style.borderColor=\'#c15f3c\';this.style.background=\'#fdf6f3\'"'
+                + ' onmouseout="this.style.borderColor=\'#e8e6e0\';this.style.background=\'#f9f8f6\'">'
+                + escHtml(opt) + '</button>';
+        });
+        html += '</div></div>';
+        div.innerHTML = html;
+        msgList.insertBefore(div, typingIndicator);
+        // Bind click handlers
+        div.querySelectorAll('.choice-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var choice = btn.textContent;
+                if (choice === 'Autre (précisez)') {
+                    chatInput.focus();
+                    chatInput.placeholder = 'Précisez votre réponse...';
+                } else {
+                    // Disable all buttons
+                    div.querySelectorAll('.choice-btn').forEach(function(b) {
+                        b.disabled = true; b.style.opacity = '0.5'; b.style.cursor = 'default';
+                    });
+                    btn.style.opacity = '1'; btn.style.borderColor = '#c15f3c'; btn.style.background = '#fdf6f3';
+                    // Send as message
+                    chatInput.value = choice;
+                    chatSend.disabled = false;
+                    chatSend.click();
+                }
+            });
+        });
+        scrollToBottom();
+    }
+
+    function renderTransition(nextStep, summary) {
+        var stepNames = { promesse: 'La promesse', parcours: 'Structurer le parcours', materialiser: 'Matérialiser' };
+        var div = document.createElement('div');
+        div.className = 'msg';
+        div.innerHTML = '<div class="msg-avatar assistant">IS</div><div class="msg-body">'
+            + '<div style="background:#f0fdf4; border-radius:8px; padding:12px 16px; margin-top:4px;">'
+            + '<div style="font-size:12px; font-weight:600; color:#166534; margin-bottom:4px;">Étape terminée</div>'
+            + '<div style="font-size:13px; color:#4a4850; margin-bottom:10px;">' + escHtml(summary) + '</div>'
+            + '<button class="transition-btn" style="padding:8px 18px; background:#166534; color:white; border:none; border-radius:8px; font-size:13px; font-weight:500; cursor:pointer; font-family:inherit;">Passer à : ' + (stepNames[nextStep] || nextStep) + '</button>'
+            + '</div></div>';
+        msgList.insertBefore(div, typingIndicator);
+        div.querySelector('.transition-btn').addEventListener('click', function() {
+            this.disabled = true; this.textContent = 'En cours...';
+            // Update step indicator
+            updateStepIndicator(nextStep);
+            // Send a message to trigger the next step
+            chatInput.value = 'OK, passons à l\'étape suivante.';
+            chatSend.disabled = false;
+            chatSend.click();
+        });
+        scrollToBottom();
+    }
+
+    function updateStepIndicator(step) {
+        var steps = ['comprendre', 'promesse', 'parcours', 'materialiser'];
+        var labels = { comprendre: 'Comprendre', promesse: 'La promesse', parcours: 'Parcours', materialiser: 'Matérialiser' };
+        var dots = document.querySelectorAll('.step-dot');
+        var stepIdx = steps.indexOf(step);
+        dots.forEach(function(dot, i) {
+            dot.classList.remove('active', 'done');
+            if (i < stepIdx) dot.classList.add('done');
+            if (i === stepIdx) dot.classList.add('active');
+        });
+        document.getElementById('stepLabel').textContent = labels[step] || step;
+        document.getElementById('stepName').textContent = 'Étape ' + (stepIdx + 1) + ' — ' + (labels[step] || step);
+    }
+
+    function updateSidePanel(section, data) {
+        // For now, just log — side panel will be built in next iteration
+        console.log('[Context update]', section, data);
+    }
+
     // Send message
     chatSend.addEventListener('click', function() {
         var msg = chatInput.value.trim();
@@ -305,6 +386,12 @@
                                 if (parsed.text) {
                                     streamEl.innerHTML += escHtml(parsed.text);
                                     scrollToBottom();
+                                } else if (parsed.choices) {
+                                    renderChoices(parsed.choices.question, parsed.choices.options);
+                                } else if (parsed.transition) {
+                                    renderTransition(parsed.transition.next_step, parsed.transition.summary);
+                                } else if (parsed.context_update) {
+                                    updateSidePanel(parsed.context_update.section, parsed.context_update.data);
                                 }
                             } catch(e) {}
                         }
@@ -341,8 +428,23 @@
                 }).then(function(r) { return r.json(); })
                 .then(function(data) {
                     conversationId = data.conversation.id;
-                    if (data.initial_message) {
+                    if (data.messages && data.messages.length) {
+                        // Existing conversation — load all messages
+                        data.messages.forEach(function(m) {
+                            if (m.role === 'user' || m.role === 'assistant') {
+                                addMessage(m.role, m.content);
+                            }
+                        });
+                        // Update step indicator
+                        if (data.conversation.current_step) updateStepIndicator(data.conversation.current_step);
+                    } else if (data.initial_message) {
                         addMessage('assistant', data.initial_message);
+                        if (data.tool_results) {
+                            data.tool_results.forEach(function(tr) {
+                                if (tr.tool === 'propose_choices') renderChoices(tr.question, tr.options);
+                                if (tr.tool === 'transition_step') renderTransition(tr.next_step, tr.summary);
+                            });
+                        }
                     }
                     chatInput.focus();
                 });
