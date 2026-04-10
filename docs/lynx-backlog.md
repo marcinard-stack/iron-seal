@@ -17,5 +17,7 @@
 - [ ] Historique : pouvoir recharger une conversation existante (pas recréer)
 
 ## Retours test conversation #2 (2026-04-10)
-- [ ] Indicateur "est en train d'écrire" sur le PREMIER message aussi (actuellement absent, présent uniquement sur les réponses suivantes)
-- [ ] Restaurer un effet de "unfold" / unwrap progressif du texte au lieu du paste brutal — perte du streaming SSE → typewriter actuel trop sec ?
+- [x] Indicateur "est en train d'écrire" sur le PREMIER message aussi
+- [x] Restaurer un effet de "unfold" / unwrap progressif du texte (typewriter word-by-word avec pauses naturelles)
+- [x] Fix bug critique : réponse vide quand Claude ne fait qu'un tool_use (boucle agentique côté serveur)
+- [x] Étape 2 (promesse) bouclait en QCM : QCM tagué "[Sélection validée]" + prompt machine à états strict

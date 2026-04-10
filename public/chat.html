@@ -288,10 +288,8 @@
                         b.disabled = true; b.style.opacity = '0.5'; b.style.cursor = 'default';
                     });
                     btn.style.opacity = '1'; btn.style.borderColor = '#c15f3c'; btn.style.background = '#fdf6f3';
-                    // Send as message
-                    chatInput.value = choice;
-                    chatSend.disabled = false;
-                    chatSend.click();
+                    // Display the clean choice in user bubble, but tag it for the model so it knows it's a final pick
+                    sendMessage(choice, '[Sélection validée par le client dans le QCM] ' + choice);
                 }
             });
         });
@@ -311,12 +309,8 @@
         msgList.insertBefore(div, typingIndicator);
         div.querySelector('.transition-btn').addEventListener('click', function() {
             this.disabled = true; this.textContent = 'En cours...';
-            // Update step indicator
             updateStepIndicator(nextStep);
-            // Send a message to trigger the next step
-            chatInput.value = 'OK, passons à l\'étape suivante.';
-            chatSend.disabled = false;
-            chatSend.click();
+            sendMessage('OK, passons à l\'étape suivante.', '[Validation utilisateur] OK pour passer à l\'étape suivante : ' + nextStep);
         });
         scrollToBottom();
     }
@@ -340,12 +334,13 @@
         console.log('[Context update]', section, data);
     }
 
-    // Send message
-    chatSend.addEventListener('click', function() {
-        var msg = chatInput.value.trim();
-        if (!msg || isStreaming) return;
+    // Core send: displayText is what the user sees in their bubble, apiText is what we send to the model
+    function sendMessage(displayText, apiText) {
+        if (isStreaming) return;
+        var sent = (apiText != null ? apiText : displayText).trim();
+        if (!sent) return;
 
-        addMessage('user', msg);
+        addMessage('user', displayText);
         chatInput.value = ''; chatInput.style.height = 'auto';
         chatSend.disabled = true;
         isStreaming = true;
@@ -355,15 +350,13 @@
         fetch('/api/chat?conversation_id=' + conversationId, {
             method: 'POST',
             headers: headers,
-            body: JSON.stringify({ message: msg })
+            body: JSON.stringify({ message: sent })
         }).then(function(r) { return r.json(); })
         .then(function(data) {
             typingIndicator.classList.remove('show');
 
-            // Render text with typewriter effect
             if (data.text && data.text.trim()) {
                 typewriterMessage(data.text.trim(), function() {
-                    // After text, render tool results
                     renderToolResults(data.tool_results);
                     isStreaming = false;
                     chatSend.disabled = !chatInput.value.trim();
@@ -374,7 +367,6 @@
                 chatSend.disabled = !chatInput.value.trim();
             }
 
-            // Update step
             if (data.step) updateStepIndicator(data.step);
         }).catch(function(err) {
             typingIndicator.classList.remove('show');
@@ -382,6 +374,12 @@
             chatSend.disabled = false;
             addMessage('assistant', 'Erreur de connexion. Réessayez.');
         });
+    }
+
+    chatSend.addEventListener('click', function() {
+        var msg = chatInput.value.trim();
+        if (!msg) return;
+        sendMessage(msg);
     });
 
     function typewriterMessage(text, onDone) {
