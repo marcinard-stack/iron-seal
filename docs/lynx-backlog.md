@@ -15,3 +15,7 @@
 - [ ] CTA "Passer cette étape" (⏭) — skip avec avertissement
 - [ ] Calibrer le nombre de questions par étape (6-8 max avant transition)
 - [ ] Historique : pouvoir recharger une conversation existante (pas recréer)
+
+## Retours test conversation #2 (2026-04-10)
+- [ ] Indicateur "est en train d'écrire" sur le PREMIER message aussi (actuellement absent, présent uniquement sur les réponses suivantes)
+- [ ] Restaurer un effet de "unfold" / unwrap progressif du texte au lieu du paste brutal — perte du streaming SSE → typewriter actuel trop sec ?

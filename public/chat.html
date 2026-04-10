@@ -386,20 +386,34 @@
 
     function typewriterMessage(text, onDone) {
         var streamEl = createStreamingMessage();
+        // Tokenize: keep words and whitespace as separate tokens for natural unfolding
+        var tokens = text.split(/(\s+)/).filter(function(t) { return t.length > 0; });
         var i = 0;
-        var speed = 12; // ms per character
+        var built = '';
         function type() {
-            if (i < text.length) {
-                // Add characters in chunks for performance
-                var chunk = text.substring(i, Math.min(i + 3, text.length));
-                streamEl.innerHTML += escHtml(chunk);
-                i += chunk.length;
-                scrollToBottom();
-                setTimeout(type, speed);
-            } else {
+            if (i >= tokens.length) {
                 if (streamEl) streamEl.removeAttribute('id');
                 if (onDone) onDone();
+                return;
             }
+            var token = tokens[i];
+            built += token;
+            streamEl.innerHTML = escHtml(built);
+            scrollToBottom();
+            i++;
+            // Natural pacing: longer pauses on punctuation, slight randomness on words
+            var delay;
+            if (/^\s+$/.test(token)) {
+                delay = 8;
+            } else if (/[.!?…]["')\]]?$/.test(token)) {
+                delay = 240 + Math.random() * 80;
+            } else if (/[,;:]["')\]]?$/.test(token)) {
+                delay = 110 + Math.random() * 40;
+            } else {
+                // Word: ~30-65ms, slightly longer for longer words
+                delay = 28 + Math.min(token.length * 4, 30) + Math.random() * 20;
+            }
+            setTimeout(type, delay);
         }
         type();
     }
@@ -425,8 +439,12 @@
                 }
                 document.title = (project.title || 'Discovery') + ' — Iron Seal';
 
-                // Check if conversation exists
-                // For now, create a new one
+                // Show typing indicator while we load the conversation
+                isStreaming = true;
+                chatSend.disabled = true;
+                typingIndicator.classList.add('show');
+                scrollToBottom();
+
                 fetch('/api/chat', {
                     method: 'POST',
                     headers: headers,
@@ -435,24 +453,38 @@
                 .then(function(data) {
                     conversationId = data.conversation.id;
                     if (data.messages && data.messages.length) {
-                        // Existing conversation — load all messages
+                        // Existing conversation — load all messages instantly (no typewriter)
+                        typingIndicator.classList.remove('show');
                         data.messages.forEach(function(m) {
                             if (m.role === 'user' || m.role === 'assistant') {
                                 addMessage(m.role, m.content);
                             }
                         });
-                        // Update step indicator
                         if (data.conversation.current_step) updateStepIndicator(data.conversation.current_step);
+                        isStreaming = false;
+                        chatInput.focus();
                     } else if (data.initial_message) {
-                        addMessage('assistant', data.initial_message);
-                        if (data.tool_results) {
-                            data.tool_results.forEach(function(tr) {
-                                if (tr.tool === 'propose_choices') renderChoices(tr.question, tr.options);
-                                if (tr.tool === 'transition_step') renderTransition(tr.next_step, tr.summary);
-                            });
-                        }
+                        // Brand new conversation: typewriter the greeting like a normal turn
+                        typingIndicator.classList.remove('show');
+                        typewriterMessage(data.initial_message, function() {
+                            if (data.tool_results) {
+                                data.tool_results.forEach(function(tr) {
+                                    if (tr.tool === 'propose_choices') renderChoices(tr.question, tr.options);
+                                    if (tr.tool === 'transition_step') renderTransition(tr.next_step, tr.summary);
+                                });
+                            }
+                            isStreaming = false;
+                            chatInput.focus();
+                        });
+                    } else {
+                        typingIndicator.classList.remove('show');
+                        isStreaming = false;
+                        chatInput.focus();
                     }
-                    chatInput.focus();
+                }).catch(function(err) {
+                    typingIndicator.classList.remove('show');
+                    isStreaming = false;
+                    addMessage('assistant', 'Erreur de connexion. Rechargez la page.');
                 });
             });
     }

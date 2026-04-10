@@ -223,23 +223,35 @@ export default async function handler(req, res) {
 
 async function callClaudeWithTools(sql, conversationId, step, messages, contextStr) {
   var systemPrompt = (SYSTEM_PROMPTS[step] || SYSTEM_PROMPTS.comprendre) + '\n\nContexte accumulé :\n' + contextStr;
-  var r = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514', max_tokens: 4096,
-      system: systemPrompt,
-      messages: messages.map(function(m) { return { role: m.role === 'user' ? 'user' : 'assistant', content: m.content }; }),
-      tools: TOOLS
-    })
-  });
-  var data = await r.json();
-  var text = '';
+  var apiMessages = messages.map(function(m) { return { role: m.role === 'user' ? 'user' : 'assistant', content: m.content }; });
+  var finalText = '';
   var toolResults = [];
-  if (data.content) {
+  var maxIter = 5;
+
+  for (var iter = 0; iter < maxIter; iter++) {
+    var r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514', max_tokens: 4096,
+        system: systemPrompt,
+        messages: apiMessages,
+        tools: TOOLS
+      })
+    });
+    var data = await r.json();
+    if (!data.content) break;
+
+    var hasToolUse = false;
+    var toolResultBlocks = [];
+    var iterText = '';
+
     for (var block of data.content) {
-      if (block.type === 'text') text += block.text;
+      if (block.type === 'text') {
+        iterText += block.text;
+      }
       if (block.type === 'tool_use') {
+        hasToolUse = true;
         if (block.name === 'update_context' && block.input) {
           var conv = await sql`SELECT context_json FROM conversations WHERE id = ${conversationId}`;
           var ctx = conv.length ? (conv[0].context_json || {}) : {};
@@ -252,8 +264,18 @@ async function callClaudeWithTools(sql, conversationId, step, messages, contextS
           await sql`UPDATE conversations SET current_step = ${block.input.next_step} WHERE id = ${conversationId}`;
           toolResults.push({ tool: 'transition_step', next_step: block.input.next_step, summary: block.input.summary });
         }
+        toolResultBlocks.push({ type: 'tool_result', tool_use_id: block.id, content: 'ok' });
       }
     }
+
+    finalText += iterText;
+
+    if (!hasToolUse) break;
+
+    // Append assistant turn (full content) + user tool_result turn for next iteration
+    apiMessages.push({ role: 'assistant', content: data.content });
+    apiMessages.push({ role: 'user', content: toolResultBlocks });
   }
-  return { text: text, toolResults: toolResults.length ? toolResults : null };
+
+  return { text: finalText, toolResults: toolResults.length ? toolResults : null };
 }
