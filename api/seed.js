@@ -20,6 +20,27 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
   const sql = neon(process.env.DATABASE_URL);
+
+  // Create a fresh empty test project (LYNX scenario sandbox)
+  if (req.query.action === 'create_test_project') {
+    var rawName = (req.query.name || req.body && req.body.name || 'lynx-test').toString().trim();
+    var slugBase = rawName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'lynx-test';
+    var slug = slugBase + '-' + Math.random().toString(36).slice(2, 8);
+    var ownerAcc = await sql`SELECT a.id FROM accounts a JOIN users u ON u.account_id = a.id ORDER BY a.id LIMIT 1`;
+    var ownerId = ownerAcc.length ? ownerAcc[0].id : null;
+    var newProj = await sql`
+      INSERT INTO projects (slug, title, status, owner_account_id, freelance_account_id)
+      VALUES (${slug}, ${rawName}, 'draft', ${ownerId}, ${ownerId})
+      RETURNING id, slug, title, status
+    `;
+    return res.json({
+      ok: true,
+      project: newProj[0],
+      discovery_url: '/discovery/' + slug,
+      viewer_url: '/deals/draft/' + slug
+    });
+  }
+
   const projectSlug = 'cdc-cockpit-sales-carjager-49c2mq';
 
   try {

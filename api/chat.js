@@ -91,21 +91,40 @@ Après avoir couvert les parcours principaux (5-8 échanges), utilise "transitio
   materialiser: `Tu es un consultant senior en cadrage de projet IT sur Iron Seal. Tu passes à l'étape "Matérialiser" — génération du CDC.
 
 RÈGLES ABSOLUES :
-- Utilise les tools "create_feature" et "create_job" pour construire le CDC.
-- Utilise "update_context" pour suivre l'avancement.
-- Ton posé, professionnel.
+- Utilise les tools "create_feature", "create_job" et "create_exclusion" pour construire le CDC.
+- Ton posé, professionnel, factuel.
+- PAS de longue dissertation. Le client n'a pas besoin de relire ce qu'il vient de te dire.
 
 ÉTAPE ACTUELLE : MATÉRIALISER
-Objectif : générer un CDC structuré à partir de tout le contexte accumulé.
+Objectif : générer un CDC structuré et complet à partir de tout le contexte accumulé, en UN SEUL message.
 
-Ce que tu fais :
-1. Tu annonces que tu vas structurer le projet en features et jobs
-2. Tu crées les features une par une via "create_feature"
-3. Pour chaque feature, tu crées les jobs via "create_job" avec estimation J/H, type (new/refacto), priorité (must/nice)
-4. Tu identifies les exclusions (hors scope)
-5. Tu proposes un résumé et demandes validation
+PROTOCOLE STRICT (suis-le à la lettre) :
 
-Quand le CDC est complet, annonce au client que le cahier des charges est prêt et qu'il peut le consulter dans l'interface de devis.`
+1. Tu commences par UN SEUL court paragraphe d'intro (3-4 lignes max) annonçant ce que tu vas faire.
+
+2. Puis tu enchaînes IMMÉDIATEMENT, dans le MÊME message, une série d'appels d'outils :
+   - Pour chaque feature identifiée à partir du contexte parcours/use cases : un appel à "create_feature" (avec position 1, 2, 3...).
+   - Juste après chaque feature, les "create_job" qui lui correspondent (avec feature_position pointant sur la feature qui vient d'être créée). 2 à 5 jobs par feature en moyenne.
+   - À la fin, 3 à 6 "create_exclusion" pour les éléments hors scope identifiés (ce qui ne sera PAS fait — utile pour cadrer les attentes).
+
+3. Tu génères TOUS les tool calls dans ce SEUL et même message. Pas de "je vais commencer par" → "voilà la première" → "maintenant la deuxième". Tu output tout d'un coup.
+
+4. Une fois tous les tool calls passés, tu termines par un court message de conclusion (4-6 lignes) qui annonce :
+   - Le nombre de features et jobs créés
+   - Le total approximatif en jours/homme
+   - Que le CDC est prêt à être consulté dans l'interface de devis
+
+RÈGLES DE CHIFFRAGE :
+- jh : utilise des valeurs réalistes (0.25, 0.5, 1, 2, 3, 5). Une feature complète se chiffre généralement entre 1 et 8 J/H au total.
+- type : "new" pour création, "refacto" pour modification d'existant.
+- priority : "must" pour l'essentiel (MVP), "nice" pour les options qui peuvent attendre une v2.
+- Vise un total cohérent avec un projet de 15 à 40 J/H selon l'ampleur. Si le contexte évoque un MVP rapide, vise plus bas.
+
+INTERDICTIONS :
+- Ne JAMAIS lister les features en texte avant de les créer via le tool. Le tool EST la création — pas besoin de répéter en texte.
+- Ne JAMAIS poser de question. C'est l'étape de génération automatique.
+- Ne JAMAIS attendre une validation avant d'enchaîner les tool calls. Tout doit sortir d'un seul jet.`
+
 };
 
 var TOOLS = [
@@ -143,6 +162,50 @@ var TOOLS = [
         summary: { type: 'string', description: 'Un bref résumé de ce qui a été couvert dans l\'étape courante' }
       },
       required: ['next_step', 'summary']
+    }
+  },
+  {
+    name: 'create_feature',
+    description: 'Crée une feature (fonctionnalité macro) du cahier des charges. À appeler en premier, avant les jobs associés.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        position: { type: 'integer', description: 'Ordre de la feature dans le CDC, à partir de 1' },
+        code: { type: 'string', description: 'Code court ex: "FEAT 1". Optionnel.' },
+        title: { type: 'string', description: 'Titre court de la feature' },
+        description: { type: 'string', description: 'Description fonctionnelle' },
+        is_transverse: { type: 'boolean', description: 'true si la feature est transverse (ex: prestations incluses, nettoyage)' }
+      },
+      required: ['position', 'title']
+    }
+  },
+  {
+    name: 'create_job',
+    description: 'Crée un job (tâche technique chiffrée) appartenant à une feature. La feature doit avoir été créée plus tôt dans la même conversation. Référence par position.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        feature_position: { type: 'integer', description: 'La position de la feature parent (telle que passée à create_feature)' },
+        position: { type: 'integer', description: 'Ordre du job dans la feature, à partir de 1' },
+        description: { type: 'string', description: 'Description technique du job' },
+        jh: { type: 'number', description: 'Estimation en jours/homme (ex: 0.25, 0.5, 1, 2)' },
+        type: { type: 'string', enum: ['new', 'refacto'], description: 'new = création, refacto = modification d\'existant' },
+        priority: { type: 'string', enum: ['must', 'nice'], description: 'must = essentiel, nice = optionnel/v2' }
+      },
+      required: ['feature_position', 'description', 'jh', 'type', 'priority']
+    }
+  },
+  {
+    name: 'create_exclusion',
+    description: 'Crée une exclusion (élément hors scope du projet, à expliciter au client).',
+    input_schema: {
+      type: 'object',
+      properties: {
+        position: { type: 'integer' },
+        title: { type: 'string', description: 'Titre court' },
+        description: { type: 'string', description: 'Pourquoi c\'est hors scope' }
+      },
+      required: ['title']
     }
   }
 ];
@@ -228,7 +291,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'method not allowed' });
   } catch (err) {
     console.error(err);
-    if (!res.headersSent) return res.status(500).json({ error: err.message });
+    if (!res.headersSent) {
+      var status = err.anthropicHttpStatus || 500;
+      return res.status(status).json({
+        error: err.message || 'Internal error',
+        error_type: err.anthropicErrorType || 'server_error'
+      });
+    }
     res.end();
   }
 }
@@ -238,20 +307,35 @@ async function callClaudeWithTools(sql, conversationId, step, messages, contextS
   var apiMessages = messages.map(function(m) { return { role: m.role === 'user' ? 'user' : 'assistant', content: m.content }; });
   var finalText = '';
   var toolResults = [];
-  var maxIter = 5;
+  var isMaterialiser = step === 'materialiser';
+  var maxIter = isMaterialiser ? 8 : 5;
+  var maxTokens = isMaterialiser ? 8192 : 4096;
+
+  // Fetch the project_id once — needed for create_feature/create_job/create_exclusion
+  var convRow = await sql`SELECT project_id FROM conversations WHERE id = ${conversationId}`;
+  var projectId = convRow.length ? convRow[0].project_id : null;
 
   for (var iter = 0; iter < maxIter; iter++) {
     var r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514', max_tokens: 4096,
+        model: 'claude-sonnet-4-20250514', max_tokens: maxTokens,
         system: systemPrompt,
         messages: apiMessages,
         tools: TOOLS
       })
     });
     var data = await r.json();
+    // Anthropic returns { type: 'error', error: { type, message } } on failure
+    if (data.type === 'error' || !r.ok) {
+      var errMsg = data.error && data.error.message ? data.error.message : ('Anthropic API error (HTTP ' + r.status + ')');
+      var errType = data.error && data.error.type ? data.error.type : 'api_error';
+      var e = new Error(errMsg);
+      e.anthropicErrorType = errType;
+      e.anthropicHttpStatus = r.status;
+      throw e;
+    }
     if (!data.content) break;
 
     var hasToolUse = false;
@@ -264,6 +348,7 @@ async function callClaudeWithTools(sql, conversationId, step, messages, contextS
       }
       if (block.type === 'tool_use') {
         hasToolUse = true;
+        var resultContent = 'ok';
         if (block.name === 'update_context' && block.input) {
           var conv = await sql`SELECT context_json FROM conversations WHERE id = ${conversationId}`;
           var ctx = conv.length ? (conv[0].context_json || {}) : {};
@@ -275,8 +360,53 @@ async function callClaudeWithTools(sql, conversationId, step, messages, contextS
         } else if (block.name === 'transition_step' && block.input) {
           await sql`UPDATE conversations SET current_step = ${block.input.next_step} WHERE id = ${conversationId}`;
           toolResults.push({ tool: 'transition_step', next_step: block.input.next_step, summary: block.input.summary });
+        } else if (block.name === 'create_feature' && block.input && projectId) {
+          var fi = block.input;
+          var fcode = fi.code || ('FEAT ' + fi.position);
+          try {
+            var fRows = await sql`
+              INSERT INTO features (project_id, position, code, title, description, is_transverse)
+              VALUES (${projectId}, ${fi.position}, ${fcode}, ${fi.title}, ${fi.description || null}, ${fi.is_transverse || false})
+              RETURNING id, position
+            `;
+            toolResults.push({ tool: 'create_feature', feature_id: fRows[0].id, position: fRows[0].position, title: fi.title });
+            resultContent = 'Feature créée (id=' + fRows[0].id + ', position=' + fRows[0].position + ')';
+          } catch (insErr) {
+            resultContent = 'Erreur insertion feature : ' + insErr.message;
+          }
+        } else if (block.name === 'create_job' && block.input && projectId) {
+          var ji = block.input;
+          try {
+            var feat = await sql`SELECT id FROM features WHERE project_id = ${projectId} AND position = ${ji.feature_position} ORDER BY id DESC LIMIT 1`;
+            if (!feat.length) {
+              resultContent = 'Erreur : aucune feature trouvée à la position ' + ji.feature_position + '. Crée la feature avant le job.';
+            } else {
+              var jRows = await sql`
+                INSERT INTO jobs (feature_id, position, description, jh, type, priority, is_offered, included)
+                VALUES (${feat[0].id}, ${ji.position || 1}, ${ji.description}, ${ji.jh}, ${ji.type}, ${ji.priority}, false, ${ji.priority === 'must'})
+                RETURNING id
+              `;
+              toolResults.push({ tool: 'create_job', job_id: jRows[0].id, feature_position: ji.feature_position, jh: ji.jh });
+              resultContent = 'Job créé (id=' + jRows[0].id + ')';
+            }
+          } catch (insErr2) {
+            resultContent = 'Erreur insertion job : ' + insErr2.message;
+          }
+        } else if (block.name === 'create_exclusion' && block.input && projectId) {
+          var ei = block.input;
+          try {
+            var eRows = await sql`
+              INSERT INTO exclusions (project_id, position, title, description)
+              VALUES (${projectId}, ${ei.position || 1}, ${ei.title}, ${ei.description || null})
+              RETURNING id
+            `;
+            toolResults.push({ tool: 'create_exclusion', exclusion_id: eRows[0].id, title: ei.title });
+            resultContent = 'Exclusion créée (id=' + eRows[0].id + ')';
+          } catch (insErr3) {
+            resultContent = 'Erreur insertion exclusion : ' + insErr3.message;
+          }
         }
-        toolResultBlocks.push({ type: 'tool_result', tool_use_id: block.id, content: 'ok' });
+        toolResultBlocks.push({ type: 'tool_result', tool_use_id: block.id, content: resultContent });
       }
     }
 

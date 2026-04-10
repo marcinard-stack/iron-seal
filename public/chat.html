@@ -296,6 +296,24 @@
         scrollToBottom();
     }
 
+    function renderError(message, errorType) {
+        var div = document.createElement('div');
+        div.className = 'msg';
+        var label = errorType === 'authentication_error' || /credit/i.test(message) ? 'Crédits API épuisés'
+                  : errorType === 'rate_limit_error' ? 'Limite de requêtes atteinte'
+                  : errorType === 'overloaded_error' ? 'Service surchargé'
+                  : errorType === 'network' ? 'Erreur réseau'
+                  : errorType === 'empty_response' ? 'Réponse vide'
+                  : 'Erreur';
+        div.innerHTML = '<div class="msg-avatar assistant" style="background:#b3261e;">!</div><div class="msg-body">'
+            + '<div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:12px 16px; margin-top:4px;">'
+            + '<div style="font-size:12px; font-weight:600; color:#b3261e; margin-bottom:4px;">' + escHtml(label) + '</div>'
+            + '<div style="font-size:13px; color:#4a4850;">' + escHtml(message) + '</div>'
+            + '</div></div>';
+        msgList.insertBefore(div, typingIndicator);
+        scrollToBottom();
+    }
+
     function renderTransition(nextStep, summary) {
         var stepNames = { promesse: 'La promesse', parcours: 'Structurer le parcours', materialiser: 'Matérialiser' };
         var div = document.createElement('div');
@@ -351,9 +369,19 @@
             method: 'POST',
             headers: headers,
             body: JSON.stringify({ message: sent })
-        }).then(function(r) { return r.json(); })
-        .then(function(data) {
+        }).then(function(r) {
+            return r.json().then(function(d) { return { ok: r.ok, status: r.status, data: d }; });
+        })
+        .then(function(res) {
             typingIndicator.classList.remove('show');
+            var data = res.data;
+
+            if (!res.ok || data.error) {
+                renderError(data.error || 'Erreur inconnue', data.error_type);
+                isStreaming = false;
+                chatSend.disabled = !chatInput.value.trim();
+                return;
+            }
 
             if (data.text && data.text.trim()) {
                 typewriterMessage(data.text.trim(), function() {
@@ -361,8 +389,13 @@
                     isStreaming = false;
                     chatSend.disabled = !chatInput.value.trim();
                 });
-            } else {
+            } else if (data.tool_results && data.tool_results.length) {
                 renderToolResults(data.tool_results);
+                isStreaming = false;
+                chatSend.disabled = !chatInput.value.trim();
+            } else {
+                // Truly empty response — surface it instead of silent hang
+                renderError('Réponse vide reçue de l\'IA. Réessayez ou contactez le support.', 'empty_response');
                 isStreaming = false;
                 chatSend.disabled = !chatInput.value.trim();
             }
@@ -372,7 +405,7 @@
             typingIndicator.classList.remove('show');
             isStreaming = false;
             chatSend.disabled = false;
-            addMessage('assistant', 'Erreur de connexion. Réessayez.');
+            renderError('Erreur réseau : ' + (err && err.message ? err.message : 'connexion perdue'), 'network');
         });
     }
 
