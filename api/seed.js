@@ -3,6 +3,17 @@ import { neon } from '@neondatabase/serverless';
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     var sql2 = neon(process.env.DATABASE_URL);
+    var action = req.query.action;
+
+    // Dump messages for a project's most recent conversation
+    if (action === 'dump_messages') {
+      var pid = parseInt(req.query.project_id || '4');
+      var convs = await sql2`SELECT id, current_step, context_json, created_at, updated_at FROM conversations WHERE project_id = ${pid} ORDER BY created_at DESC LIMIT 1`;
+      if (!convs.length) return res.json({ project_id: pid, conversation: null, messages: [] });
+      var msgs = await sql2`SELECT id, role, content, tool_calls_json, created_at FROM chat_messages WHERE conversation_id = ${convs[0].id} ORDER BY created_at ASC`;
+      return res.json({ project_id: pid, conversation: convs[0], message_count: msgs.length, messages: msgs });
+    }
+
     var accounts = await sql2`SELECT a.id, a.name, u.email, u.account_id, u.email_verified FROM accounts a LEFT JOIN users u ON u.account_id = a.id ORDER BY a.id`;
     return res.json(accounts);
   }
@@ -76,10 +87,8 @@ export default async function handler(req, res) {
       }
     }
 
-    // Clean conversations: delete empty messages + reset project 4 convos
+    // Clean only obviously broken messages (empty content). Never wipe full conversations.
     await sql`DELETE FROM chat_messages WHERE TRIM(content) = '' OR content IS NULL`;
-    await sql`DELETE FROM chat_messages WHERE conversation_id IN (SELECT id FROM conversations WHERE project_id = 4)`;
-    await sql`DELETE FROM conversations WHERE project_id = 4`;
 
     // Duplicate features/jobs to test project 2
     const testProj2 = await sql`SELECT id FROM projects WHERE slug = 'cdc-cockpit-sales-carjager-test-2-bqqrmo'`;
