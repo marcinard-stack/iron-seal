@@ -37,7 +37,7 @@ function emailLayout(content) {
     + '<tr><td style="padding:0 0 24px;">'
     + '<table width="100%" cellpadding="0" cellspacing="0"><tr>'
     + '<td style="font-size:18px; font-weight:700; color:#2d2b35; letter-spacing:-0.03em; font-family:Helvetica Neue,Arial,sans-serif;">'
-    + '<img src="https://deal-forge-tawny.vercel.app/seal-logo.png" width="22" height="22" alt="" style="vertical-align:middle; margin-right:5px;">'
+    + '<img src="https://iron-seal.vercel.app/seal-logo.png" width="22" height="22" alt="" style="vertical-align:middle; margin-right:5px;">'
     + 'iron seal</td>'
     + '<td align="right" style="font-size:11px; color:#b1ada1;">Proposition &amp; signature en ligne</td>'
     + '</tr></table>'
