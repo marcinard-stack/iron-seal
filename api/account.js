@@ -132,7 +132,51 @@ export default async function handler(req, res) {
       }
     }
 
-    return res.status(400).json({ error: 'Invalid entity. Use ?entity=addresses|payment_methods' });
+    // ── ACCOUNT INFO (GET/PUT on account fields) ──
+    if (entity === 'info' || !entity) {
+      if (req.method === 'GET') {
+        var rows = await sql`SELECT * FROM accounts WHERE id = ${accountId}`;
+        return rows.length ? res.json(rows[0]) : res.status(404).json({ error: 'account not found' });
+      }
+      if (req.method === 'PUT') {
+        var b = req.body;
+        await sql`UPDATE accounts SET
+          name = COALESCE(${b.name ?? null}, name),
+          legal_name = COALESCE(${b.legal_name ?? null}, legal_name),
+          siren = COALESCE(${b.siren ?? null}, siren),
+          tva_intra = COALESCE(${b.tva_intra ?? null}, tva_intra),
+          legal_form = COALESCE(${b.legal_form ?? null}, legal_form),
+          capital = COALESCE(${b.capital ?? null}, capital),
+          rcs_city = COALESCE(${b.rcs_city ?? null}, rcs_city),
+          ape_code = COALESCE(${b.ape_code ?? null}, ape_code),
+          phone = COALESCE(${b.phone ?? null}, phone),
+          default_tjm = COALESCE(${b.default_tjm ?? null}, default_tjm),
+          default_weekly_cap = COALESCE(${b.default_weekly_cap ?? null}, default_weekly_cap),
+          currency = COALESCE(${b.currency ?? null}, currency),
+          default_vat_rate = COALESCE(${b.default_vat_rate ?? null}, default_vat_rate),
+          payment_terms = COALESCE(${b.payment_terms ?? null}, payment_terms),
+          quote_validity = COALESCE(${b.quote_validity ?? null}, quote_validity),
+          project_contact_name = COALESCE(${b.project_contact_name ?? null}, project_contact_name),
+          project_contact_email = COALESCE(${b.project_contact_email ?? null}, project_contact_email),
+          project_contact_phone = COALESCE(${b.project_contact_phone ?? null}, project_contact_phone),
+          project_contact_role = COALESCE(${b.project_contact_role ?? null}, project_contact_role),
+          late_payment_rate_label = COALESCE(${b.late_payment_rate_label ?? null}, late_payment_rate_label),
+          recovery_fee_amount = COALESCE(${b.recovery_fee_amount ?? null}, recovery_fee_amount),
+          escompte_text = COALESCE(${b.escompte_text ?? null}, escompte_text),
+          rc_pro_insurer = COALESCE(${b.rc_pro_insurer ?? null}, rc_pro_insurer),
+          rc_pro_policy_number = COALESCE(${b.rc_pro_policy_number ?? null}, rc_pro_policy_number),
+          brand_color = COALESCE(${b.brand_color ?? null}, brand_color),
+          logo_url = COALESCE(${b.logo_url ?? null}, logo_url),
+          cgv_text = COALESCE(${b.cgv_text ?? null}, cgv_text),
+          cgv_url = COALESCE(${b.cgv_url ?? null}, cgv_url),
+          updated_at = NOW()
+        WHERE id = ${accountId}`;
+        var updated = await sql`SELECT * FROM accounts WHERE id = ${accountId}`;
+        return res.json(updated[0]);
+      }
+    }
+
+    return res.status(400).json({ error: 'Invalid entity. Use ?entity=addresses|payment_methods|info' });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: err.message });

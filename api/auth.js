@@ -88,7 +88,7 @@ export default async function handler(req, res) {
 
       // Send welcome email
       var cleanedEmail = email.toLowerCase().trim();
-      var homeLink = req.headers.origin || 'https://ironseal.vercel.app';
+      var homeLink = req.headers.origin || 'https://iron-seal.vercel.app';
       await sendAuthEmail(cleanedEmail, 'Bienvenue sur Iron Seal',
         authEmailLayout(
           '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Bienvenue sur Iron Seal, ' + name + ' !</h2>'
@@ -182,7 +182,7 @@ export default async function handler(req, res) {
         user = { ...users[0], account_name: name || cleanEmail, account_type: 'solo' };
 
         // Send welcome email
-        var homeLink = req.headers.origin || 'https://ironseal.vercel.app';
+        var homeLink = req.headers.origin || 'https://iron-seal.vercel.app';
         await sendAuthEmail(cleanEmail, 'Bienvenue sur Iron Seal',
           authEmailLayout(
             '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Bienvenue sur Iron Seal, ' + (name || '') + ' !</h2>'
@@ -269,7 +269,7 @@ export default async function handler(req, res) {
         user = { ...users[0], account_name: ghName, account_type: 'solo' };
 
         // Send welcome email
-        var homeLink = req.headers.origin || 'https://ironseal.vercel.app';
+        var homeLink = req.headers.origin || 'https://iron-seal.vercel.app';
         await sendAuthEmail(cleanEmail, 'Bienvenue sur Iron Seal',
           authEmailLayout(
             '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Bienvenue sur Iron Seal, ' + ghName + ' !</h2>'
@@ -313,15 +313,22 @@ export default async function handler(req, res) {
 
       if (req.method === 'GET') {
         var rows = await sql`
-          SELECT u.id, u.email, u.name, u.first_name, u.last_name, u.phone, u.phone_country, u.avatar_choice, u.role, u.avatar_url, u.email_prefs, u.email_verified,
+          SELECT u.id, u.email, u.name, u.first_name, u.last_name, u.phone as user_phone, u.phone_country, u.avatar_choice, u.role, u.avatar_url, u.email_prefs, u.email_verified,
                  a.id as account_id, a.name as account_name, a.type as account_type,
-                 a.legal_name, a.siren, a.tva_intra, a.default_tjm, a.default_weekly_cap, a.plan, a.legal_form, a.capital, a.rcs_city, a.currency, a.default_vat_rate, a.payment_terms, a.quote_validity, a.created_at as account_created_at
+                 a.legal_name, a.siren, a.tva_intra, a.default_tjm, a.default_weekly_cap, a.plan,
+                 a.legal_form, a.capital, a.rcs_city, a.currency, a.default_vat_rate,
+                 a.payment_terms, a.quote_validity, a.created_at as account_created_at,
+                 a.ape_code, a.phone as account_phone,
+                 a.project_contact_name, a.project_contact_role, a.project_contact_email, a.project_contact_phone,
+                 a.late_payment_rate_label, a.recovery_fee_amount, a.escompte_text,
+                 a.rc_pro_insurer, a.rc_pro_policy_number,
+                 a.brand_color, a.logo_url, a.cgv_url, a.cgv_text
           FROM users u JOIN accounts a ON a.id = u.account_id WHERE u.id = ${userId}
         `;
         if (!rows.length) return res.status(404).json({ error: 'User not found' });
         var r = rows[0];
         return res.json({
-          user: { id: r.id, email: r.email, name: r.name, first_name: r.first_name, last_name: r.last_name, phone: r.phone, phone_country: r.phone_country, avatar_choice: r.avatar_choice, role: r.role, avatar_url: r.avatar_url, email_prefs: r.email_prefs, email_verified: r.email_verified },
+          user: { id: r.id, email: r.email, name: r.name, first_name: r.first_name, last_name: r.last_name, phone: r.user_phone, phone_country: r.phone_country, avatar_choice: r.avatar_choice, role: r.role, avatar_url: r.avatar_url, email_prefs: r.email_prefs, email_verified: r.email_verified },
           account: {
             id: r.account_id, name: r.account_name, type: r.account_type,
             legal_name: r.legal_name, siren: r.siren, tva_intra: r.tva_intra,
@@ -329,7 +336,15 @@ export default async function handler(req, res) {
             legal_form: r.legal_form, capital: r.capital, rcs_city: r.rcs_city,
             currency: r.currency, default_vat_rate: r.default_vat_rate,
             payment_terms: r.payment_terms, quote_validity: r.quote_validity,
-            created_at: r.account_created_at
+            created_at: r.account_created_at,
+            ape_code: r.ape_code, phone: r.account_phone,
+            project_contact_name: r.project_contact_name, project_contact_role: r.project_contact_role,
+            project_contact_email: r.project_contact_email, project_contact_phone: r.project_contact_phone,
+            late_payment_rate_label: r.late_payment_rate_label, recovery_fee_amount: r.recovery_fee_amount,
+            escompte_text: r.escompte_text,
+            rc_pro_insurer: r.rc_pro_insurer, rc_pro_policy_number: r.rc_pro_policy_number,
+            brand_color: r.brand_color, logo_url: r.logo_url,
+            cgv_url: r.cgv_url, cgv_text: r.cgv_text
           }
         });
       }
@@ -393,7 +408,7 @@ export default async function handler(req, res) {
           if (u.length && !u[0].verify_token) {
             var vt = crypto.randomBytes(32).toString('base64url');
             await sql`UPDATE users SET verify_token = ${vt} WHERE id = ${userId}`;
-            var vl = (req.headers.origin || 'https://ironseal.vercel.app') + '/login?verify=' + vt;
+            var vl = (req.headers.origin || 'https://iron-seal.vercel.app') + '/login?verify=' + vt;
             await sendAuthEmail(u[0].email, 'Verifiez votre email - Iron Seal',
               authEmailLayout('<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Verifiez votre adresse email</h2>'
               + '<p style="font-size:14px; color:#4a4850; line-height:1.7; margin:0;">Cliquez ci-dessous pour confirmer votre adresse email.</p>'
@@ -416,6 +431,21 @@ export default async function handler(req, res) {
         if (body.default_vat_rate !== undefined) await sql`UPDATE accounts SET default_vat_rate = ${body.default_vat_rate}, updated_at = NOW() WHERE id = ${accountId}`;
         if (body.payment_terms !== undefined) await sql`UPDATE accounts SET payment_terms = ${body.payment_terms}, updated_at = NOW() WHERE id = ${accountId}`;
         if (body.quote_validity !== undefined) await sql`UPDATE accounts SET quote_validity = ${body.quote_validity}, updated_at = NOW() WHERE id = ${accountId}`;
+        // New fields (Sprint 4)
+        if (body.ape_code !== undefined) await sql`UPDATE accounts SET ape_code = ${body.ape_code}, updated_at = NOW() WHERE id = ${accountId}`;
+        if (body.account_phone !== undefined) await sql`UPDATE accounts SET phone = ${body.account_phone}, updated_at = NOW() WHERE id = ${accountId}`;
+        if (body.project_contact_name !== undefined) await sql`UPDATE accounts SET project_contact_name = ${body.project_contact_name}, updated_at = NOW() WHERE id = ${accountId}`;
+        if (body.project_contact_role !== undefined) await sql`UPDATE accounts SET project_contact_role = ${body.project_contact_role}, updated_at = NOW() WHERE id = ${accountId}`;
+        if (body.project_contact_email !== undefined) await sql`UPDATE accounts SET project_contact_email = ${body.project_contact_email}, updated_at = NOW() WHERE id = ${accountId}`;
+        if (body.project_contact_phone !== undefined) await sql`UPDATE accounts SET project_contact_phone = ${body.project_contact_phone}, updated_at = NOW() WHERE id = ${accountId}`;
+        if (body.late_payment_rate_label !== undefined) await sql`UPDATE accounts SET late_payment_rate_label = ${body.late_payment_rate_label}, updated_at = NOW() WHERE id = ${accountId}`;
+        if (body.recovery_fee_amount !== undefined) await sql`UPDATE accounts SET recovery_fee_amount = ${body.recovery_fee_amount}, updated_at = NOW() WHERE id = ${accountId}`;
+        if (body.escompte_text !== undefined) await sql`UPDATE accounts SET escompte_text = ${body.escompte_text}, updated_at = NOW() WHERE id = ${accountId}`;
+        if (body.rc_pro_insurer !== undefined) await sql`UPDATE accounts SET rc_pro_insurer = ${body.rc_pro_insurer}, updated_at = NOW() WHERE id = ${accountId}`;
+        if (body.rc_pro_policy_number !== undefined) await sql`UPDATE accounts SET rc_pro_policy_number = ${body.rc_pro_policy_number}, updated_at = NOW() WHERE id = ${accountId}`;
+        if (body.brand_color !== undefined) await sql`UPDATE accounts SET brand_color = ${body.brand_color}, updated_at = NOW() WHERE id = ${accountId}`;
+        if (body.cgv_url !== undefined) await sql`UPDATE accounts SET cgv_url = ${body.cgv_url}, updated_at = NOW() WHERE id = ${accountId}`;
+        if (body.cgv_text !== undefined) await sql`UPDATE accounts SET cgv_text = ${body.cgv_text}, updated_at = NOW() WHERE id = ${accountId}`;
         return res.json({ ok: true });
       }
     }
@@ -429,7 +459,7 @@ export default async function handler(req, res) {
       var resetToken = crypto.randomBytes(32).toString('base64url');
       var expires = new Date(Date.now() + 3600000).toISOString(); // 1 hour
       await sql`UPDATE users SET reset_token = ${resetToken}, reset_expires = ${expires} WHERE id = ${users[0].id}`;
-      var resetLink = (req.headers.origin || 'https://ironseal.vercel.app') + '/login?reset=' + resetToken;
+      var resetLink = (req.headers.origin || 'https://iron-seal.vercel.app') + '/login?reset=' + resetToken;
       await sendAuthEmail(users[0].email, 'Reinitialiser votre mot de passe — Iron Seal',
         authEmailLayout(
           '<h2 style="font-size:20px; font-weight:700; color:#2d2b35; margin:0 0 16px;">Mot de passe oublie</h2>'

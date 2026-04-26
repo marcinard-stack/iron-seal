@@ -50,7 +50,7 @@ function emailLayout(content) {
     + '<tr><td style="padding:24px 0 0; text-align:center;">'
     + '<p style="font-size:11px; color:#b1ada1; margin:0 0 6px;">Iron Seal par Blue Heron Lab</p>'
     + '<p style="font-size:10px; color:#c4c2bc; margin:0;">Vous recevez cet email car vous etes partie prenante d\'un projet sur Iron Seal.<br>'
-    + 'Pour ne plus recevoir ces notifications, modifiez vos <a href="https://ironseal.vercel.app/settings" style="color:#c4c2bc;">preferences email</a>.</p>'
+    + 'Pour ne plus recevoir ces notifications, modifiez vos <a href="https://iron-seal.vercel.app/settings" style="color:#c4c2bc;">preferences email</a>.</p>'
     + '</td></tr>'
     + '</table>'
     + '</td></tr></table></body></html>';
@@ -100,10 +100,9 @@ function backToDraftEmail(projectTitle, requesterName, isClient, link, message) 
 async function createDevisVersion(sql, projectId) {
   // Get all features + jobs
   var features = await sql`SELECT id, position, code, title, description, is_transverse FROM features WHERE project_id = ${projectId} ORDER BY position`;
-  var featureIds = features.map(function(f) { return f.id; });
   var jobs = [];
-  if (featureIds.length) {
-    jobs = await sql`SELECT id, feature_id, position, description, jh, type, priority, is_offered, included FROM jobs WHERE feature_id = ANY(${featureIds}) ORDER BY position`;
+  if (features.length) {
+    jobs = await sql`SELECT id, feature_id, position, description, jh, type, priority, is_offered, included FROM jobs WHERE feature_id IN (SELECT id FROM features WHERE project_id = ${projectId}) ORDER BY position`;
   }
   var exclusions = await sql`SELECT position, title, description FROM exclusions WHERE project_id = ${projectId} ORDER BY position`;
 
@@ -205,7 +204,7 @@ export default async function handler(req, res) {
       // Send magic link email
       var senderName = sender ? sender.name : 'Un freelance';
       var magicToken = await createMagicToken(sql, cleanEmail);
-      var directLink = (req.headers.origin || 'https://ironseal.vercel.app') + '/deals/proposed/' + project.slug + '?auth=' + magicToken;
+      var directLink = (req.headers.origin || 'https://iron-seal.vercel.app') + '/deals/proposed/' + project.slug + '?auth=' + magicToken;
       var result = await sendEmail(
         cleanEmail,
         'Proposition : ' + project.title,
@@ -226,7 +225,7 @@ export default async function handler(req, res) {
       if (prefs.proposal_received === false) return res.json({ ok: true, skipped: 'email disabled by user' });
       var senderName = sender ? sender.name : 'Un freelance';
       var magicToken = await createMagicToken(sql, clients[0].email);
-      var directLink = (req.headers.origin || 'https://ironseal.vercel.app') + '/deals/' + project.status + '/' + project.slug + '?auth=' + magicToken;
+      var directLink = (req.headers.origin || 'https://iron-seal.vercel.app') + '/deals/' + project.status + '/' + project.slug + '?auth=' + magicToken;
       var result = await sendEmail(
         clients[0].email,
         'Proposition : ' + project.title,
@@ -253,7 +252,7 @@ export default async function handler(req, res) {
       var requesterName = sender ? sender.name : 'Un utilisateur';
       var isClient = sender && sender.account_id == project.client_account_id;
       var magicToken = await createMagicToken(sql, recipients[0].email);
-      var directLink = (req.headers.origin || 'https://ironseal.vercel.app') + '/deals/' + project.status + '/' + project.slug + '?auth=' + magicToken;
+      var directLink = (req.headers.origin || 'https://iron-seal.vercel.app') + '/deals/' + project.status + '/' + project.slug + '?auth=' + magicToken;
       var result = await sendEmail(
         recipients[0].email,
         'Retour en brouillon : ' + project.title,

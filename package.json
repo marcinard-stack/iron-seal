@@ -6,6 +6,8 @@
     "dev": "vercel dev"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^0.10.4"
+    "@neondatabase/serverless": "^0.10.4",
+    "@sparticuz/chromium": "^147.0.2",
+    "puppeteer-core": "^24.42.0"
   }
 }

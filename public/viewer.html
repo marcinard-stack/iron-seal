@@ -690,6 +690,9 @@
     </a>
     <div class="topbar-right">
         <div id="presenceBar" style="display:flex; align-items:center; flex-direction:row-reverse;"></div>
+        <button class="topbar-btn" id="downloadPdfBtn" title="Télécharger PDF" style="display:none;">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13v2a1 1 0 001 1h10a1 1 0 001-1v-2"/><polyline points="6,8 9,11 12,8"/><line x1="9" y1="3" x2="9" y2="11"/></svg>
+        </button>
         <button class="topbar-btn" id="shareBtn" title="Partager" style="display:none;">
             <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="4" r="2.5"/><circle cx="4" cy="9" r="2.5"/><circle cx="14" cy="14" r="2.5"/><line x1="6.2" y1="10.1" x2="11.8" y2="12.9"/><line x1="6.2" y1="7.9" x2="11.8" y2="5.1"/></svg>
         </button>
@@ -785,6 +788,75 @@
             <button class="confirm-ok primary" id="signSubmit" disabled>Signer le devis</button>
         </div>
         <div class="sign-hash" id="signHash"></div>
+    </div>
+</div>
+
+<!-- INVOICE MODAL -->
+<div class="sign-overlay" id="invoiceOverlay">
+    <div class="sign-modal" style="max-width:440px;">
+        <h3>Générer une facture</h3>
+        <p class="sign-subtitle">La facture sera pré-remplie depuis le devis signé.</p>
+        <div class="sign-row">
+            <div class="sign-field" style="flex:1;">
+                <label>Jalon / Label (optionnel)</label>
+                <input type="text" id="invoiceMilestone" placeholder="ex : Acompte 50%, Livraison finale…">
+            </div>
+        </div>
+        <div class="sign-row">
+            <div class="sign-field" style="flex:1;">
+                <label>Montant HT (laisser vide = total du devis)</label>
+                <input type="number" id="invoiceAmountHt" placeholder="ex : 1200.00" step="0.01">
+            </div>
+        </div>
+        <div class="confirm-actions">
+            <button class="confirm-cancel" id="invoiceCancel">Annuler</button>
+            <button class="confirm-ok primary" id="invoiceCreate">Créer la facture</button>
+        </div>
+        <div id="invoiceList" style="margin-top:16px; border-top:1px solid #e8e6e0; padding-top:12px; display:none;">
+            <div style="font-size:12px; font-weight:600; color:#4a4850; margin-bottom:8px;">Factures existantes</div>
+            <div id="invoiceListItems"></div>
+        </div>
+    </div>
+</div>
+
+<!-- PRESTA SIGN MODAL (F3) -->
+<div class="sign-overlay" id="prestaSignOverlay">
+    <div class="sign-modal">
+        <h3>Signer et émettre le devis</h3>
+        <p class="sign-subtitle">En signant, vous certifiez l'exactitude de cette proposition commerciale avant envoi au client.</p>
+        <div class="sign-row">
+            <div class="sign-field" style="flex:1;">
+                <label>Nom complet <span class="required-star">*</span></label>
+                <input type="text" id="prestaSignName" placeholder="ex : Marc Inard">
+            </div>
+            <div class="sign-field" style="flex:1;">
+                <label>Fonction</label>
+                <input type="text" id="prestaSignFunction" placeholder="ex : Gérant">
+            </div>
+        </div>
+        <div class="sign-row">
+            <div class="sign-field">
+                <label>Fait à <span class="required-star">*</span></label>
+                <input type="text" id="prestaSignCity" placeholder="ex : Rennes">
+            </div>
+            <div class="sign-field">
+                <label>Le</label>
+                <input type="text" id="prestaSignDate" readonly style="background:#f9f8f6; cursor:default;">
+            </div>
+        </div>
+        <label style="font-size:12px; font-weight:600; color:#4a4850; display:block; margin-bottom:8px;">Signature</label>
+        <div class="sign-pad-area" id="prestaSignDrawArea">
+            <canvas id="prestaSignCanvas" width="456" height="100"></canvas>
+        </div>
+        <div class="sign-clear" id="prestaSignClear">Effacer la signature</div>
+        <label class="sign-legal">
+            <input type="checkbox" id="prestaSignAccept">
+            <span>Bon pour accord, valable engagement contractuel. Je certifie l'exactitude des informations contenues dans ce devis.</span>
+        </label>
+        <div class="confirm-actions">
+            <button class="confirm-cancel" id="prestaSignCancel">Annuler</button>
+            <button class="confirm-ok primary" id="prestaSignSubmit" disabled>Signer et émettre</button>
+        </div>
     </div>
 </div>
 
@@ -1090,6 +1162,16 @@
         <ul><li data-job-pos="1">Convention de nommage flows <code>{OBJET}_{Type}_{Description}</code> + renommage + suppression VR <code>Marketing_Lost</code> + flows obsolètes <span class="tag nice">NICE TO HAVE</span> <span class="tag refacto">REFACTO</span></li></ul>
         <h3>Configuration Home Page</h3>
         <ul><li data-job-pos="2">Assemblage Lightning Home Page Sales : KPIs (haut) + 5 backlogs + assignation profil Sales <span class="tag must">MUST HAVE</span> <span class="tag new">NEW</span></li></ul>
+    </div>
+
+    <!-- Preamble editor (B4) — visible to presta in draft -->
+    <div id="preambleSection" style="display:none; margin-top:32px; margin-bottom:24px;">
+        <div style="font-size:13px; font-weight:600; color:#2d2b35; margin-bottom:8px;">Préambule du devis <span style="font-weight:400; color:#8a8780; font-size:11px;">(optionnel — apparaît dans le PDF)</span></div>
+        <textarea id="preambleInput" rows="3" placeholder="Suite à nos échanges du JJ/MM, voici la proposition couvrant…" style="width:100%; padding:10px 14px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none; resize:vertical; line-height:1.5;"></textarea>
+        <div style="display:flex; justify-content:flex-end; margin-top:6px;">
+            <button id="preambleSave" style="background:#0F172A; color:white; border:none; border-radius:6px; padding:6px 16px; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit;">Enregistrer</button>
+            <span id="preambleSaved" style="font-size:11px; color:#059669; margin-left:8px; display:none; align-self:center;">✓ Enregistré</span>
+        </div>
     </div>
 
     <div class="header" id="propale" style="margin-top: 40px;">
@@ -2194,28 +2276,8 @@
             text.textContent = 'Votre proposition est prête ?';
             buttons.innerHTML = '<button class="action-btn primary" id="btnPropose">Proposer le devis</button>';
             document.getElementById('btnPropose').addEventListener('click', function() {
-                // If client already linked, propose directly without asking email
-                if (PROJECT_DATA.client_account_id) {
-                    var btn = document.getElementById('btnPropose');
-                    btn.disabled = true; btn.textContent = 'Envoi...';
-                    var dfToken = localStorage.getItem('df_token') || '';
-                    fetch('/api/notify', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
-                        body: JSON.stringify({ type: 'proposed', slug: SLUG })
-                    }).then(function(r) { return r.json(); }).then(function() {
-                        return changeStatus('proposed');
-                    }).then(function() {
-                        btn.textContent = 'Proposer le devis'; btn.disabled = false;
-                    }).catch(function() {
-                        btn.textContent = 'Proposer le devis'; btn.disabled = false;
-                    });
-                } else {
-                    document.getElementById('proposeOverlay').classList.add('show');
-                    document.getElementById('proposeEmail').value = '';
-                    document.getElementById('proposeSubmit').disabled = true;
-                    document.getElementById('proposeEmail').focus();
-                }
+                // Open presta signature modal first (F3)
+                openPrestaSignModal();
             });
             trackScroll('btnPropose');
         }
@@ -2267,6 +2329,32 @@
         }
 
         if (status === 'signed' || status === 'active' || status === 'delivered' || status === 'completed') {
+            // Show action bar with workflow buttons for presta
+            if (isFreelance) {
+                bar.style.display = 'block';
+                if (status === 'signed') {
+                    text.textContent = 'Devis signé. Prêt à démarrer ?';
+                    buttons.innerHTML = '<button class="action-btn secondary" id="btnGenInvoice">Générer une facture</button><button class="action-btn primary" id="btnStartProject">Démarrer le projet</button>';
+                    document.getElementById('btnStartProject').addEventListener('click', function() {
+                        showConfirm('Démarrer le projet ?', 'Démarrer', '', function() { changeStatus('active'); });
+                    });
+                    document.getElementById('btnGenInvoice').addEventListener('click', function() { openInvoiceModal(); });
+                } else if (status === 'active') {
+                    text.textContent = 'Projet en cours.';
+                    buttons.innerHTML = '<button class="action-btn secondary" id="btnGenInvoice2">Générer une facture</button><button class="action-btn primary" id="btnDeliver">Marquer comme livré</button>';
+                    document.getElementById('btnDeliver').addEventListener('click', function() {
+                        showConfirm('Marquer le projet comme livré ?', 'Livré', '', function() { changeStatus('delivered'); });
+                    });
+                    document.getElementById('btnGenInvoice2').addEventListener('click', function() { openInvoiceModal(); });
+                } else if (status === 'delivered') {
+                    text.textContent = 'Projet livré. En attente de paiement.';
+                    buttons.innerHTML = '<button class="action-btn secondary" id="btnGenInvoice3">Générer une facture</button>';
+                    document.getElementById('btnGenInvoice3').addEventListener('click', function() { openInvoiceModal(); });
+                } else if (status === 'completed') {
+                    text.textContent = 'Projet terminé — toutes les factures sont réglées.';
+                }
+            }
+
             // Show signed banner
             fetch('/api/signature?slug=' + encodeURIComponent(SLUG))
                 .then(function(r) { return r.json(); })
@@ -2734,29 +2822,11 @@
             var sigData = { name: name, city: city, date: dateStr, time: timeStr, hash: hash, sigImage: sigImage, ip: result.ip_address, freelanceInfo: result.freelance_info, clientInfo: result.client_info, refNumber: result.ref_number };
 
             function doGeneratePDF() {
-                // Re-fetch fresh account data (in case onboarding updated it)
-                fetch('/api/auth?action=me', { headers: { 'Authorization': 'Bearer ' + dfToken } })
-                    .then(function(r) { return r.ok ? r.json() : null; })
-                    .then(function(fresh) {
-                        if (fresh) {
-                            sigData.clientInfo = sigData.clientInfo || {};
-                            sigData.clientInfo.name = fresh.account.name;
-                            sigData.clientInfo.tva_intra = fresh.account.tva_intra;
-                            sigData.clientInfo.user_name = fresh.user.name;
-                            sigData.clientInfo.user_email = fresh.user.email;
-                        }
-                        try {
-                            var pdfData = generateSignedPDF(sigData);
-                            if (pdfData) {
-                                fetch('/api/signature?action=pdf', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
-                                    body: JSON.stringify({ slug: SLUG, pdf_base64: pdfData.split(',')[1] })
-                                });
-                            }
-                        } catch(e) { console.warn('PDF generation failed', e); }
-                        document.getElementById('successOverlay').classList.add('show');
-                    });
+                // Server-side: generate PDF + email to both parties
+                fetch('/api/pdf?slug=' + SLUG + '&notify=1')
+                    .then(function() { /* PDF generated and emailed */ })
+                    .catch(function(e) { console.warn('PDF notify failed', e); });
+                document.getElementById('successOverlay').classList.add('show');
             }
 
             // Check if client needs onboarding BEFORE generating PDF
@@ -2790,6 +2860,294 @@
     var shareCopied = document.getElementById('shareCopied');
 
     if (!IS_SHARED) shareBtn.style.display = '';
+
+    // PDF download button
+    var downloadPdfBtn = document.getElementById('downloadPdfBtn');
+    if (!IS_SHARED && SLUG) downloadPdfBtn.style.display = '';
+    downloadPdfBtn.addEventListener('click', function() {
+        window.open('/api/pdf?slug=' + SLUG, '_blank');
+    });
+
+    // ===== INVOICE MODAL =====
+    var invoiceOverlay = document.getElementById('invoiceOverlay');
+    var invoiceListEl = document.getElementById('invoiceList');
+    var invoiceListItems = document.getElementById('invoiceListItems');
+
+    function openInvoiceModal() {
+        invoiceOverlay.classList.add('show');
+        loadInvoices();
+    }
+
+    document.getElementById('invoiceCancel').addEventListener('click', function() { invoiceOverlay.classList.remove('show'); });
+    invoiceOverlay.addEventListener('click', function(e) { if (e.target === invoiceOverlay) invoiceOverlay.classList.remove('show'); });
+
+    document.getElementById('invoiceCreate').addEventListener('click', function() {
+        var milestone = document.getElementById('invoiceMilestone').value.trim();
+        var amountHt = document.getElementById('invoiceAmountHt').value.trim();
+        var btn = document.getElementById('invoiceCreate');
+        btn.disabled = true; btn.textContent = 'Création...';
+        var dfToken = localStorage.getItem('df_token') || '';
+        var body = { slug: SLUG };
+        if (milestone) body.milestone_label = milestone;
+        if (amountHt) body.amount_ht_override = parseFloat(amountHt);
+
+        fetch('/api/projects?entity=invoices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
+            body: JSON.stringify(body)
+        }).then(function(r) { return r.json(); }).then(function(inv) {
+            btn.disabled = false; btn.textContent = 'Créer la facture';
+            document.getElementById('invoiceMilestone').value = '';
+            document.getElementById('invoiceAmountHt').value = '';
+            loadInvoices();
+        }).catch(function() {
+            btn.disabled = false; btn.textContent = 'Créer la facture';
+        });
+    });
+
+    function loadInvoices() {
+        fetch('/api/projects?entity=invoices&slug=' + SLUG)
+            .then(function(r) { return r.json(); })
+            .then(function(invoices) {
+                if (!invoices.length) { invoiceListEl.style.display = 'none'; return; }
+                invoiceListEl.style.display = 'block';
+                var statusColors = { draft: '#6B7280', sent: '#2563EB', paid: '#059669', paid_partial: '#D97706', overdue: '#DC2626', cancelled: '#6B7280' };
+                var statusLabels = { draft: 'Brouillon', sent: 'Envoyée', paid: 'Payée', paid_partial: 'Partiel', overdue: 'Impayée', cancelled: 'Annulée' };
+                invoiceListItems.innerHTML = invoices.map(function(inv) {
+                    var color = statusColors[inv.status] || '#6B7280';
+                    var label = statusLabels[inv.status] || inv.status;
+                    var amount = Number(inv.amount_ttc).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' €';
+                    var actions = '';
+                    if (inv.status === 'draft') {
+                        actions = '<button onclick="sendInvoice(' + inv.id + ')" style="background:#0F172A;color:white;border:none;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit;">Envoyer</button>';
+                    }
+                    if (inv.status === 'sent' || inv.status === 'paid_partial') {
+                        actions = '<button onclick="markInvoicePaid(' + inv.id + ',' + inv.amount_ttc + ')" style="background:#059669;color:white;border:none;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit;">Marquer payée</button>'
+                            + ' <a href="/api/pdf?type=invoice&invoice_id=' + inv.id + '" target="_blank" style="font-size:11px;color:#6B7280;">PDF</a>';
+                    }
+                    if (inv.status === 'paid') {
+                        actions = '<a href="/api/pdf?type=invoice&invoice_id=' + inv.id + '" target="_blank" style="font-size:11px;color:#6B7280;">PDF</a>';
+                    }
+                    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f3f4f6;font-size:12px;">'
+                        + '<span style="font-weight:600;color:#2d2b35;">' + inv.invoice_number + '</span>'
+                        + (inv.milestone_label ? '<span style="color:#8a8780;">' + inv.milestone_label + '</span>' : '')
+                        + '<span style="margin-left:auto;font-weight:500;">' + amount + '</span>'
+                        + '<span style="display:inline-block;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:' + color + '20;color:' + color + ';">' + label + '</span>'
+                        + actions
+                        + '</div>';
+                }).join('');
+            });
+    }
+
+    window.sendInvoice = function(invoiceId) {
+        fetch('/api/pdf?type=invoice&invoice_id=' + invoiceId + '&notify=1')
+            .then(function(r) { return r.json(); })
+            .then(function() { loadInvoices(); });
+    };
+
+    window.markInvoicePaid = function(invoiceId, amountTtc) {
+        var dfToken = localStorage.getItem('df_token') || '';
+        fetch('/api/projects?entity=invoices', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
+            body: JSON.stringify({ id: invoiceId, payment_amount: amountTtc, payment_method: 'virement' })
+        }).then(function(r) { return r.json(); }).then(function(result) {
+            loadInvoices();
+            if (result.status === 'paid') {
+                // Refresh project data to check for auto-complete
+                fetch('/api/projects?slug=' + SLUG).then(function(r) { return r.json(); }).then(function(p) {
+                    PROJECT_DATA = p;
+                    setupStatusActions();
+                });
+            }
+        });
+    };
+
+    // ===== PREAMBLE EDITOR (B4) =====
+    var preambleSection = document.getElementById('preambleSection');
+    var preambleInput = document.getElementById('preambleInput');
+    var preambleSave = document.getElementById('preambleSave');
+    var preambleSaved = document.getElementById('preambleSaved');
+
+    // Show preamble editor for presta in draft
+    if (!IS_SHARED && PROJECT_DATA && PROJECT_DATA.status === 'draft' && USER_ACCOUNT_ID && PROJECT_DATA.freelance_account_id == USER_ACCOUNT_ID) {
+        preambleSection.style.display = 'block';
+        if (PROJECT_DATA.preamble) preambleInput.value = PROJECT_DATA.preamble;
+    }
+
+    preambleSave.addEventListener('click', function() {
+        var dfToken = localStorage.getItem('df_token') || '';
+        fetch('/api/projects', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
+            body: JSON.stringify({ slug: SLUG, preamble: preambleInput.value })
+        }).then(function(r) { return r.json(); }).then(function() {
+            preambleSaved.style.display = 'inline';
+            setTimeout(function() { preambleSaved.style.display = 'none'; }, 2000);
+        });
+    });
+
+    // ===== PRESTA SIGNATURE MODAL (F3) =====
+    var prestaSignOverlay = document.getElementById('prestaSignOverlay');
+    var prestaSignCanvas = document.getElementById('prestaSignCanvas');
+    var prestaSignCtx = prestaSignCanvas ? prestaSignCanvas.getContext('2d') : null;
+    var prestaDrawing = false;
+
+    // Pre-fill date
+    var psd = new Date();
+    var prestaSignDateEl = document.getElementById('prestaSignDate');
+    if (prestaSignDateEl) prestaSignDateEl.value = psd.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    // Pre-fill name from user data
+    var dfUserData = localStorage.getItem('df_user');
+    if (dfUserData) {
+        try {
+            var ud = JSON.parse(dfUserData);
+            var nameEl = document.getElementById('prestaSignName');
+            if (nameEl && ud.name) nameEl.value = ud.name;
+        } catch(e) {}
+    }
+
+    // Canvas drawing
+    if (prestaSignCanvas) {
+        prestaSignCanvas.addEventListener('mousedown', function(e) { prestaDrawing = true; prestaSignCtx.beginPath(); prestaSignCtx.moveTo(e.offsetX, e.offsetY); });
+        prestaSignCanvas.addEventListener('mousemove', function(e) { if (!prestaDrawing) return; prestaSignCtx.lineWidth = 2; prestaSignCtx.strokeStyle = '#0A0A0A'; prestaSignCtx.lineTo(e.offsetX, e.offsetY); prestaSignCtx.stroke(); });
+        prestaSignCanvas.addEventListener('mouseup', function() { prestaDrawing = false; checkPrestaSignReady(); });
+        prestaSignCanvas.addEventListener('mouseleave', function() { prestaDrawing = false; });
+        // Touch support
+        prestaSignCanvas.addEventListener('touchstart', function(e) { e.preventDefault(); var t = e.touches[0]; var r = prestaSignCanvas.getBoundingClientRect(); prestaDrawing = true; prestaSignCtx.beginPath(); prestaSignCtx.moveTo(t.clientX - r.left, t.clientY - r.top); });
+        prestaSignCanvas.addEventListener('touchmove', function(e) { e.preventDefault(); if (!prestaDrawing) return; var t = e.touches[0]; var r = prestaSignCanvas.getBoundingClientRect(); prestaSignCtx.lineWidth = 2; prestaSignCtx.strokeStyle = '#0A0A0A'; prestaSignCtx.lineTo(t.clientX - r.left, t.clientY - r.top); prestaSignCtx.stroke(); });
+        prestaSignCanvas.addEventListener('touchend', function() { prestaDrawing = false; checkPrestaSignReady(); });
+    }
+
+    document.getElementById('prestaSignClear').addEventListener('click', function() {
+        prestaSignCtx.clearRect(0, 0, prestaSignCanvas.width, prestaSignCanvas.height);
+        checkPrestaSignReady();
+    });
+
+    var prestaSignAccept = document.getElementById('prestaSignAccept');
+    var prestaSignSubmitBtn = document.getElementById('prestaSignSubmit');
+    prestaSignAccept.addEventListener('change', checkPrestaSignReady);
+    document.getElementById('prestaSignName').addEventListener('input', checkPrestaSignReady);
+    document.getElementById('prestaSignCity').addEventListener('input', checkPrestaSignReady);
+
+    function isPrestaCanvasEmpty() {
+        var d = prestaSignCtx.getImageData(0, 0, prestaSignCanvas.width, prestaSignCanvas.height).data;
+        for (var i = 3; i < d.length; i += 4) { if (d[i] > 0) return false; }
+        return true;
+    }
+
+    function checkPrestaSignReady() {
+        var name = document.getElementById('prestaSignName').value.trim();
+        var city = document.getElementById('prestaSignCity').value.trim();
+        var accepted = prestaSignAccept.checked;
+        var hasSig = !isPrestaCanvasEmpty();
+        prestaSignSubmitBtn.disabled = !(name && city && accepted && hasSig);
+    }
+
+    function openPrestaSignModal() {
+        // Wizard H3: check account completeness before allowing emission
+        var dfToken = localStorage.getItem('df_token') || '';
+        fetch('/api/auth?action=me', { headers: { 'Authorization': 'Bearer ' + dfToken } })
+            .then(function(r) { return r.ok ? r.json() : null; })
+            .then(function(data) {
+                if (!data) { prestaSignOverlay.classList.add('show'); return; }
+                var a = data.account;
+                var missing = [];
+                if (!a.legal_name) missing.push('Raison sociale');
+                if (!a.legal_form) missing.push('Forme juridique');
+                if (!a.siren) missing.push('SIREN');
+                if (!a.tva_intra) missing.push('TVA intracommunautaire');
+                if (!a.rcs_city) missing.push('RCS / Ville');
+                if (!a.cgv_url && !a.cgv_text) missing.push('CGV (texte ou URL)');
+                // Check address exists
+                return fetch('/api/account?entity=addresses', { headers: { 'Authorization': 'Bearer ' + dfToken } })
+                    .then(function(r2) { return r2.json(); })
+                    .then(function(addrs) {
+                        if (!addrs || !addrs.length) missing.push('Adresse de facturation');
+                        if (missing.length) {
+                            showConfirm(
+                                'Avant d\'émettre un devis, complétez votre compte :\n\n• ' + missing.join('\n• ') + '\n\nRendez-vous dans les Paramètres.',
+                                'Aller aux paramètres', 'danger',
+                                function() { window.location.href = '/settings'; }
+                            );
+                        } else {
+                            prestaSignOverlay.classList.add('show');
+                        }
+                    });
+            })
+            .catch(function() { prestaSignOverlay.classList.add('show'); });
+    }
+
+    document.getElementById('prestaSignCancel').addEventListener('click', function() { prestaSignOverlay.classList.remove('show'); });
+    prestaSignOverlay.addEventListener('click', function(e) { if (e.target === prestaSignOverlay) prestaSignOverlay.classList.remove('show'); });
+
+    prestaSignSubmitBtn.addEventListener('click', function() {
+        var name = document.getElementById('prestaSignName').value.trim();
+        var func = document.getElementById('prestaSignFunction').value.trim();
+        var city = document.getElementById('prestaSignCity').value.trim();
+        var sigImage = prestaSignCanvas.toDataURL('image/png');
+        var dfToken = localStorage.getItem('df_token') || '';
+
+        prestaSignSubmitBtn.disabled = true;
+        prestaSignSubmitBtn.textContent = 'Signature en cours...';
+
+        // Compute hash on features/jobs content (same as client hash)
+        var hashContent = JSON.stringify(allFeatures.map(function(f) {
+            return { code: f.code, title: f.title, jobs: (f.jobs || []).map(function(j) { return { description: j.description, jh: j.jh, included: j.included }; }) };
+        }));
+        crypto.subtle.digest('SHA-256', new TextEncoder().encode(hashContent)).then(function(buf) {
+            var hash = Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+
+            // Save presta signature
+            fetch('/api/signature', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
+                body: JSON.stringify({
+                    slug: SLUG,
+                    signer_name: name,
+                    signer_function: func,
+                    signer_role: 'presta',
+                    devis_hash: hash,
+                    city: city,
+                    signature_image: sigImage
+                })
+            }).then(function(r) {
+                if (!r.ok) return r.json().then(function(d) { throw new Error(d.error); });
+                return r.json();
+            }).then(function() {
+                prestaSignOverlay.classList.remove('show');
+                prestaSignSubmitBtn.textContent = 'Signer et émettre';
+                prestaSignSubmitBtn.disabled = false;
+
+                // Now proceed to propose: send to client or ask for email
+                if (PROJECT_DATA.client_account_id) {
+                    var btn = document.getElementById('btnPropose');
+                    if (btn) { btn.disabled = true; btn.textContent = 'Envoi...'; }
+                    fetch('/api/notify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
+                        body: JSON.stringify({ type: 'proposed', slug: SLUG })
+                    }).then(function(r) { return r.json(); }).then(function() {
+                        return changeStatus('proposed');
+                    }).then(function() {
+                        if (btn) { btn.textContent = 'Proposer le devis'; btn.disabled = false; }
+                    }).catch(function() {
+                        if (btn) { btn.textContent = 'Proposer le devis'; btn.disabled = false; }
+                    });
+                } else {
+                    document.getElementById('proposeOverlay').classList.add('show');
+                    document.getElementById('proposeEmail').value = '';
+                    document.getElementById('proposeSubmit').disabled = true;
+                    document.getElementById('proposeEmail').focus();
+                }
+            }).catch(function(err) {
+                prestaSignSubmitBtn.disabled = false;
+                prestaSignSubmitBtn.textContent = 'Signer et émettre';
+                showConfirm('Erreur : ' + (err.message || 'Échec'), 'OK', 'danger', function() {});
+            });
+        });
+    });
 
     shareBtn.addEventListener('click', function() { shareOverlay.classList.add('show'); });
     shareClose.addEventListener('click', function() { shareOverlay.classList.remove('show'); });

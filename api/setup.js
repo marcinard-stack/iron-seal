@@ -1,9 +1,39 @@
 import { neon } from '@neondatabase/serverless';
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  var sql = neon(process.env.DATABASE_URL);
+  var action = req.query.action;
 
-  const sql = neon(process.env.DATABASE_URL);
+  // ── SEED ACTIONS (merged from seed.js) ──
+  if (action === 'dump_messages') {
+    var pid = parseInt(req.query.project_id || '4');
+    var convs = await sql`SELECT id, current_step, context_json, created_at, updated_at FROM conversations WHERE project_id = ${pid} ORDER BY created_at DESC LIMIT 1`;
+    if (!convs.length) return res.json({ project_id: pid, conversation: null, messages: [] });
+    var msgs = await sql`SELECT id, role, content, tool_calls_json, created_at FROM chat_messages WHERE conversation_id = ${convs[0].id} ORDER BY created_at ASC`;
+    return res.json({ project_id: pid, conversation: convs[0], message_count: msgs.length, messages: msgs });
+  }
+
+  if (action === 'list_accounts') {
+    var accounts = await sql`SELECT a.id, a.name, u.email, u.account_id, u.email_verified FROM accounts a LEFT JOIN users u ON u.account_id = a.id ORDER BY a.id`;
+    return res.json(accounts);
+  }
+
+  if (action === 'create_test_project' && req.method === 'POST') {
+    var rawName = (req.query.name || req.body && req.body.name || 'lynx-test').toString().trim();
+    var slugBase = rawName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'lynx-test';
+    var slug = slugBase + '-' + Math.random().toString(36).slice(2, 8);
+    var ownerAcc = await sql`SELECT a.id FROM accounts a JOIN users u ON u.account_id = a.id ORDER BY a.id LIMIT 1`;
+    var ownerId = ownerAcc.length ? ownerAcc[0].id : null;
+    var newProj = await sql`
+      INSERT INTO projects (slug, title, status, owner_account_id, freelance_account_id)
+      VALUES (${slug}, ${rawName}, 'draft', ${ownerId}, ${ownerId})
+      RETURNING id, slug, title, status
+    `;
+    return res.json({ ok: true, project: newProj[0], discovery_url: '/discovery/' + slug, viewer_url: '/deals/draft/' + slug });
+  }
+
+  // ── SCHEMA MIGRATION (POST only) ──
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
   try {
     // ── ACCOUNTS ──
@@ -356,6 +386,83 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS default_vat_rate NUMERIC(5,2) DEFAULT 20.00`;
     await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS payment_terms VARCHAR(200) DEFAULT '30 jours'`;
     await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS quote_validity INTEGER DEFAULT 30`;
+
+    // ── NEW MIGRATIONS (Sprint 1 — devis refonte) ──
+
+    // Accounts: legal/branding/contact fields
+    await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS ape_code VARCHAR(10)`;
+    await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS phone VARCHAR(30)`;
+    await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS cgv_text TEXT`;
+    await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS cgv_url VARCHAR(500)`;
+    await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS brand_color VARCHAR(10) DEFAULT '#0F172A'`;
+    await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS logo_url TEXT`;
+    await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS project_contact_name VARCHAR(200)`;
+    await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS project_contact_email VARCHAR(300)`;
+    await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS project_contact_phone VARCHAR(30)`;
+    await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS project_contact_role VARCHAR(100)`;
+    await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS late_payment_rate_label VARCHAR(200) DEFAULT 'BCE + 10 points'`;
+    await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS recovery_fee_amount NUMERIC(10,2) DEFAULT 40.00`;
+    await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS rc_pro_insurer VARCHAR(200)`;
+    await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS rc_pro_policy_number VARCHAR(100)`;
+    await sql`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS escompte_text VARCHAR(500) DEFAULT 'Pas d''escompte pour paiement anticipé'`;
+
+    // Projects: preamble, payment schedule, dates
+    await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS preamble TEXT`;
+    await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS payment_schedule_mode VARCHAR(20) DEFAULT 'on_delivery'`;
+    await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS payment_schedule_json JSONB`;
+    await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS kickoff_date DATE`;
+    await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS delivery_date DATE`;
+    await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS issued_at TIMESTAMPTZ`;
+
+    // Devis versions: versioning chain
+    await sql`ALTER TABLE devis_versions ADD COLUMN IF NOT EXISTS previous_version_id INTEGER REFERENCES devis_versions(id)`;
+    await sql`ALTER TABLE devis_versions ADD COLUMN IF NOT EXISTS change_summary TEXT`;
+
+    // Devis signatures: presta signature support
+    await sql`ALTER TABLE devis_signatures ADD COLUMN IF NOT EXISTS signer_role VARCHAR(50) DEFAULT 'client'`;
+    await sql`ALTER TABLE devis_signatures ADD COLUMN IF NOT EXISTS signer_function VARCHAR(200)`;
+    await sql`ALTER TABLE devis_signatures ADD COLUMN IF NOT EXISTS signature_image TEXT`;
+
+    // Exclusions: lot 2 flag
+    await sql`ALTER TABLE exclusions ADD COLUMN IF NOT EXISTS reportable_lot2 BOOLEAN NOT NULL DEFAULT false`;
+
+    // ── INVOICES ──
+    await sql`
+      CREATE TABLE IF NOT EXISTS invoices (
+        id SERIAL PRIMARY KEY,
+        project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        devis_signature_id INTEGER REFERENCES devis_signatures(id),
+        invoice_number VARCHAR(30) NOT NULL UNIQUE,
+        issued_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        due_at TIMESTAMPTZ,
+        amount_ht NUMERIC(12,2) NOT NULL,
+        amount_tva NUMERIC(12,2) NOT NULL DEFAULT 0,
+        amount_ttc NUMERIC(12,2) NOT NULL,
+        status VARCHAR(50) NOT NULL DEFAULT 'draft',
+        paid_at TIMESTAMPTZ,
+        payment_method VARCHAR(100),
+        milestone_label VARCHAR(200),
+        data_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_invoices_project ON invoices(project_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status)`;
+
+    // ── INVOICE PAYMENTS ──
+    await sql`
+      CREATE TABLE IF NOT EXISTS invoice_payments (
+        id SERIAL PRIMARY KEY,
+        invoice_id INTEGER NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
+        amount NUMERIC(12,2) NOT NULL,
+        paid_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        method VARCHAR(100),
+        reference VARCHAR(200),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_invoice_payments_invoice ON invoice_payments(invoice_id)`;
 
     return res.json({ ok: true, message: 'All tables created successfully' });
   } catch (err) {

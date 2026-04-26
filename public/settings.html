@@ -96,6 +96,15 @@
         .save-bar .save-btn.idle { background: #b1ada1; cursor: default; }
         .save-bar .save-hint { font-size: 12px; color: #8a8780; }
 
+        /* ---- FIELD STATUS BADGES ---- */
+        .field-status {
+            display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px;
+            border-radius: 10px; margin-left: 8px; vertical-align: middle;
+        }
+        .field-status.ok { background: #DCFCE7; color: #166534; }
+        .field-status.warn { background: #FEF3C7; color: #92400E; }
+        .field-status.optional { background: #F3F4F6; color: #6B7280; }
+
         /* ---- MOBILE RESPONSIVE ---- */
         @media (max-width: 768px) {
             .main { padding: 60px 16px 24px; }
@@ -200,7 +209,7 @@
     </div>
 
     <div class="section-card">
-        <h2>Informations légales</h2>
+        <h2>Informations légales <span id="statusLegal" class="field-status"></span></h2>
         <div class="field">
             <label>Nom de la structure</label>
             <input type="text" id="accountName" placeholder="ex : Studio XYZ">
@@ -242,6 +251,104 @@
         <div class="field">
             <label>RCS / Ville d'immatriculation</label>
             <input type="text" id="rcsCity" placeholder="ex : RCS Paris">
+        </div>
+        <div class="field-row">
+            <div class="field">
+                <label>Code APE / NAF</label>
+                <input type="text" id="apeCode" placeholder="ex : 6201Z">
+            </div>
+            <div class="field">
+                <label>Téléphone entreprise</label>
+                <input type="text" id="accountPhone" placeholder="ex : 06 12 34 56 78">
+            </div>
+        </div>
+    </div>
+
+    <div class="section-card">
+        <h2>Contact projet (par défaut)</h2>
+        <div class="hint" style="margin-bottom:12px;">Personne référente affichée sur les devis et factures.</div>
+        <div class="field-row">
+            <div class="field">
+                <label>Nom</label>
+                <input type="text" id="contactName" placeholder="ex : Marc Inard">
+            </div>
+            <div class="field">
+                <label>Fonction</label>
+                <input type="text" id="contactRole" placeholder="ex : Gérant">
+            </div>
+        </div>
+        <div class="field-row">
+            <div class="field">
+                <label>Email</label>
+                <input type="email" id="contactEmail" placeholder="ex : marc@blueheronlab.com">
+            </div>
+            <div class="field">
+                <label>Téléphone</label>
+                <input type="text" id="contactPhone" placeholder="ex : 06 12 34 56 78">
+            </div>
+        </div>
+    </div>
+
+    <div class="section-card">
+        <h2>Pénalités et mentions légales</h2>
+        <div class="field-row">
+            <div class="field">
+                <label>Pénalités de retard</label>
+                <input type="text" id="latePaymentRate" placeholder="ex : BCE + 10 points">
+                <div class="hint">Taux appliqué en cas de retard de paiement</div>
+            </div>
+            <div class="field">
+                <label>Indemnité de recouvrement (€)</label>
+                <input type="number" id="recoveryFee" placeholder="40" step="0.01">
+            </div>
+        </div>
+        <div class="field">
+            <label>Escompte</label>
+            <input type="text" id="escompteText" placeholder="Pas d'escompte pour paiement anticipé">
+        </div>
+        <div class="field-row">
+            <div class="field">
+                <label>Assureur RC Pro (optionnel)</label>
+                <input type="text" id="rcProInsurer" placeholder="ex : Hiscox">
+            </div>
+            <div class="field">
+                <label>N° de police RC Pro</label>
+                <input type="text" id="rcProPolicy" placeholder="ex : HA-123456">
+            </div>
+        </div>
+    </div>
+
+    <div class="section-card">
+        <h2>Branding <span id="statusLogo" class="field-status"></span></h2>
+        <div class="field">
+            <label>Logo (PNG ou SVG, max 500 Ko)</label>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div id="logoPreview" style="width:80px; height:40px; border:1px dashed #e8e6e0; border-radius:6px; display:flex; align-items:center; justify-content:center; overflow:hidden; background:#f9f8f6;">
+                    <span id="logoPlaceholder" style="font-size:10px; color:#b1ada1;">Aucun logo</span>
+                </div>
+                <input type="file" id="logoUpload" accept="image/png,image/svg+xml" style="font-size:12px;">
+                <button id="logoRemove" style="display:none; background:none; border:none; color:#DC2626; font-size:11px; cursor:pointer;">Supprimer</button>
+            </div>
+        </div>
+        <div class="field">
+            <label>Couleur d'accent</label>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <input type="color" id="brandColor" value="#0F172A" style="width:40px; height:32px; border:1px solid #e8e6e0; border-radius:6px; padding:2px; cursor:pointer;">
+                <input type="text" id="brandColorHex" value="#0F172A" style="width:90px; padding:6px 10px; border:1px solid #e8e6e0; border-radius:6px; font-size:12px; font-family:monospace;">
+            </div>
+        </div>
+    </div>
+
+    <div class="section-card">
+        <h2>Conditions Générales de Vente (CGV) <span id="statusCgv" class="field-status"></span></h2>
+        <div class="hint" style="margin-bottom:12px;">Au moins un des deux champs doit être renseigné pour émettre un devis.</div>
+        <div class="field">
+            <label>URL des CGV</label>
+            <input type="url" id="cgvUrl" placeholder="ex : https://monsite.com/cgv">
+        </div>
+        <div class="field">
+            <label>Texte des CGV (résumé ou complet)</label>
+            <textarea id="cgvText" rows="4" placeholder="Vos conditions générales de vente…" style="width:100%; padding:10px 14px; border:1px solid #e8e6e0; border-radius:8px; font-size:13px; font-family:inherit; color:#2d2b35; outline:none; resize:vertical; line-height:1.5;"></textarea>
         </div>
     </div>
 
@@ -294,7 +401,7 @@
     </div>
 
     <div class="section-card">
-        <h2>Adresse de facturation</h2>
+        <h2>Adresse de facturation <span id="statusAddress" class="field-status"></span></h2>
         <div id="addressList"></div>
         <div id="addressForm" style="display:none;">
             <div class="field">
@@ -332,7 +439,7 @@
     </div>
 
     <div class="section-card">
-        <h2>Coordonnées bancaires (freelance)</h2>
+        <h2>Coordonnées bancaires (freelance) <span id="statusIban" class="field-status"></span></h2>
         <div id="ibanList"></div>
         <div id="ibanForm" style="display:none;">
             <div class="field">
@@ -383,6 +490,19 @@
                 Nouveau commentaire
             </label>
             <div class="hint" style="margin-left:23px;">Quand quelqu'un ajoute un commentaire sur un de vos projets</div>
+        </div>
+    </div>
+
+    <div class="section-card">
+        <h2>Tester le rendu PDF</h2>
+        <p style="font-size:12px; color:#8a8780; margin-bottom:14px;">Générez un devis fictif avec vos informations réelles pour vérifier l'apparence du PDF.</p>
+        <button id="testPdfBtn" class="save-btn" style="margin-top:4px;">Tester avec un devis fictif</button>
+    </div>
+
+    <div class="section-card">
+        <h2>Aperçu de vos blocs PDF</h2>
+        <div id="pdfPreviewBlocks" style="background:#f9f8f6; border-radius:8px; padding:16px; font-family:Inter,sans-serif; font-size:9pt;">
+            <p style="font-size:12px; color:#8a8780;">Chargement...</p>
         </div>
     </div>
 
@@ -630,6 +750,27 @@
             document.getElementById('vatRate').value = data.account.default_vat_rate || '20';
             document.getElementById('paymentTerms').value = data.account.payment_terms || '30 jours';
             document.getElementById('quoteValidity').value = data.account.quote_validity || '30';
+            // New fields (Sprint 4)
+            document.getElementById('apeCode').value = data.account.ape_code || '';
+            document.getElementById('accountPhone').value = data.account.phone || '';
+            document.getElementById('contactName').value = data.account.project_contact_name || '';
+            document.getElementById('contactRole').value = data.account.project_contact_role || '';
+            document.getElementById('contactEmail').value = data.account.project_contact_email || '';
+            document.getElementById('contactPhone').value = data.account.project_contact_phone || '';
+            document.getElementById('latePaymentRate').value = data.account.late_payment_rate_label || 'BCE + 10 points';
+            document.getElementById('recoveryFee').value = data.account.recovery_fee_amount || '40';
+            document.getElementById('escompteText').value = data.account.escompte_text || '';
+            document.getElementById('rcProInsurer').value = data.account.rc_pro_insurer || '';
+            document.getElementById('rcProPolicy').value = data.account.rc_pro_policy_number || '';
+            document.getElementById('brandColor').value = data.account.brand_color || '#0F172A';
+            document.getElementById('brandColorHex').value = data.account.brand_color || '#0F172A';
+            document.getElementById('cgvUrl').value = data.account.cgv_url || '';
+            document.getElementById('cgvText').value = data.account.cgv_text || '';
+            // Logo
+            if (data.account.logo_url) {
+                document.getElementById('logoPreview').innerHTML = '<img src="' + data.account.logo_url + '" style="max-width:100%;max-height:100%;object-fit:contain;">';
+                document.getElementById('logoRemove').style.display = 'inline';
+            }
             // Member since
             if (data.account.created_at) {
                 var d = new Date(data.account.created_at);
@@ -639,6 +780,10 @@
             document.getElementById('prefProposal').checked = prefs.proposal_received !== false;
             document.getElementById('prefBackDraft').checked = prefs.back_to_draft !== false;
             document.getElementById('prefComment').checked = prefs.comment_added !== false;
+
+            // FU-11: Update status badges and PDF preview
+            updateStatusBadges(data);
+            renderPdfPreview(data);
         })
         .catch(function() {
             localStorage.removeItem('df_token');
@@ -700,7 +845,7 @@
     emailInput.disabled = true; emailInput.style.background = '#f9f8f6';
 
     // Track changes on all inputs
-    document.querySelectorAll('.section-card input:not([type=checkbox]), .section-card select').forEach(function(el) {
+    document.querySelectorAll('.section-card input:not([type=checkbox]), .section-card select, .section-card textarea').forEach(function(el) {
         el.addEventListener('input', markChanged);
         el.addEventListener('change', markChanged);
     });
@@ -739,6 +884,20 @@
                 default_vat_rate: parseFloat(document.getElementById('vatRate').value) || null,
                 payment_terms: document.getElementById('paymentTerms').value,
                 quote_validity: parseInt(document.getElementById('quoteValidity').value) || null,
+                ape_code: document.getElementById('apeCode').value.trim(),
+                account_phone: document.getElementById('accountPhone').value.trim(),
+                project_contact_name: document.getElementById('contactName').value.trim(),
+                project_contact_role: document.getElementById('contactRole').value.trim(),
+                project_contact_email: document.getElementById('contactEmail').value.trim(),
+                project_contact_phone: document.getElementById('contactPhone').value.trim(),
+                late_payment_rate_label: document.getElementById('latePaymentRate').value.trim(),
+                recovery_fee_amount: parseFloat(document.getElementById('recoveryFee').value) || 40,
+                escompte_text: document.getElementById('escompteText').value.trim(),
+                rc_pro_insurer: document.getElementById('rcProInsurer').value.trim(),
+                rc_pro_policy_number: document.getElementById('rcProPolicy').value.trim(),
+                brand_color: document.getElementById('brandColor').value,
+                cgv_url: document.getElementById('cgvUrl').value.trim(),
+                cgv_text: document.getElementById('cgvText').value.trim(),
                 email_prefs: {
                     proposal_received: document.getElementById('prefProposal').checked,
                     back_to_draft: document.getElementById('prefBackDraft').checked,
@@ -751,6 +910,8 @@
                 hasChanges = false; btn.disabled = true; btn.classList.add('idle');
                 document.getElementById('saveHint').textContent = 'Tout est à jour';
                 showToast('Préférences enregistrées');
+                // Refresh status badges and PDF preview after save
+                fetch('/api/auth?action=me', { headers: headers }).then(function(r2) { return r2.json(); }).then(function(d2) { updateStatusBadges(d2); renderPdfPreview(d2); });
                 // Update localStorage user
                 var fn = document.getElementById('userFirstName').value.trim();
                 var ln = document.getElementById('userLastName').value.trim();
@@ -844,6 +1005,55 @@
         });
     });
 
+    // ===== BRANDING: LOGO UPLOAD =====
+    document.getElementById('logoUpload').addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        if (!file || file.size > 512000) { alert('Fichier trop lourd (max 500 Ko)'); return; }
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            var base64 = ev.target.result;
+            document.getElementById('logoPreview').innerHTML = '<img src="' + base64 + '" style="max-width:100%;max-height:100%;object-fit:contain;">';
+            document.getElementById('logoRemove').style.display = 'inline';
+            var placeholder = document.getElementById('logoPlaceholder');
+            if (placeholder) placeholder.style.display = 'none';
+            // Save immediately via account info API and confirm
+            var statusEl = document.getElementById('statusLogo');
+            if (statusEl) { statusEl.className = 'field-status optional'; statusEl.textContent = 'Envoi...'; }
+            fetch('/api/account?entity=info', { method: 'PUT', headers: headers, body: JSON.stringify({ logo_url: base64 }) })
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if (d.logo_url) {
+                        if (statusEl) { statusEl.className = 'field-status ok'; statusEl.textContent = 'Détecté · sera utilisé dans le PDF'; }
+                    } else {
+                        if (statusEl) { statusEl.className = 'field-status warn'; statusEl.textContent = 'Erreur de sauvegarde'; }
+                    }
+                })
+                .catch(function() {
+                    if (statusEl) { statusEl.className = 'field-status warn'; statusEl.textContent = 'Erreur réseau'; }
+                });
+        };
+        reader.readAsDataURL(file);
+    });
+    document.getElementById('logoRemove').addEventListener('click', function() {
+        document.getElementById('logoPreview').innerHTML = '<span id="logoPlaceholder" style="font-size:10px;color:#b1ada1;">Aucun logo</span>';
+        this.style.display = 'none';
+        fetch('/api/account?entity=info', { method: 'PUT', headers: headers, body: JSON.stringify({ logo_url: '' }) })
+            .then(function() {
+                var statusEl = document.getElementById('statusLogo');
+                if (statusEl) { statusEl.className = 'field-status warn'; statusEl.textContent = 'Manquant · le PDF affichera votre nom'; }
+            });
+    });
+
+    // ===== BRANDING: COLOR SYNC =====
+    document.getElementById('brandColor').addEventListener('input', function() {
+        document.getElementById('brandColorHex').value = this.value;
+        markChanged();
+    });
+    document.getElementById('brandColorHex').addEventListener('input', function() {
+        if (/^#[0-9A-Fa-f]{6}$/.test(this.value)) document.getElementById('brandColor').value = this.value;
+        markChanged();
+    });
+
     // Logout
     document.getElementById('logoutBtn').addEventListener('click', function() {
         fetch('/api/auth?action=logout', { method: 'POST', headers: headers })
@@ -869,6 +1079,116 @@
                 localStorage.removeItem('df_user');
                 window.location.href = '/login';
             });
+    });
+
+    // ===== FU-11: STATUS BADGES =====
+    function setBadge(id, ok, okText, warnText) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (ok) { el.className = 'field-status ok'; el.textContent = okText; }
+        else { el.className = 'field-status warn'; el.textContent = warnText; }
+    }
+
+    function updateStatusBadges(data) {
+        var a = data.account || {};
+        // Logo
+        setBadge('statusLogo', !!a.logo_url, 'Détecté · sera utilisé dans le PDF', 'Manquant · le PDF affichera votre nom');
+        // IBAN — check via separate fetch
+        fetch('/api/account?entity=payment_methods', { headers: headers }).then(function(r) { return r.json(); }).then(function(rows) {
+            setBadge('statusIban', rows && rows.length > 0, 'Configuré', 'Manquant · à compléter pour facturer');
+        });
+        // CGV
+        var hasCgv = !!(a.cgv_text || a.cgv_url);
+        setBadge('statusCgv', hasCgv, a.cgv_text ? 'Texte renseigné' : 'URL renseignée', 'Manquant · obligatoire pour émettre un devis');
+        // Address
+        fetch('/api/account?entity=addresses', { headers: headers }).then(function(r) { return r.json(); }).then(function(rows) {
+            setBadge('statusAddress', rows && rows.length > 0, 'Configurée', 'Manquante · obligatoire pour émission');
+        });
+        // Legal: SIREN, TVA, RCS, Forme juridique
+        var legalFields = [a.siren, a.tva_intra, a.rcs_city, a.legal_form];
+        var legalFilled = legalFields.filter(Boolean).length;
+        if (legalFilled === legalFields.length) {
+            setBadge('statusLegal', true, 'Complet', '');
+        } else {
+            var missing = [];
+            if (!a.siren) missing.push('SIREN');
+            if (!a.tva_intra) missing.push('TVA');
+            if (!a.rcs_city) missing.push('RCS');
+            if (!a.legal_form) missing.push('Forme juridique');
+            setBadge('statusLegal', false, '', 'Manquant : ' + missing.join(', '));
+        }
+    }
+
+    // ===== FU-11: PDF PREVIEW =====
+    function renderPdfPreview(data) {
+        var a = data.account || {};
+        var u = data.user || {};
+        var container = document.getElementById('pdfPreviewBlocks');
+        if (!container) return;
+
+        var brandColor = a.brand_color || '#0F172A';
+        var contactName = a.project_contact_name || ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || 'Votre nom';
+        var contactRole = a.project_contact_role || 'Gérant';
+        var contactEmail = a.project_contact_email || u.email || 'email@exemple.com';
+        var contactPhone = a.project_contact_phone || a.phone || '';
+
+        var legalName = a.legal_name || a.name || 'Votre structure';
+        var legalForm = a.legal_form || '—';
+        var capital = a.capital || '—';
+        var siren = a.siren || '—';
+        var tvaIntra = a.tva_intra || '—';
+        var rcsCity = a.rcs_city || '—';
+
+        var html = '';
+
+        // Block 1: Identity (PRESTATAIRE)
+        html += '<div style="border:1px solid #e5e5e5; border-radius:6px; padding:14px; margin-bottom:12px;">';
+        html += '<div style="font-size:8pt; font-weight:700; color:' + brandColor + '; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; border-bottom:2px solid ' + brandColor + '; padding-bottom:4px;">PRESTATAIRE</div>';
+        if (a.logo_url) {
+            html += '<div style="margin-bottom:6px;"><img src="' + a.logo_url + '" style="max-height:28px; max-width:120px; object-fit:contain;"></div>';
+        }
+        html += '<div style="font-weight:700; font-size:10pt; margin-bottom:2px;">' + legalName + '</div>';
+        html += '<div style="font-size:8pt; color:#555;">' + legalForm + ' au capital de ' + capital + '</div>';
+        html += '<div style="font-size:8pt; color:#555;">SIREN : ' + siren + ' — TVA : ' + tvaIntra + '</div>';
+        html += '<div style="font-size:8pt; color:#555;">RCS : ' + rcsCity + '</div>';
+        html += '<div style="font-size:8pt; color:#555; margin-top:6px;">' + contactName + ' · ' + contactRole + '</div>';
+        html += '<div style="font-size:8pt; color:#555;">' + contactEmail + (contactPhone ? ' · ' + contactPhone : '') + '</div>';
+        html += '</div>';
+
+        // Block 2: Conditions
+        html += '<div style="border:1px solid #e5e5e5; border-radius:6px; padding:14px; margin-bottom:12px;">';
+        html += '<div style="font-size:8pt; font-weight:700; color:' + brandColor + '; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; border-bottom:2px solid ' + brandColor + '; padding-bottom:4px;">CONDITIONS</div>';
+        html += '<div style="font-size:8pt; color:#555;">Validité du devis : ' + (a.quote_validity || 30) + ' jours</div>';
+        html += '<div style="font-size:8pt; color:#555;">Conditions de paiement : ' + (a.payment_terms || '30 jours') + '</div>';
+        html += '<div style="font-size:8pt; color:#555;">Pénalités de retard : ' + (a.late_payment_rate_label || 'BCE + 10 points') + '</div>';
+        html += '<div style="font-size:8pt; color:#555;">Indemnité de recouvrement : ' + (a.recovery_fee_amount || 40) + ' €</div>';
+        if (a.escompte_text) html += '<div style="font-size:8pt; color:#555;">Escompte : ' + a.escompte_text + '</div>';
+        if (a.rc_pro_insurer) html += '<div style="font-size:8pt; color:#555;">RC Pro : ' + a.rc_pro_insurer + (a.rc_pro_policy_number ? ' — N° ' + a.rc_pro_policy_number : '') + '</div>';
+        html += '</div>';
+
+        // Block 3: Signature placeholder
+        html += '<div style="border:1px solid #e5e5e5; border-radius:6px; padding:14px;">';
+        html += '<div style="font-size:8pt; font-weight:700; color:' + brandColor + '; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; border-bottom:2px solid ' + brandColor + '; padding-bottom:4px;">SIGNATURES</div>';
+        html += '<div style="display:flex; gap:24px;">';
+        html += '<div style="flex:1; text-align:center;">';
+        html += '<div style="font-size:8pt; font-weight:600; margin-bottom:4px;">Le prestataire</div>';
+        html += '<div style="font-size:8pt; color:#555;">' + contactName + '</div>';
+        html += '<div style="height:40px; border:1px dashed #ccc; border-radius:4px; margin-top:6px; display:flex; align-items:center; justify-content:center; font-size:7pt; color:#aaa;">Signature</div>';
+        html += '</div>';
+        html += '<div style="flex:1; text-align:center;">';
+        html += '<div style="font-size:8pt; font-weight:600; margin-bottom:4px;">Le client</div>';
+        html += '<div style="font-size:8pt; color:#555;">Nom du client</div>';
+        html += '<div style="height:40px; border:1px dashed #ccc; border-radius:4px; margin-top:6px; display:flex; align-items:center; justify-content:center; font-size:7pt; color:#aaa;">Signature</div>';
+        html += '</div>';
+        html += '</div>';
+        html += '</div>';
+
+        container.innerHTML = html;
+    }
+
+    // ===== FU-11: TEST PDF BUTTON =====
+    document.getElementById('testPdfBtn').addEventListener('click', function() {
+        window.open('/api/pdf?slug=cdc-cockpit-sales-carjager-test-5b70d0&format=html', '_blank');
     });
 
     // Password change

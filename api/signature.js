@@ -48,7 +48,7 @@ function signedEmail(projectTitle, signerName, signedAt, hash) {
     + '<tr><td style="padding:24px 0 0; text-align:center;">'
     + '<p style="font-size:11px; color:#b1ada1; margin:0 0 6px;">Iron Seal par Blue Heron Lab</p>'
     + '<p style="font-size:10px; color:#c4c2bc; margin:0;">Vous recevez cet email car vous etes partie prenante d\'un projet sur Iron Seal.<br>'
-    + 'Pour ne plus recevoir ces notifications, modifiez vos <a href="https://ironseal.vercel.app/settings" style="color:#c4c2bc;">preferences email</a>.</p>'
+    + 'Pour ne plus recevoir ces notifications, modifiez vos <a href="https://iron-seal.vercel.app/settings" style="color:#c4c2bc;">preferences email</a>.</p>'
     + '</td></tr></table></td></tr></table></body></html>';
 }
 
@@ -109,8 +109,9 @@ export default async function handler(req, res) {
         }
         return res.json({ ok: true });
       }
-      var { slug, signer_name, devis_hash, city } = req.body;
+      var { slug, signer_name, devis_hash, city, signer_role, signer_function, signature_image } = req.body;
       if (!slug || !signer_name || !devis_hash) return res.status(400).json({ error: 'slug, signer_name, devis_hash required' });
+      var sigRole = signer_role || 'client';
 
       // Resolve signer from auth
       var auth = (req.headers.authorization || '').replace('Bearer ', '');
@@ -129,7 +130,9 @@ export default async function handler(req, res) {
       if (!projects.length) return res.status(404).json({ error: 'project not found' });
       var project = projects[0];
 
-      if (project.status !== 'proposed') return res.status(400).json({ error: 'Project must be in proposed status to sign' });
+      // Presta can sign in draft, client can sign in proposed
+      if (sigRole === 'presta' && project.status !== 'draft') return res.status(400).json({ error: 'Presta can only sign in draft status' });
+      if (sigRole === 'client' && project.status !== 'proposed') return res.status(400).json({ error: 'Project must be in proposed status to sign' });
 
       // Get IP
       var ip = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.connection?.remoteAddress || 'unknown';
@@ -139,21 +142,23 @@ export default async function handler(req, res) {
       var currentVersion = await sql`SELECT id FROM devis_versions WHERE project_id = ${project.id} AND status = 'proposed' ORDER BY created_at DESC LIMIT 1`;
       var versionId = currentVersion.length ? currentVersion[0].id : null;
 
-      // Mark previous signatures as superseded
-      await sql`UPDATE devis_signatures SET status = 'superseded' WHERE project_id = ${project.id} AND status = 'active'`;
-
-      // Mark current version as signed
-      if (versionId) await sql`UPDATE devis_versions SET status = 'signed' WHERE id = ${versionId}`;
+      // For client signatures: mark previous sigs as superseded and version as signed
+      if (sigRole === 'client') {
+        await sql`UPDATE devis_signatures SET status = 'superseded' WHERE project_id = ${project.id} AND status = 'active' AND signer_role = 'client'`;
+        if (versionId) await sql`UPDATE devis_versions SET status = 'signed' WHERE id = ${versionId}`;
+      }
 
       // Save signature
       var rows = await sql`
-        INSERT INTO devis_signatures (project_id, signer_user_id, signer_name, signer_email, devis_hash, ip_address, city, version_id, status)
-        VALUES (${project.id}, ${signer.id}, ${signer_name}, ${signer.email}, ${devis_hash}, ${ip}, ${city || null}, ${versionId}, 'active')
+        INSERT INTO devis_signatures (project_id, signer_user_id, signer_name, signer_email, devis_hash, ip_address, city, version_id, status, signer_role, signer_function, signature_image)
+        VALUES (${project.id}, ${signer.id}, ${signer_name}, ${signer.email}, ${devis_hash}, ${ip}, ${city || null}, ${versionId}, 'active', ${sigRole}, ${signer_function || null}, ${signature_image || null})
         RETURNING *
       `;
 
-      // Update project status to signed
-      await sql`UPDATE projects SET status = 'signed', updated_at = NOW() WHERE id = ${project.id}`;
+      // Update project status: only move to signed when client signs
+      if (sigRole === 'client') {
+        await sql`UPDATE projects SET status = 'signed', updated_at = NOW() WHERE id = ${project.id}`;
+      }
 
       // Auto-generate ref_number if missing
       if (!project.ref_number) {

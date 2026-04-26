@@ -14,6 +14,129 @@ function generateSlug(title) {
   return base + '-' + hash;
 }
 
+function generateInvoiceNumber(year, count) {
+  return 'FAC-' + year.toString().slice(2) + '-' + (count + 1).toString().padStart(4, '0');
+}
+
+async function handleInvoices(req, res, sql, accountId, userId) {
+  // GET: list invoices for a project
+  if (req.method === 'GET') {
+    var projectId = req.query.project_id;
+    var slug = req.query.slug;
+    if (slug) {
+      var p = await sql`SELECT id FROM projects WHERE slug = ${slug}`;
+      if (!p.length) return res.status(404).json({ error: 'project not found' });
+      projectId = p[0].id;
+    }
+    if (!projectId) return res.status(400).json({ error: 'project_id or slug required' });
+    var invoices = await sql`SELECT * FROM invoices WHERE project_id = ${projectId} ORDER BY created_at DESC`;
+    // Attach payments
+    for (var i = 0; i < invoices.length; i++) {
+      invoices[i].payments = await sql`SELECT * FROM invoice_payments WHERE invoice_id = ${invoices[i].id} ORDER BY paid_at DESC`;
+    }
+    return res.json(invoices);
+  }
+
+  // POST: create invoice from signed devis
+  if (req.method === 'POST') {
+    var { slug, milestone_label, amount_ht_override } = req.body;
+    if (!slug) return res.status(400).json({ error: 'slug required' });
+
+    var projects = await sql`SELECT * FROM projects WHERE slug = ${slug}`;
+    if (!projects.length) return res.status(404).json({ error: 'project not found' });
+    var project = projects[0];
+
+    // Must be signed, active, or delivered
+    if (!['signed', 'active', 'delivered'].includes(project.status)) {
+      return res.status(400).json({ error: 'Project must be signed, active or delivered to generate invoice' });
+    }
+
+    // Check presta owns project
+    if (accountId && project.freelance_account_id != accountId) {
+      return res.status(403).json({ error: 'Only the freelance can create invoices' });
+    }
+
+    // Load presta account for TJM + VAT
+    var prestaAcc = await sql`SELECT * FROM accounts WHERE id = ${project.freelance_account_id}`;
+    var tjm = Number(project.tjm_override || (prestaAcc.length ? prestaAcc[0].default_tjm : 500) || 500);
+    var vatRate = Number(prestaAcc.length ? prestaAcc[0].default_vat_rate : 20);
+    var payTerms = prestaAcc.length ? prestaAcc[0].payment_terms : '30 jours';
+
+    // Calculate amounts from included jobs
+    var features = await sql`SELECT id FROM features WHERE project_id = ${project.id}`;
+    var totalJh = 0;
+    if (features.length) {
+      var jobsAgg = await sql`SELECT COALESCE(SUM(jh), 0)::float as total FROM jobs WHERE feature_id IN (SELECT id FROM features WHERE project_id = ${project.id}) AND included = true AND is_offered = false`;
+      totalJh = jobsAgg[0].total;
+    }
+
+    var amountHt = amount_ht_override ? Number(amount_ht_override) : totalJh * tjm;
+    var amountTva = amountHt * vatRate / 100;
+    var amountTtc = amountHt + amountTva;
+
+    // Generate invoice number
+    var year = new Date().getFullYear();
+    var countRes = await sql`SELECT COUNT(*)::int as cnt FROM invoices WHERE EXTRACT(YEAR FROM created_at) = ${year}`;
+    var invoiceNumber = generateInvoiceNumber(year, countRes[0].cnt);
+
+    // Due date from payment terms
+    var daysMatch = (payTerms || '30').match(/(\d+)/);
+    var dueDays = daysMatch ? parseInt(daysMatch[1]) : 30;
+    var dueAt = new Date(Date.now() + dueDays * 86400000).toISOString();
+
+    // Get latest signature ID
+    var latestSig = await sql`SELECT id FROM devis_signatures WHERE project_id = ${project.id} AND status = 'active' AND signer_role = 'client' ORDER BY signed_at DESC LIMIT 1`;
+    var sigId = latestSig.length ? latestSig[0].id : null;
+
+    // Snapshot data
+    var dataJson = { tjm: tjm, vat_rate: vatRate, total_jh: totalJh, project_title: project.title, ref_number: project.ref_number };
+
+    var rows = await sql`
+      INSERT INTO invoices (project_id, devis_signature_id, invoice_number, due_at, amount_ht, amount_tva, amount_ttc, milestone_label, data_json, status)
+      VALUES (${project.id}, ${sigId}, ${invoiceNumber}, ${dueAt}, ${amountHt}, ${amountTva}, ${amountTtc}, ${milestone_label || null}, ${JSON.stringify(dataJson)}::jsonb, 'draft')
+      RETURNING *
+    `;
+    return res.status(201).json(rows[0]);
+  }
+
+  // PUT: update invoice status or record payment
+  if (req.method === 'PUT') {
+    var { id, status, payment_amount, payment_method, payment_reference } = req.body;
+    if (!id) return res.status(400).json({ error: 'id required' });
+
+    // Record payment
+    if (payment_amount) {
+      await sql`INSERT INTO invoice_payments (invoice_id, amount, method, reference) VALUES (${id}, ${payment_amount}, ${payment_method || 'virement'}, ${payment_reference || null})`;
+      // Check if fully paid
+      var inv = await sql`SELECT amount_ttc FROM invoices WHERE id = ${id}`;
+      var payments = await sql`SELECT COALESCE(SUM(amount), 0)::float as total FROM invoice_payments WHERE invoice_id = ${id}`;
+      var newStatus = payments[0].total >= Number(inv[0].amount_ttc) ? 'paid' : 'paid_partial';
+      await sql`UPDATE invoices SET status = ${newStatus}, paid_at = ${newStatus === 'paid' ? new Date().toISOString() : null}, updated_at = NOW() WHERE id = ${id}`;
+
+      // Auto-complete project if all invoices paid
+      var invProject = await sql`SELECT project_id FROM invoices WHERE id = ${id}`;
+      if (invProject.length) {
+        var unpaid = await sql`SELECT COUNT(*)::int as cnt FROM invoices WHERE project_id = ${invProject[0].project_id} AND status NOT IN ('paid', 'cancelled')`;
+        if (unpaid[0].cnt === 0) {
+          await sql`UPDATE projects SET status = 'completed', updated_at = NOW() WHERE id = ${invProject[0].project_id}`;
+        }
+      }
+
+      return res.json({ ok: true, status: newStatus });
+    }
+
+    // Update status
+    if (status) {
+      await sql`UPDATE invoices SET status = ${status}, updated_at = NOW() WHERE id = ${id}`;
+      return res.json({ ok: true });
+    }
+
+    return res.status(400).json({ error: 'status or payment_amount required' });
+  }
+
+  return res.status(405).json({ error: 'method not allowed' });
+}
+
 export default async function handler(req, res) {
   var sql = getDb();
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -22,15 +145,21 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    // Resolve session → account_id if auth header present
+    // Resolve session → account_id + user_id if auth header present
     var accountId = null;
+    var userId = null;
     var authToken = (req.headers.authorization || '').replace('Bearer ', '');
     if (authToken) {
       var sess = await sql`
-        SELECT u.account_id FROM sessions s JOIN users u ON u.id = s.user_id
+        SELECT u.account_id, u.id as user_id FROM sessions s JOIN users u ON u.id = s.user_id
         WHERE s.token = ${authToken} AND s.expires_at > NOW()
       `;
-      if (sess.length) accountId = sess[0].account_id;
+      if (sess.length) { accountId = sess[0].account_id; userId = sess[0].user_id; }
+    }
+
+    // ── INVOICES (entity=invoices) ──
+    if (req.query.entity === 'invoices') {
+      return handleInvoices(req, res, sql, accountId, userId);
     }
 
     if (req.method === 'GET') {
@@ -70,7 +199,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'PUT') {
-      var { slug, title, status, owner_account_id, freelance_account_id, client_account_id, clear_client } = req.body;
+      var { slug, title, status, owner_account_id, freelance_account_id, client_account_id, clear_client, preamble, kickoff_date, delivery_date, payment_schedule_mode, payment_schedule_json } = req.body;
       if (!slug) return res.status(400).json({ error: 'slug required' });
       if (clear_client) {
         await sql`UPDATE projects SET client_account_id = NULL, updated_at = NOW() WHERE slug = ${slug}`;
@@ -82,6 +211,11 @@ export default async function handler(req, res) {
             owner_account_id = COALESCE(${owner_account_id ?? null}, owner_account_id),
             freelance_account_id = COALESCE(${freelance_account_id ?? null}, freelance_account_id),
             client_account_id = COALESCE(${client_account_id ?? null}, client_account_id),
+            preamble = COALESCE(${preamble ?? null}, preamble),
+            kickoff_date = COALESCE(${kickoff_date ?? null}, kickoff_date),
+            delivery_date = COALESCE(${delivery_date ?? null}, delivery_date),
+            payment_schedule_mode = COALESCE(${payment_schedule_mode ?? null}, payment_schedule_mode),
+            payment_schedule_json = COALESCE(${payment_schedule_json ? JSON.stringify(payment_schedule_json) : null}::jsonb, payment_schedule_json),
             updated_at = NOW()
         WHERE slug = ${slug}
         RETURNING *
