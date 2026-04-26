@@ -2939,18 +2939,21 @@
                     var amount = Number(inv.amount_ttc).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' €';
                     var actions = '';
                     if (inv.status === 'draft') {
-                        actions = '<button onclick="sendInvoice(' + inv.id + ')" style="background:#0F172A;color:white;border:none;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit;">Envoyer</button>';
+                        actions = '<button id="sendBtn' + inv.id + '" onclick="sendInvoice(' + inv.id + ')" style="background:#0F172A;color:white;border:none;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit;transition:all 0.2s;">Envoyer</button>'
+                            + ' <a href="/api/pdf?type=invoice&invoice_id=' + inv.id + '" target="_blank" style="font-size:11px;color:#6B7280;">Aperçu</a>';
                     }
                     if (inv.status === 'sent' || inv.status === 'paid_partial') {
-                        actions = '<button onclick="markInvoicePaid(' + inv.id + ',' + inv.amount_ttc + ')" style="background:#059669;color:white;border:none;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit;">Marquer payée</button>'
-                            + ' <a href="/api/pdf?type=invoice&invoice_id=' + inv.id + '" target="_blank" style="font-size:11px;color:#6B7280;">PDF</a>';
+                        actions = '<button id="payBtn' + inv.id + '" onclick="markInvoicePaid(' + inv.id + ',' + inv.amount_ttc + ')" style="background:#059669;color:white;border:none;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit;transition:all 0.2s;">Marquer payée</button>'
+                            + ' <a href="/api/pdf?type=invoice&invoice_id=' + inv.id + '&version=signed" target="_blank" style="font-size:11px;color:#6B7280;">PDF</a>';
                     }
                     if (inv.status === 'paid') {
-                        actions = '<a href="/api/pdf?type=invoice&invoice_id=' + inv.id + '" target="_blank" style="font-size:11px;color:#6B7280;">PDF</a>';
+                        actions = '<span style="font-size:10px;color:#059669;margin-right:4px;">✓</span>'
+                            + '<a href="/api/pdf?type=invoice&invoice_id=' + inv.id + '&version=signed" target="_blank" style="font-size:11px;color:#6B7280;">PDF</a>';
                     }
                     return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f3f4f6;font-size:12px;">'
-                        + '<span style="font-weight:600;color:#2d2b35;">' + inv.invoice_number + '</span>'
-                        + (inv.milestone_label ? '<span style="color:#8a8780;">' + inv.milestone_label + '</span>' : '')
+                        + '<span style="font-weight:600;color:#2d2b35;">' + (inv.invoice_number || 'Brouillon') + '</span>'
+                        + (inv.invoice_type && inv.invoice_type !== 'unique' ? '<span style="color:#8a8780;font-size:10px;text-transform:capitalize;">' + inv.invoice_type + '</span>' : '')
+                        + (inv.milestone_label && inv.milestone_label !== 'Acompte' && inv.milestone_label !== 'Solde' ? '<span style="color:#8a8780;">' + inv.milestone_label + '</span>' : '')
                         + '<span style="margin-left:auto;font-weight:500;">' + amount + '</span>'
                         + '<span style="display:inline-block;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:' + color + '20;color:' + color + ';">' + label + '</span>'
                         + actions
@@ -2960,19 +2963,41 @@
     }
 
     window.sendInvoice = function(invoiceId) {
-        fetch('/api/pdf?type=invoice&invoice_id=' + invoiceId + '&notify=1')
-            .then(function(r) { return r.json(); })
-            .then(function() { loadInvoices(); });
+        var btn = document.getElementById('sendBtn' + invoiceId);
+        if (btn) { btn.disabled = true; btn.textContent = 'Attribution n°...'; btn.style.opacity = '0.7'; }
+        var dfToken = localStorage.getItem('df_token') || '';
+
+        // Step 1: Assign number (PUT status=sent)
+        fetch('/api/projects?entity=invoices', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
+            body: JSON.stringify({ id: invoiceId, status: 'sent' })
+        }).then(function(r) { return r.json(); }).then(function(res) {
+            if (btn) { btn.textContent = 'Génération PDF...'; }
+
+            // Step 2: Generate PDF + send email (now invoice has a number)
+            return fetch('/api/pdf?type=invoice&invoice_id=' + invoiceId + '&notify=1')
+                .then(function(r2) { return r2.json(); });
+        }).then(function() {
+            if (btn) { btn.textContent = 'Envoyé ✓'; btn.style.background = '#059669'; }
+            setTimeout(function() { loadInvoices(); }, 800);
+        }).catch(function(err) {
+            if (btn) { btn.disabled = false; btn.textContent = 'Envoyer'; btn.style.opacity = '1'; }
+            console.error('sendInvoice error:', err);
+        });
     };
 
     window.markInvoicePaid = function(invoiceId, amountTtc) {
+        var btn = document.getElementById('payBtn' + invoiceId);
+        if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement...'; btn.style.opacity = '0.7'; }
         var dfToken = localStorage.getItem('df_token') || '';
         fetch('/api/projects?entity=invoices', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
             body: JSON.stringify({ id: invoiceId, payment_amount: amountTtc, payment_method: 'virement' })
         }).then(function(r) { return r.json(); }).then(function(result) {
-            loadInvoices();
+            if (btn) { btn.textContent = 'Payée ✓'; btn.style.background = '#166534'; }
+            setTimeout(function() { loadInvoices(); }, 800);
             if (result.status === 'paid') {
                 // Refresh project data to check for auto-complete
                 fetch('/api/projects?slug=' + SLUG).then(function(r) { return r.json(); }).then(function(p) {
@@ -3100,7 +3125,7 @@
                         return fetch('/api/account?entity=payment_methods', { headers: { 'Authorization': 'Bearer ' + dfToken } })
                             .then(function(r3) { return r3.ok ? r3.json() : []; })
                             .then(function(pms) {
-                                if (!pms || !pms.length || !pms[0].iban_encrypted) warnings.push('IBAN non renseigné (sera obligatoire pour la facturation)');
+                                if (!pms || !pms.length || !pms[0].iban_last4) warnings.push('IBAN non renseigné (sera obligatoire pour la facturation)');
                                 if (warnings.length) {
                                     showConfirm(
                                         'Attention :\n\n• ' + warnings.join('\n• ') + '\n\nContinuer quand même ?',

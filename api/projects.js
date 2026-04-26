@@ -70,7 +70,16 @@ async function handleInvoices(req, res, sql, accountId, userId) {
       totalJh = jobsAgg[0].total;
     }
 
-    var amountHt = amount_ht_override ? Number(amount_ht_override) : totalJh * tjm;
+    var fullAmountHt = totalJh * tjm;
+
+    // For solde invoices, deduct already invoiced amounts (non-cancelled)
+    var amountHt = amount_ht_override ? Number(amount_ht_override) : fullAmountHt;
+    if (!amount_ht_override && (invoice_type === 'solde' || (!invoice_type && project.status === 'delivered'))) {
+      var alreadyInvoiced = await sql`SELECT COALESCE(SUM(amount_ht), 0)::float as total FROM invoices WHERE project_id = ${project.id} AND status != 'cancelled' AND invoice_type != 'credit_note'`;
+      var invoicedHt = alreadyInvoiced[0].total;
+      amountHt = Math.max(0, fullAmountHt - invoicedHt);
+    }
+
     var amountTva = amountHt * vatRate / 100;
     var amountTtc = amountHt + amountTva;
 
@@ -122,12 +131,15 @@ async function handleInvoices(req, res, sql, accountId, userId) {
       var newStatus = payments[0].total >= Number(inv[0].amount_ttc) ? 'paid' : 'paid_partial';
       await sql`UPDATE invoices SET status = ${newStatus}, paid_at = ${newStatus === 'paid' ? new Date().toISOString() : null}, updated_at = NOW() WHERE id = ${id}`;
 
-      // Auto-complete project if all invoices paid
+      // Auto-complete project only if delivered AND all invoices paid
       var invProject = await sql`SELECT project_id FROM invoices WHERE id = ${id}`;
       if (invProject.length) {
-        var unpaid = await sql`SELECT COUNT(*)::int as cnt FROM invoices WHERE project_id = ${invProject[0].project_id} AND status NOT IN ('paid', 'cancelled')`;
-        if (unpaid[0].cnt === 0) {
-          await sql`UPDATE projects SET status = 'completed', updated_at = NOW() WHERE id = ${invProject[0].project_id}`;
+        var proj = await sql`SELECT status FROM projects WHERE id = ${invProject[0].project_id}`;
+        if (proj.length && proj[0].status === 'delivered') {
+          var unpaid = await sql`SELECT COUNT(*)::int as cnt FROM invoices WHERE project_id = ${invProject[0].project_id} AND status NOT IN ('paid', 'cancelled')`;
+          if (unpaid[0].cnt === 0) {
+            await sql`UPDATE projects SET status = 'completed', updated_at = NOW() WHERE id = ${invProject[0].project_id}`;
+          }
         }
       }
 

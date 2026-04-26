@@ -828,6 +828,36 @@ export default async function handler(req, res) {
 
       // If ?notify=1, email the invoice to client
       if (req.query.notify === '1') {
+        // Re-fetch invoice to get number assigned by the PUT call before this
+        var refreshedInv = await sql`SELECT * FROM invoices WHERE id = ${invoice.id}`;
+        if (refreshedInv.length) invoice = refreshedInv[0];
+
+        // Rebuild header/footer with actual number
+        invHeader = '<div style="width:100%;font-family:Inter,sans-serif;display:flex;justify-content:space-between;align-items:center;padding:4mm 18mm 2mm 18mm;border-bottom:0.5px solid #E5E7EB;">'
+          + '<span>' + invLogoHtml + '</span>'
+          + '<span style="font-size:7pt;color:#9CA3AF;">' + esc(invoice.invoice_number || '') + '</span>'
+          + '</div>';
+        invFooter = '<div style="width:100%;font-family:Inter,sans-serif;font-size:7pt;color:#9CA3AF;display:flex;justify-content:space-between;padding:0 18mm;">'
+          + '<span>' + esc(invoice.invoice_number || '') + ' — ' + esc((invProject.title || '').substring(0, 60)) + '</span>'
+          + '<span>Page <span class="pageNumber"></span> / <span class="totalPages"></span></span>'
+          + '<span>' + esc((invPresta || {}).legal_name || (invPresta || {}).name || '') + '</span>'
+          + '</div>';
+
+        // Re-generate PDF with the actual invoice number
+        invHtml = buildInvoiceHtml({
+          invoice: invoice, project: invProject,
+          presta_account: invPresta, presta_user: invPrestaUser, presta_address: invPrestaAddr,
+          client_account: invClient, client_user: invClientUser, client_address: invClientAddr,
+          features: invFeatures, presta_iban: invIban, presta_bic: invBic,
+          devis_signed_at: invDevisSignedAt
+        });
+        var reBrowser = await puppeteer.launch({ args: chromium.args, defaultViewport: chromium.defaultViewport, executablePath: await chromium.executablePath(), headless: chromium.headless });
+        var rePage = await reBrowser.newPage();
+        await rePage.setContent(invHtml, { waitUntil: 'networkidle0' });
+        invPdfBuf = await rePage.pdf({ format: 'A4', printBackground: true, displayHeaderFooter: true, headerTemplate: invHeader, footerTemplate: invFooter, margin: { top: '32mm', right: '18mm', bottom: '28mm', left: '18mm' } });
+        await reBrowser.close();
+        invBuf = Buffer.from(invPdfBuf);
+
         // Store frozen PDF blob for invoice
         await sql`UPDATE invoices SET pdf_blob = ${invBuf} WHERE id = ${invoice.id}`;
 
@@ -866,22 +896,19 @@ export default async function handler(req, res) {
             body: JSON.stringify({ from: 'Iron Seal <notifications@mail.blueheronlab.com>', to: invPrestaEmail, subject: 'Facture envoyée : ' + invoice.invoice_number, html: invEmailHtml, attachments: invAttachments })
           });
         }
-        // Mark invoice as sent and assign number if missing
-        if (!invoice.invoice_number) {
-          var seqRes = await sql`SELECT nextval('invoice_number_seq') as num`;
-          var seqNum = parseInt(seqRes[0].num);
-          var yr = new Date().getFullYear().toString().slice(2);
-          var newInvNum = 'FAC-' + yr + '-' + seqNum.toString().padStart(4, '0');
-          await sql`UPDATE invoices SET invoice_number = ${newInvNum}, status = 'sent', updated_at = NOW() WHERE id = ${invoice.id} AND status = 'draft'`;
-        } else {
-          await sql`UPDATE invoices SET status = 'sent', updated_at = NOW() WHERE id = ${invoice.id} AND status = 'draft'`;
-        }
-        return res.json({ ok: true, emailed: true });
+        // Re-fetch invoice to get the number assigned by the PUT call
+        var freshInv = await sql`SELECT invoice_number FROM invoices WHERE id = ${invoice.id}`;
+        var finalNumber = freshInv.length ? freshInv[0].invoice_number : invoice.invoice_number;
+
+        // Mark as sent if still draft (in case PUT didn't run first)
+        await sql`UPDATE invoices SET status = 'sent', updated_at = NOW() WHERE id = ${invoice.id} AND status = 'draft'`;
+
+        return res.json({ ok: true, emailed: true, invoice_number: finalNumber });
       }
 
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Length', invBuf.length);
-      res.setHeader('Content-Disposition', 'inline; filename="' + invoice.invoice_number + '.pdf"');
+      res.setHeader('Content-Disposition', 'inline; filename="' + (invoice.invoice_number || 'facture-brouillon') + '.pdf"');
       res.statusCode = 200;
       return res.end(invBuf);
     }
