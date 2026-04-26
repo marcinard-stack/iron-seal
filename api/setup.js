@@ -464,6 +464,30 @@ export default async function handler(req, res) {
     `;
     await sql`CREATE INDEX IF NOT EXISTS idx_invoice_payments_invoice ON invoice_payments(invoice_id)`;
 
+    // ── SPRINT 6 MIGRATIONS ──
+
+    // FU-19: Byte-stability — PDF blob storage
+    await sql`ALTER TABLE devis_signatures ADD COLUMN IF NOT EXISTS pdf_blob BYTEA`;
+    await sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS pdf_blob BYTEA`;
+
+    // FU-24: Date de prestation sur facture
+    await sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS delivery_period_start DATE`;
+    await sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS delivery_period_end DATE`;
+
+    // FU-27: Numérotation séquentielle — numéro nullable jusqu'à envoi
+    await sql`ALTER TABLE invoices ALTER COLUMN invoice_number DROP NOT NULL`;
+
+    // FU-28: Préparation avoirs
+    await sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS invoice_type VARCHAR(20) DEFAULT 'unique'`;
+    await sql`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS parent_invoice_id INTEGER REFERENCES invoices(id)`;
+
+    // FU-45: Snapshot — ensure data_json is large enough (already JSONB, OK)
+    // Add account_snapshot to devis_versions
+    await sql`ALTER TABLE devis_versions ADD COLUMN IF NOT EXISTS account_snapshot_json JSONB`;
+
+    // Sequence for invoice numbering
+    await sql`CREATE SEQUENCE IF NOT EXISTS invoice_number_seq START 1`;
+
     return res.json({ ok: true, message: 'All tables created successfully' });
   } catch (err) {
     console.error(err);

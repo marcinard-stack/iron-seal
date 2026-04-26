@@ -155,6 +155,27 @@ export default async function handler(req, res) {
         RETURNING *
       `;
 
+      // Build account snapshot when presta signs
+      if (sigRole === 'presta') {
+        var prestaAcc = await sql`SELECT * FROM accounts WHERE id = ${signer.account_id}`;
+        var prestaAddr = await sql`SELECT * FROM addresses WHERE account_id = ${signer.account_id} LIMIT 1`;
+        var clientAcc = project.client_account_id ? await sql`SELECT * FROM accounts WHERE id = ${project.client_account_id}` : [];
+        var clientAddr = project.client_account_id ? await sql`SELECT * FROM addresses WHERE account_id = ${project.client_account_id} LIMIT 1` : [];
+
+        var snapshot = {
+          presta: prestaAcc.length ? prestaAcc[0] : null,
+          presta_address: prestaAddr.length ? prestaAddr[0] : null,
+          client: clientAcc.length ? clientAcc[0] : null,
+          client_address: clientAddr.length ? clientAddr[0] : null
+        };
+
+        // Store in latest devis_version
+        var latestVersion = await sql`SELECT id FROM devis_versions WHERE project_id = ${project.id} ORDER BY created_at DESC LIMIT 1`;
+        if (latestVersion.length) {
+          await sql`UPDATE devis_versions SET account_snapshot_json = ${JSON.stringify(snapshot)}::jsonb WHERE id = ${latestVersion[0].id}`;
+        }
+      }
+
       // Update project status: only move to signed when client signs
       if (sigRole === 'client') {
         await sql`UPDATE projects SET status = 'signed', updated_at = NOW() WHERE id = ${project.id}`;

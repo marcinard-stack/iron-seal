@@ -1059,6 +1059,10 @@
 <div class="main-content" id="mainContent">
 
     <div class="status-banner" id="statusBanner"></div>
+    <div id="versionHistoryBar" style="display:none; background:#f9f8f6; border:1px solid #e8e6e0; border-radius:8px; padding:8px 14px; margin:12px 0 0; font-size:13px; color:#4a4850;">
+        <label for="versionSelect" style="font-weight:500; margin-right:8px;">Versions :</label>
+        <select id="versionSelect" style="font-size:13px; padding:4px 8px; border:1px solid #d4d1cb; border-radius:6px; background:white; color:#2d2b35; cursor:pointer;"></select>
+    </div>
 
     <div class="header" id="cdc">
         <h1>Cahier des Charges — Cockpit Sales</h1>
@@ -2369,6 +2373,22 @@
                     banner.innerHTML = 'Devis signé' + versionLabel + ' par <strong>' + sig.signer_name + '</strong> le ' + dateStr
                         + '<div class="signed-info">Hash : ' + sig.devis_hash.substring(0, 16) + '...'
                         + (data.versions && data.versions.length > 1 ? ' — ' + data.versions.length + ' versions' : '') + '</div>';
+
+                    // Populate version history dropdown for presta
+                    if (isFreelance && data.versions && data.versions.length > 1) {
+                        var vBar = document.getElementById('versionHistoryBar');
+                        var vSelect = document.getElementById('versionSelect');
+                        vBar.style.display = 'block';
+                        vSelect.innerHTML = '';
+                        data.versions.forEach(function(v) {
+                            var opt = document.createElement('option');
+                            opt.value = v.id;
+                            var vDate = new Date(v.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+                            var statusLabel = v.status === 'signed' ? ' (signée)' : v.status === 'proposed' ? ' (proposée)' : v.status === 'draft' ? ' (brouillon)' : '';
+                            opt.textContent = 'v' + v.version + ' — ' + vDate + statusLabel;
+                            vSelect.appendChild(opt);
+                        });
+                    }
                 });
         }
     }
@@ -3071,9 +3091,26 @@
                                 'Aller aux paramètres', 'danger',
                                 function() { window.location.href = '/settings'; }
                             );
-                        } else {
-                            prestaSignOverlay.classList.add('show');
+                            return;
                         }
+                        // Non-blocking warnings (logo, IBAN)
+                        var warnings = [];
+                        if (!a.logo_url) warnings.push('Logo non renseigné (recommandé pour un devis professionnel)');
+                        // Check IBAN
+                        return fetch('/api/account?entity=payment_methods', { headers: { 'Authorization': 'Bearer ' + dfToken } })
+                            .then(function(r3) { return r3.ok ? r3.json() : []; })
+                            .then(function(pms) {
+                                if (!pms || !pms.length || !pms[0].iban_encrypted) warnings.push('IBAN non renseigné (sera obligatoire pour la facturation)');
+                                if (warnings.length) {
+                                    showConfirm(
+                                        'Attention :\n\n• ' + warnings.join('\n• ') + '\n\nContinuer quand même ?',
+                                        'Continuer', '',
+                                        function() { prestaSignOverlay.classList.add('show'); }
+                                    );
+                                } else {
+                                    prestaSignOverlay.classList.add('show');
+                                }
+                            });
                     });
             })
             .catch(function() { prestaSignOverlay.classList.add('show'); });

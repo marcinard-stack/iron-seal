@@ -39,7 +39,7 @@ async function handleInvoices(req, res, sql, accountId, userId) {
 
   // POST: create invoice from signed devis
   if (req.method === 'POST') {
-    var { slug, milestone_label, amount_ht_override } = req.body;
+    var { slug, milestone_label, amount_ht_override, delivery_period_start, delivery_period_end, invoice_type } = req.body;
     if (!slug) return res.status(400).json({ error: 'slug required' });
 
     var projects = await sql`SELECT * FROM projects WHERE slug = ${slug}`;
@@ -74,11 +74,6 @@ async function handleInvoices(req, res, sql, accountId, userId) {
     var amountTva = amountHt * vatRate / 100;
     var amountTtc = amountHt + amountTva;
 
-    // Generate invoice number
-    var year = new Date().getFullYear();
-    var countRes = await sql`SELECT COUNT(*)::int as cnt FROM invoices WHERE EXTRACT(YEAR FROM created_at) = ${year}`;
-    var invoiceNumber = generateInvoiceNumber(year, countRes[0].cnt);
-
     // Due date from payment terms
     var daysMatch = (payTerms || '30').match(/(\d+)/);
     var dueDays = daysMatch ? parseInt(daysMatch[1]) : 30;
@@ -88,12 +83,26 @@ async function handleInvoices(req, res, sql, accountId, userId) {
     var latestSig = await sql`SELECT id FROM devis_signatures WHERE project_id = ${project.id} AND status = 'active' AND signer_role = 'client' ORDER BY signed_at DESC LIMIT 1`;
     var sigId = latestSig.length ? latestSig[0].id : null;
 
+    // Default invoice_type based on project status
+    if (!invoice_type) {
+      if (project.status === 'signed') invoice_type = 'acompte';
+      else if (project.status === 'active') invoice_type = 'jalon';
+      else if (project.status === 'delivered') invoice_type = 'solde';
+      else invoice_type = 'jalon';
+    }
+
+    // Smart milestone label based on invoice_type if not provided
+    if (!milestone_label) {
+      if (invoice_type === 'acompte') milestone_label = 'Acompte';
+      else if (invoice_type === 'solde') milestone_label = 'Solde';
+    }
+
     // Snapshot data
     var dataJson = { tjm: tjm, vat_rate: vatRate, total_jh: totalJh, project_title: project.title, ref_number: project.ref_number };
 
     var rows = await sql`
-      INSERT INTO invoices (project_id, devis_signature_id, invoice_number, due_at, amount_ht, amount_tva, amount_ttc, milestone_label, data_json, status)
-      VALUES (${project.id}, ${sigId}, ${invoiceNumber}, ${dueAt}, ${amountHt}, ${amountTva}, ${amountTtc}, ${milestone_label || null}, ${JSON.stringify(dataJson)}::jsonb, 'draft')
+      INSERT INTO invoices (project_id, devis_signature_id, invoice_number, due_at, amount_ht, amount_tva, amount_ttc, milestone_label, data_json, status, delivery_period_start, delivery_period_end, invoice_type)
+      VALUES (${project.id}, ${sigId}, ${null}, ${dueAt}, ${amountHt}, ${amountTva}, ${amountTtc}, ${milestone_label || null}, ${JSON.stringify(dataJson)}::jsonb, 'draft', ${delivery_period_start || null}, ${delivery_period_end || null}, ${invoice_type})
       RETURNING *
     `;
     return res.status(201).json(rows[0]);
@@ -127,11 +136,36 @@ async function handleInvoices(req, res, sql, accountId, userId) {
 
     // Update status
     if (status) {
+      // Assign invoice_number when transitioning to 'sent'
+      if (status === 'sent') {
+        var currentInv = await sql`SELECT invoice_number FROM invoices WHERE id = ${id}`;
+        if (currentInv.length && !currentInv[0].invoice_number) {
+          var seqRes = await sql`SELECT nextval('invoice_number_seq') as num`;
+          var seqNum = parseInt(seqRes[0].num);
+          var yr = new Date().getFullYear().toString().slice(2);
+          var newInvNumber = 'FAC-' + yr + '-' + seqNum.toString().padStart(4, '0');
+          await sql`UPDATE invoices SET invoice_number = ${newInvNumber}, status = ${status}, updated_at = NOW() WHERE id = ${id}`;
+          return res.json({ ok: true, invoice_number: newInvNumber });
+        }
+      }
       await sql`UPDATE invoices SET status = ${status}, updated_at = NOW() WHERE id = ${id}`;
       return res.json({ ok: true });
     }
 
     return res.status(400).json({ error: 'status or payment_amount required' });
+  }
+
+  // DELETE: only allow deletion of draft invoices
+  if (req.method === 'DELETE') {
+    var { id } = req.body;
+    if (!id) return res.status(400).json({ error: 'id required' });
+    var delInv = await sql`SELECT status FROM invoices WHERE id = ${id}`;
+    if (!delInv.length) return res.status(404).json({ error: 'invoice not found' });
+    if (delInv[0].status !== 'draft') {
+      return res.status(400).json({ error: 'Seules les factures en brouillon peuvent être supprimées' });
+    }
+    await sql`DELETE FROM invoices WHERE id = ${id}`;
+    return res.json({ ok: true });
   }
 
   return res.status(405).json({ error: 'method not allowed' });

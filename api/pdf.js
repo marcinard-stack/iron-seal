@@ -677,14 +677,15 @@ tr.feat-row { page-break-after: avoid; }
   </div>
 </div>
 
-<div class="doc-type">FACTURE N° ${esc(inv.invoice_number)}</div>
+<div class="doc-type">FACTURE${inv.invoice_number ? ' N° ' + esc(inv.invoice_number) : ' (brouillon)'}</div>
 <div class="project-title">${esc(p.title)}</div>
 <div class="project-meta">
   <span>Émise le ${issuedDate}</span>
   <span>Échéance : ${dueDate}</span>
-  ${p.ref_number ? '<span>Réf. devis : ' + esc(p.ref_number) + '</span>' : ''}
-  ${inv.milestone_label ? '<span>Jalon : ' + esc(inv.milestone_label) + '</span>' : ''}
+  ${p.ref_number ? '<span>Réf. devis : ' + esc(p.ref_number) + (data.devis_signed_at ? ' · signé le ' + fmtDateShort(data.devis_signed_at) : '') + '</span>' : ''}
+  ${inv.invoice_type === 'acompte' ? '<span>Facture d\'acompte</span>' : inv.invoice_type === 'solde' ? '<span>Facture de solde</span>' : inv.milestone_label ? '<span>Jalon : ' + esc(inv.milestone_label) + '</span>' : ''}
 </div>
+${inv.delivery_period_start && inv.delivery_period_end ? '<div class="project-meta" style="margin-top:-12pt;"><span>Prestation délivrée du ' + fmtDateShort(inv.delivery_period_start) + ' au ' + fmtDateShort(inv.delivery_period_end) + '</span></div>' : ''}
 
 <table>
   <thead><tr><th style="width:55%">Description</th><th style="width:15%"></th><th class="r" style="width:12%">J/H</th><th class="r" style="width:18%">Montant HT</th></tr></thead>
@@ -738,6 +739,32 @@ export default async function handler(req, res) {
   if (!slug && !invoiceId) return res.status(400).json({ error: 'slug or invoice_id required' });
 
   try {
+    // ── SERVE FROZEN SIGNED PDF ──
+    if (req.query.version === 'signed') {
+      if (pdfType === 'invoice' && invoiceId) {
+        var frozenInv = await sql`SELECT pdf_blob FROM invoices WHERE id = ${invoiceId} AND pdf_blob IS NOT NULL`;
+        if (frozenInv.length && frozenInv[0].pdf_blob) {
+          var frozenBuf = Buffer.from(frozenInv[0].pdf_blob);
+          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader('Content-Length', frozenBuf.length);
+          res.setHeader('Content-Disposition', 'inline; filename="facture-signed.pdf"');
+          res.statusCode = 200;
+          return res.end(frozenBuf);
+        }
+      } else if (slug) {
+        var frozenSig = await sql`SELECT ds.pdf_blob FROM devis_signatures ds JOIN projects p ON p.id = ds.project_id WHERE p.slug = ${slug} AND ds.signer_role = 'client' AND ds.status = 'active' AND ds.pdf_blob IS NOT NULL ORDER BY ds.signed_at DESC LIMIT 1`;
+        if (frozenSig.length && frozenSig[0].pdf_blob) {
+          var frozenBuf = Buffer.from(frozenSig[0].pdf_blob);
+          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader('Content-Length', frozenBuf.length);
+          res.setHeader('Content-Disposition', 'inline; filename="devis-signed.pdf"');
+          res.statusCode = 200;
+          return res.end(frozenBuf);
+        }
+      }
+      // Fall through to regeneration if no frozen blob
+    }
+
     // ── INVOICE PDF ──
     if (pdfType === 'invoice' && invoiceId) {
       var invRows = await sql`SELECT * FROM invoices WHERE id = ${invoiceId}`;
@@ -761,11 +788,16 @@ export default async function handler(req, res) {
       var invIban = invPayMethods.length ? formatIban(decryptIban(invPayMethods[0].iban_encrypted)) : null;
       var invBic = invPayMethods.length ? invPayMethods[0].bic : null;
 
+      // Fetch devis signature date for reference
+      var invDevisSig = invoice.devis_signature_id ? await sql`SELECT signed_at FROM devis_signatures WHERE id = ${invoice.devis_signature_id}` : [];
+      var invDevisSignedAt = invDevisSig.length ? invDevisSig[0].signed_at : null;
+
       var invHtml = buildInvoiceHtml({
         invoice: invoice, project: invProject,
         presta_account: invPresta, presta_user: invPrestaUser, presta_address: invPrestaAddr,
         client_account: invClient, client_user: invClientUser, client_address: invClientAddr,
-        features: invFeatures, presta_iban: invIban, presta_bic: invBic
+        features: invFeatures, presta_iban: invIban, presta_bic: invBic,
+        devis_signed_at: invDevisSignedAt
       });
 
       if (req.query.format === 'html') {
@@ -796,6 +828,9 @@ export default async function handler(req, res) {
 
       // If ?notify=1, email the invoice to client
       if (req.query.notify === '1') {
+        // Store frozen PDF blob for invoice
+        await sql`UPDATE invoices SET pdf_blob = ${invBuf} WHERE id = ${invoice.id}`;
+
         var invPdfBase64 = invBuf.toString('base64');
         var invClientEmail = invClientUser ? invClientUser.email : null;
         var invPrestaEmail = invPrestaUser ? invPrestaUser.email : null;
@@ -831,8 +866,16 @@ export default async function handler(req, res) {
             body: JSON.stringify({ from: 'Iron Seal <notifications@mail.blueheronlab.com>', to: invPrestaEmail, subject: 'Facture envoyée : ' + invoice.invoice_number, html: invEmailHtml, attachments: invAttachments })
           });
         }
-        // Mark invoice as sent
-        await sql`UPDATE invoices SET status = 'sent', updated_at = NOW() WHERE id = ${invoice.id} AND status = 'draft'`;
+        // Mark invoice as sent and assign number if missing
+        if (!invoice.invoice_number) {
+          var seqRes = await sql`SELECT nextval('invoice_number_seq') as num`;
+          var seqNum = parseInt(seqRes[0].num);
+          var yr = new Date().getFullYear().toString().slice(2);
+          var newInvNum = 'FAC-' + yr + '-' + seqNum.toString().padStart(4, '0');
+          await sql`UPDATE invoices SET invoice_number = ${newInvNum}, status = 'sent', updated_at = NOW() WHERE id = ${invoice.id} AND status = 'draft'`;
+        } else {
+          await sql`UPDATE invoices SET status = 'sent', updated_at = NOW() WHERE id = ${invoice.id} AND status = 'draft'`;
+        }
         return res.json({ ok: true, emailed: true });
       }
 
@@ -960,6 +1003,12 @@ export default async function handler(req, res) {
 
     // If ?notify=1, send signed PDF by email to both parties
     if (req.query.notify === '1') {
+      // Store frozen PDF blob
+      var latestClientSig = clientSigs.length ? clientSigs[0] : null;
+      if (latestClientSig) {
+        await sql`UPDATE devis_signatures SET pdf_blob = ${buf} WHERE id = ${latestClientSig.id}`;
+      }
+
       var pdfBase64 = buf.toString('base64');
       var filename = 'devis-signe-' + slug + '.pdf';
       var lastClientSig = clientSigs.length ? clientSigs[0] : null;
