@@ -378,6 +378,19 @@ tr.feat-row { page-break-after: avoid; }
 .iban-reminder div { margin-bottom: 2pt; }
 .iban-reminder .iban-value { font-family: 'Courier New', monospace; letter-spacing: 0.03em; }
 
+/* ── COVER PAGE ── */
+.cover-page { display: flex; flex-direction: column; justify-content: center; min-height: 200mm; page-break-after: always; }
+.cover-logo { margin-bottom: 48pt; }
+.cover-logo img { max-width: 80mm; height: 20mm; width: auto; object-fit: contain; }
+.cover-doc-type { font-size: 40pt; font-weight: 700; color: ${accent}; letter-spacing: 0.05em; margin-bottom: 16pt; }
+.cover-title { font-size: 28pt; font-weight: 600; color: #0A0A0A; line-height: 1.2; margin-bottom: 24pt; }
+.cover-meta { font-size: 8.5pt; color: #6B7280; margin-bottom: 48pt; }
+.cover-meta span + span::before { content: ' · '; }
+.cover-identity { display: flex; gap: 32pt; margin-top: auto; }
+.cover-id-col { flex: 1; }
+.cover-id-label { font-size: 8.5pt; font-weight: 600; letter-spacing: 0.05em; color: #6B7280; text-transform: uppercase; margin-bottom: 4pt; }
+.cover-id-col div:last-child { font-size: 9.5pt; color: #1F2937; }
+
 /* ── FOOTER ── */
 .page-footer {
   position: fixed; bottom: 0; left: 0; right: 0;
@@ -396,6 +409,30 @@ tr.feat-row { page-break-after: avoid; }
 </head>
 <body>
 
+<!-- ═══════ COVER PAGE (optional) ═══════ -->
+${p.use_cover_page ? `
+<div class="cover-page">
+  <div class="cover-logo">${presta.logo_url ? '<img src="' + presta.logo_url + '">' : '<div style="font-size:14pt; font-weight:700; color:#0A0A0A;">' + esc(presta.legal_name || presta.name) + '</div>'}</div>
+  <div class="cover-doc-type">DEVIS</div>
+  <div class="cover-title">${esc(p.title)}</div>
+  <div class="cover-meta">
+    <span>Version ${esc(p.version || '1.0')}</span>
+    <span>Émis le ${fmtDate(issuedAt)}</span>
+    <span>Valable jusqu'au ${fmtDate(validUntil)}</span>
+  </div>
+  <div class="cover-identity">
+    <div class="cover-id-col">
+      <div class="cover-id-label">PRESTATAIRE</div>
+      <div>${esc(presta.legal_name || presta.name)}</div>
+    </div>
+    <div class="cover-id-col">
+      <div class="cover-id-label">CLIENT</div>
+      <div>${esc(client ? (client.legal_name || client.name) : '')}</div>
+    </div>
+  </div>
+</div>
+` : ''}
+
 <!-- ═══════ PAGE 1 — DEVIS ═══════ -->
 <div class="page-header">
   <div class="logo-text">${presta.logo_url ? '<img src="' + presta.logo_url + '" style="max-width:50mm;height:14mm;width:auto;object-fit:contain;">' : esc(presta.legal_name || presta.name)}</div>
@@ -408,7 +445,7 @@ tr.feat-row { page-break-after: avoid; }
     <div class="identity-name">${esc(presta.legal_name || presta.name)}</div>
     <div class="identity-detail">
       ${presta.legal_form ? esc(presta.legal_form) + (presta.capital ? ' au capital de ' + esc(presta.capital) + ' €' : '') + '<br>' : ''}
-      ${presta.siren ? 'SIREN ' + esc(presta.siren) : ''}${presta.ape_code ? ' — APE ' + esc(presta.ape_code) : ''}<br>
+      ${presta.siren ? '<a href="https://www.pappers.fr/entreprise/' + esc(presta.siren).replace(/\s/g, '') + '">SIREN ' + esc(presta.siren) + '</a>' : ''}${presta.ape_code ? ' — APE ' + esc(presta.ape_code) : ''}<br>
       ${presta.tva_intra ? 'TVA ' + esc(presta.tva_intra) + '<br>' : ''}
       ${presta.rcs_city ? esc(presta.rcs_city) + '<br>' : ''}
       ${prestaAddr ? esc(prestaAddr.line1) + (prestaAddr.line2 ? ', ' + esc(prestaAddr.line2) : '') + '<br>' + esc(prestaAddr.zip) + ' ' + esc(prestaAddr.city) + '<br>' : ''}
@@ -421,7 +458,7 @@ tr.feat-row { page-break-after: avoid; }
     <div class="identity-name">${esc(client ? (client.legal_name || client.name) : '')}</div>
     <div class="identity-detail">
       ${client && client.legal_form ? esc(client.legal_form) : ''}${client && client.capital ? ' au capital de ' + esc(client.capital) + ' €' : ''}<br>
-      ${client && client.siren ? 'SIREN ' + esc(client.siren) + '<br>' : ''}
+      ${client && client.siren ? '<a href="https://www.pappers.fr/entreprise/' + esc(client.siren).replace(/\s/g, '') + '">SIREN ' + esc(client.siren) + '</a><br>' : ''}
       ${client && client.tva_intra ? 'TVA ' + esc(client.tva_intra) + '<br>' : ''}
       ${clientAddr ? esc(clientAddr.line1) + (clientAddr.line2 ? ', ' + esc(clientAddr.line2) : '') + '<br>' + esc(clientAddr.zip) + ' ' + esc(clientAddr.city) + '<br>' : ''}
       ${clientUser ? esc(clientUser.name) + '<br>' : ''}
@@ -716,7 +753,7 @@ tr.feat-row { page-break-after: avoid; }
     <div class="identity-name">${esc(presta.legal_name || presta.name)}</div>
     <div class="identity-detail">
       ${presta.legal_form ? esc(presta.legal_form) + (presta.capital ? ' au capital de ' + esc(presta.capital) + ' €' : '') + '<br>' : ''}
-      ${presta.siren ? 'SIREN ' + esc(presta.siren) : ''}${presta.ape_code ? ' — APE ' + esc(presta.ape_code) : ''}<br>
+      ${presta.siren ? '<a href="https://www.pappers.fr/entreprise/' + esc(presta.siren).replace(/\s/g, '') + '">SIREN ' + esc(presta.siren) + '</a>' : ''}${presta.ape_code ? ' — APE ' + esc(presta.ape_code) : ''}<br>
       ${presta.tva_intra ? 'TVA ' + esc(presta.tva_intra) + '<br>' : ''}
       ${presta.rcs_city ? esc(presta.rcs_city) + '<br>' : ''}
       ${prestaAddr ? esc(prestaAddr.line1) + '<br>' + esc(prestaAddr.zip) + ' ' + esc(prestaAddr.city) + '<br>' : ''}
@@ -727,7 +764,7 @@ tr.feat-row { page-break-after: avoid; }
     <div class="identity-label">CLIENT</div>
     <div class="identity-name">${esc(client ? (client.legal_name || client.name) : '')}</div>
     <div class="identity-detail">
-      ${client && client.siren ? 'SIREN ' + esc(client.siren) + '<br>' : ''}
+      ${client && client.siren ? '<a href="https://www.pappers.fr/entreprise/' + esc(client.siren).replace(/\s/g, '') + '">SIREN ' + esc(client.siren) + '</a><br>' : ''}
       ${client && client.tva_intra ? 'TVA ' + esc(client.tva_intra) + '<br>' : ''}
       ${clientAddr ? esc(clientAddr.line1) + '<br>' + esc(clientAddr.zip) + ' ' + esc(clientAddr.city) + '<br>' : ''}
       ${clientUser ? esc(clientUser.name) + '<br><a href="mailto:' + esc(clientUser.email) + '">' + esc(clientUser.email) + '</a>' : ''}
@@ -763,7 +800,7 @@ ${inv.delivery_period_start && inv.delivery_period_end ? '<div class="project-me
   <div class="due">Date d'échéance : ${dueDate}</div>
   <div class="pay-grid">
     <div class="label">Référence</div><div class="value">${esc(inv.invoice_number)}</div>
-    ${data.presta_iban ? '<div class="label">IBAN</div><div class="value iban">' + esc(data.presta_iban) + '</div>' : ''}
+    ${data.presta_iban ? '<div class="label">IBAN</div><div class="value iban">' + esc(data.presta_iban) + ' <span style="font-size:7.5pt; color:rgba(255,255,255,0.7); font-style:italic;">(à reporter dans votre app bancaire)</span></div>' : ''}
     ${data.presta_bic ? '<div class="label">BIC</div><div class="value">' + esc(data.presta_bic) + '</div>' : ''}
   </div>
 </div>
@@ -780,7 +817,7 @@ ${inv.delivery_period_start && inv.delivery_period_end ? '<div class="project-me
 
 <div class="legal-mentions">
   ${presta.legal_name ? esc(presta.legal_name) : ''} ${presta.legal_form ? '— ' + esc(presta.legal_form) : ''} ${presta.capital ? 'au capital de ' + esc(presta.capital) + ' €' : ''}<br>
-  ${presta.siren ? 'SIREN ' + esc(presta.siren) : ''} ${presta.rcs_city ? '— ' + esc(presta.rcs_city) : ''} ${presta.tva_intra ? '— TVA ' + esc(presta.tva_intra) : ''}
+  ${presta.siren ? '<a href="https://www.pappers.fr/entreprise/' + esc(presta.siren).replace(/\s/g, '') + '" style="color:#6B7280;">SIREN ' + esc(presta.siren) + '</a>' : ''} ${presta.rcs_city ? '— ' + esc(presta.rcs_city) : ''} ${presta.tva_intra ? '— TVA ' + esc(presta.tva_intra) : ''}
 </div>
 
 ${inv.status === 'cancelled' ? '<div class="watermark">ANNULÉ</div>' : inv.status === 'draft' ? '<div class="watermark">BROUILLON</div>' : ''}

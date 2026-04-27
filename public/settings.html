@@ -133,6 +133,17 @@
 <div class="main">
     <h1>Paramètres du compte</h1>
 
+    <div id="completionBar" style="margin-bottom:24px; padding:16px 20px; background:white; border-radius:12px; border:1px solid #e8e6e0;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="font-size:14px; font-weight:600; color:#2d2b35;">Complétude du compte</span>
+            <span id="completionPercent" style="font-size:14px; font-weight:700; color:#0F172A;">0%</span>
+        </div>
+        <div style="height:6px; background:#E5E7EB; border-radius:3px; overflow:hidden;">
+            <div id="completionProgress" style="height:100%; background:#0F172A; border-radius:3px; transition:width 0.5s; width:0%;"></div>
+        </div>
+        <div id="completionHints" style="margin-top:8px; font-size:11px; color:#8a8780;"></div>
+    </div>
+
     <div class="section-card">
         <h2>Profil</h2>
         <div style="display:flex; align-items:center; gap:16px; margin-bottom:18px;">
@@ -784,6 +795,7 @@
             // FU-11: Update status badges and PDF preview
             updateStatusBadges(data);
             renderPdfPreview(data);
+            updateCompletionScore(data);
         })
         .catch(function() {
             localStorage.removeItem('df_token');
@@ -911,7 +923,7 @@
                 document.getElementById('saveHint').textContent = 'Tout est à jour';
                 showToast('Préférences enregistrées');
                 // Refresh status badges and PDF preview after save
-                fetch('/api/auth?action=me', { headers: headers }).then(function(r2) { return r2.json(); }).then(function(d2) { updateStatusBadges(d2); renderPdfPreview(d2); });
+                fetch('/api/auth?action=me', { headers: headers }).then(function(r2) { return r2.json(); }).then(function(d2) { updateStatusBadges(d2); renderPdfPreview(d2); updateCompletionScore(d2); });
                 // Update localStorage user
                 var fn = document.getElementById('userFirstName').value.trim();
                 var ln = document.getElementById('userLastName').value.trim();
@@ -1080,6 +1092,52 @@
                 window.location.href = '/login';
             });
     });
+
+    // ===== FU-44: COMPLETION SCORE =====
+    function updateCompletionScore(data) {
+        var a = data.account || {};
+        var weights = {
+            legal_name: { w: 10, label: 'Raison sociale', val: a.legal_name },
+            siren: { w: 10, label: 'SIREN', val: a.siren },
+            tva_intra: { w: 10, label: 'TVA intracommunautaire', val: a.tva_intra },
+            rcs_city: { w: 5, label: 'RCS / Ville', val: a.rcs_city },
+            capital: { w: 5, label: 'Capital social', val: a.capital },
+            address: { w: 10, label: 'Adresse de facturation', val: null },
+            iban: { w: 15, label: 'Coordonnées bancaires (IBAN)', val: null },
+            cgv: { w: 15, label: 'CGV (URL ou texte)', val: a.cgv_url || a.cgv_text },
+            logo: { w: 10, label: 'Logo', val: a.logo_url },
+            brand_color: { w: 5, label: 'Couleur d\'accent', val: a.brand_color && a.brand_color !== '#0F172A' ? a.brand_color : '' },
+            project_contact: { w: 5, label: 'Contact projet', val: a.project_contact_name }
+        };
+        // Check address and IBAN via fetches already done
+        var pending = 2;
+        function finalize() {
+            pending--;
+            if (pending > 0) return;
+            var score = 0;
+            var missing = [];
+            Object.keys(weights).forEach(function(k) {
+                if (weights[k].val) score += weights[k].w;
+                else missing.push(weights[k].label);
+            });
+            document.getElementById('completionPercent').textContent = score + '%';
+            document.getElementById('completionProgress').style.width = score + '%';
+            if (missing.length) {
+                document.getElementById('completionHints').textContent = 'Manquant : ' + missing.join(', ');
+            } else {
+                document.getElementById('completionHints').textContent = 'Votre compte est complet !';
+                document.getElementById('completionHints').style.color = '#166534';
+            }
+        }
+        fetch('/api/account?entity=addresses', { headers: headers }).then(function(r) { return r.json(); }).then(function(rows) {
+            weights.address.val = rows && rows.length > 0 ? 'ok' : '';
+            finalize();
+        }).catch(function() { finalize(); });
+        fetch('/api/account?entity=payment_methods', { headers: headers }).then(function(r) { return r.json(); }).then(function(rows) {
+            weights.iban.val = rows && rows.length > 0 ? 'ok' : '';
+            finalize();
+        }).catch(function() { finalize(); });
+    }
 
     // ===== FU-11: STATUS BADGES =====
     function setBadge(id, ok, okText, warnText) {

@@ -880,15 +880,38 @@
     </div>
 </div>
 
-<!-- SUCCESS MODAL -->
+<!-- SUCCESS MODAL (FU-41 enhanced) -->
 <div class="success-overlay" id="successOverlay">
-    <div class="success-modal">
-        <div class="success-check">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="5,12 10,17 19,7"/></svg>
+    <div class="success-modal" style="width:480px; text-align:left;">
+        <div style="text-align:center;">
+            <div class="success-check">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="5,12 10,17 19,7"/></svg>
+            </div>
+            <h3 style="margin-bottom:4px;">Document signé</h3>
+            <p style="font-size:13px; color:#8a8780; margin-bottom:16px;">La proposition a été signée avec succès.</p>
         </div>
-        <h3>Document signé</h3>
-        <p>La proposition a été signée avec succès. Un email de confirmation avec le document signé a été envoyé aux deux parties.</p>
-        <button class="confirm-ok" id="successClose" style="padding:10px 32px;">Fermer</button>
+        <div id="successDetails" style="background:#f9f8f6; border-radius:8px; padding:16px; margin-bottom:16px; font-size:13px;">
+            <div style="margin-bottom:8px;"><strong id="successProject" style="color:#2d2b35;"></strong></div>
+            <div style="color:#6b6560;"><span id="successSigner"></span> — <span id="successDate"></span></div>
+        </div>
+        <div style="margin-bottom:16px;">
+            <div style="font-size:13px; font-weight:600; color:#2d2b35; margin-bottom:8px;">Prochaines étapes</div>
+            <div id="successNextSteps" style="font-size:12px; color:#6b6560; line-height:1.6;">
+                <div id="successKickoff" style="display:none; margin-bottom:4px;"></div>
+                <div id="successContact" style="display:none; margin-bottom:4px;"></div>
+            </div>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="confirm-ok" id="successDownloadPdf" style="padding:8px 16px; font-size:12px; flex:1;">Télécharger le PDF</button>
+            <button class="confirm-ok" id="successCalendar" style="padding:8px 16px; font-size:12px; background:#f4f3ee; color:#2d2b35; border:1px solid #e8e6e0; flex:1; display:none;">Ajouter au calendrier</button>
+        </div>
+        <div id="successPrestaContact" style="display:none; margin-top:16px; padding:12px 16px; background:#f4f3ee; border-radius:8px; font-size:12px; color:#6b6560;">
+            <div style="font-weight:600; color:#2d2b35; margin-bottom:4px;">Restez en contact</div>
+            <div id="successPrestaInfo"></div>
+        </div>
+        <div style="text-align:center; margin-top:12px;">
+            <button class="confirm-ok" id="successClose" style="padding:8px 24px; background:none; color:#8a8780; border:none; font-size:12px; cursor:pointer;">Fermer</button>
+        </div>
     </div>
 </div>
 
@@ -1196,6 +1219,14 @@
             <button id="preambleSave" style="background:#0F172A; color:white; border:none; border-radius:6px; padding:6px 16px; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit;">Enregistrer</button>
             <span id="preambleSaved" style="font-size:11px; color:#059669; margin-left:8px; display:none; align-self:center;">✓ Enregistré</span>
         </div>
+    </div>
+
+    <!-- Cover page toggle (FU-21) — visible to presta in draft -->
+    <div id="coverPageSection" style="display:none; margin-bottom:16px;">
+        <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:#2d2b35; cursor:pointer;">
+            <input type="checkbox" id="coverPageToggle" style="accent-color:#0F172A; width:16px; height:16px;">
+            Ajouter une page de garde au devis
+        </label>
     </div>
 
     <!-- Schedule mode toggle (FU-14) — visible to presta in draft -->
@@ -2901,6 +2932,47 @@
                 fetch('/api/pdf?slug=' + SLUG + '&notify=1')
                     .then(function() { /* PDF generated and emailed */ })
                     .catch(function(e) { console.warn('PDF notify failed', e); });
+
+                // Populate success overlay (FU-41)
+                document.getElementById('successProject').textContent = PROJECT_DATA ? PROJECT_DATA.title : '';
+                document.getElementById('successSigner').textContent = name || '';
+                document.getElementById('successDate').textContent = dateStr || '';
+                if (PROJECT_DATA && PROJECT_DATA.kickoff_date) {
+                    var kd = new Date(PROJECT_DATA.kickoff_date);
+                    document.getElementById('successKickoff').textContent = 'Kick-off prévu le ' + kd.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+                    document.getElementById('successKickoff').style.display = 'block';
+                    // Calendar button
+                    var calBtn = document.getElementById('successCalendar');
+                    calBtn.style.display = '';
+                    calBtn.addEventListener('click', function() {
+                        var start = kd.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+                        var endD = new Date(kd.getTime() + 3600000);
+                        var end = endD.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+                        var ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nDTSTART:' + start + '\r\nDTEND:' + end + '\r\nSUMMARY:Kick-off — ' + (PROJECT_DATA.title || '') + '\r\nDESCRIPTION:Lancement du projet\r\nEND:VEVENT\r\nEND:VCALENDAR';
+                        var blob = new Blob([ics], { type: 'text/calendar' });
+                        var url = URL.createObjectURL(blob);
+                        var a = document.createElement('a');
+                        a.href = url; a.download = 'kickoff.ics'; a.click();
+                        URL.revokeObjectURL(url);
+                    });
+                }
+                if (signResult && signResult.freelance_info) {
+                    var fi = signResult.freelance_info;
+                    var contactParts = [];
+                    if (fi.contact_name) contactParts.push(fi.contact_name);
+                    if (fi.contact_email) contactParts.push(fi.contact_email);
+                    if (fi.contact_phone) contactParts.push(fi.contact_phone);
+                    if (contactParts.length) {
+                        document.getElementById('successContact').textContent = 'Contact projet : ' + contactParts.join(' — ');
+                        document.getElementById('successContact').style.display = 'block';
+                        document.getElementById('successPrestaInfo').textContent = contactParts.join(' — ');
+                        document.getElementById('successPrestaContact').style.display = 'block';
+                    }
+                }
+                document.getElementById('successDownloadPdf').addEventListener('click', function() {
+                    window.open('/api/pdf?slug=' + SLUG + '&version=signed', '_blank');
+                });
+
                 document.getElementById('successOverlay').classList.add('show');
             }
 
@@ -3235,6 +3307,22 @@
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
             body: JSON.stringify({ slug: SLUG, payment_schedule_mode: mode, payment_schedule_json: { deposit_percent: pct } })
+        });
+    }
+
+    // ===== COVER PAGE TOGGLE (FU-21) =====
+    var coverPageSection = document.getElementById('coverPageSection');
+    var coverPageToggle = document.getElementById('coverPageToggle');
+    if (!IS_SHARED && PROJECT_DATA && PROJECT_DATA.status === 'draft' && USER_ACCOUNT_ID && PROJECT_DATA.freelance_account_id == USER_ACCOUNT_ID) {
+        coverPageSection.style.display = 'block';
+        coverPageToggle.checked = !!PROJECT_DATA.use_cover_page;
+        coverPageToggle.addEventListener('change', function() {
+            var dfTk = localStorage.getItem('df_token') || '';
+            fetch('/api/projects', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfTk },
+                body: JSON.stringify({ slug: SLUG, use_cover_page: coverPageToggle.checked })
+            });
         });
     }
 

@@ -464,6 +464,10 @@ export default async function handler(req, res) {
     `;
     await sql`CREATE INDEX IF NOT EXISTS idx_invoice_payments_invoice ON invoice_payments(invoice_id)`;
 
+    // ── SPRINT 9 MIGRATIONS ──
+    await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS use_cover_page BOOLEAN NOT NULL DEFAULT false`;
+    await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS cover_image_url TEXT`;
+
     // ── SPRINT 6 MIGRATIONS ──
 
     // FU-19: Byte-stability — PDF blob storage

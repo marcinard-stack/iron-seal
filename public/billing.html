@@ -257,11 +257,14 @@
         </div>
     </div>
 
-    <div class="filter-bar" id="filterBar">
-        <span class="filter-tag active" data-filter="all">Toutes</span>
-        <span class="filter-tag" data-filter="pending">En attente</span>
-        <span class="filter-tag" data-filter="paid">Payées</span>
-        <span class="filter-tag" data-filter="overdue">En retard</span>
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:16px;">
+        <div class="filter-bar" id="filterBar" style="margin-bottom:0;">
+            <span class="filter-tag active" data-filter="all">Toutes</span>
+            <span class="filter-tag" data-filter="pending">En attente</span>
+            <span class="filter-tag" data-filter="paid">Payées</span>
+            <span class="filter-tag" data-filter="overdue">En retard</span>
+        </div>
+        <button id="exportCsvBtn" style="font-size:12px; font-weight:600; padding:6px 14px; border:1px solid #e8e6e0; border-radius:8px; background:white; color:#2d2b35; cursor:pointer; transition:all 0.15s; font-family:inherit; display:none;">Exporter CSV</button>
     </div>
 
     <div id="tableContainer">
@@ -368,6 +371,7 @@
 
             updateKpis();
             renderTable();
+            if (allInvoices.length) document.getElementById('exportCsvBtn').style.display = '';
         })
         .catch(function() {
             document.getElementById('emptyState').style.display = 'block';
@@ -464,6 +468,41 @@
                 + '</tr>';
         }).join('');
     }
+    // ===== FU-42: CSV EXPORT =====
+    document.getElementById('exportCsvBtn').addEventListener('click', function() {
+        if (!allInvoices.length) return;
+        var sep = ';';
+        var header = ['Numéro', 'Date émission', 'Client', 'Projet', 'HT', 'TVA', 'TTC', 'Statut', 'Date paiement'];
+        var rows = [header.join(sep)];
+        allInvoices.forEach(function(inv) {
+            var ds = inv._display_status;
+            var statusLabel = ds === 'overdue' ? 'Impayée' : (statusLabels[inv.status] || inv.status);
+            var ht = Number(inv.amount_ht || 0).toFixed(2);
+            var tva = Number(inv.amount_tva || 0).toFixed(2);
+            var ttc = Number(inv.amount_ttc || 0).toFixed(2);
+            var paidDate = inv.paid_at ? fmtDateShort(inv.paid_at) : '';
+            var row = [
+                '"' + (inv.invoice_number || 'Brouillon') + '"',
+                fmtDateShort(inv.created_at || inv.issued_at),
+                '"' + (inv.client_legal_name || inv.client_name || '').replace(/"/g, '""') + '"',
+                '"' + (inv.project_title || '').replace(/"/g, '""') + '"',
+                ht,
+                tva,
+                ttc,
+                statusLabel,
+                paidDate
+            ];
+            rows.push(row.join(sep));
+        });
+        var csvContent = '\uFEFF' + rows.join('\r\n');
+        var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'factures-' + new Date().getFullYear() + '.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+    });
 })();
 </script>
 

@@ -263,7 +263,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'PUT') {
-      var { slug, title, status, owner_account_id, freelance_account_id, client_account_id, clear_client, preamble, kickoff_date, delivery_date, payment_schedule_mode, payment_schedule_json } = req.body;
+      var { slug, title, status, owner_account_id, freelance_account_id, client_account_id, clear_client, preamble, kickoff_date, delivery_date, payment_schedule_mode, payment_schedule_json, use_cover_page } = req.body;
       if (!slug) return res.status(400).json({ error: 'slug required' });
       if (clear_client) {
         await sql`UPDATE projects SET client_account_id = NULL, updated_at = NOW() WHERE slug = ${slug}`;
@@ -280,6 +280,7 @@ export default async function handler(req, res) {
             delivery_date = COALESCE(${delivery_date ?? null}, delivery_date),
             payment_schedule_mode = COALESCE(${payment_schedule_mode ?? null}, payment_schedule_mode),
             payment_schedule_json = COALESCE(${payment_schedule_json ? JSON.stringify(payment_schedule_json) : null}::jsonb, payment_schedule_json),
+            use_cover_page = COALESCE(${use_cover_page !== undefined ? use_cover_page : null}, use_cover_page),
             updated_at = NOW()
         WHERE slug = ${slug}
         RETURNING *
