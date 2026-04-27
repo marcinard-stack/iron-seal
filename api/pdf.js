@@ -41,7 +41,7 @@ function recolorSvgLogo(dataUrl, brandColor) {
 // ── HELPERS ──
 
 function fmtEur(v) {
-  return Number(v).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+  return Number(v).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '\u202F€';
 }
 function fmtJh(v) {
   return Number(v).toFixed(2).replace('.', ',');
@@ -124,12 +124,18 @@ function buildDevisHtml(data) {
 
   // Offered section
   var offeredRows = '';
+  var totalOfferedJh = 0;
   offeredFeatures.forEach(function(f) {
     offeredRows += '<tr class="feat-row"><td colspan="4">' + esc(f.title) + '</td></tr>';
     (f.jobs || []).filter(function(j) { return j.is_offered; }).forEach(function(j) {
-      offeredRows += '<tr class="job-row offered"><td class="job-desc" colspan="3">' + esc(j.description) + '</td><td class="r"><span class="pill-offered">Offert</span></td></tr>';
+      var ojh = Number(j.jh) || 0;
+      totalOfferedJh += ojh;
+      offeredRows += '<tr class="job-row offered"><td class="job-desc" colspan="2">' + esc(j.description) + '</td><td class="r">' + (ojh > 0 ? fmtJh(ojh) : '') + '</td><td class="r"><span class="pill-offered">Offert</span></td></tr>';
     });
   });
+  if (totalOfferedJh > 0) {
+    offeredRows += '<tr><td colspan="4" style="font-size:8.5pt; color:#6B7280; font-style:italic; padding:8pt 6pt; border-top:1px solid #E5E7EB;">Soit ' + fmtJh(totalOfferedJh) + ' J/H offertes — équivalent ' + fmtEur(totalOfferedJh * tjm) + ' HT au TJM appliqué</td></tr>';
+  }
 
   // CDC Annexe rows (all jobs with badges)
   var cdcRows = '';
@@ -146,6 +152,12 @@ function buildDevisHtml(data) {
       var prioBadge = '<span class="pill pill-' + j.priority + '">' + (j.priority === 'must' ? 'MUST' : 'NICE') + '</span>';
       cdcRows += '<tr class="job-row"><td class="job-desc">' + esc(j.description) + '</td><td class="r">' + typeBadge + ' ' + prioBadge + '</td><td class="r">' + fmtJh(Number(j.jh)) + '</td><td class="r">' + included + '</td></tr>';
     });
+    var optionJobs = regularJobs.filter(function(j) { return !j.included && j.description.match(/^Option [A-Z]/i); });
+    if (optionJobs.length) {
+      optionJobs.forEach(function(oj) {
+        cdcRows += '<tr><td colspan="4" style="font-size:7.5pt; color:#9CA3AF; font-style:italic; padding:2pt 6pt;">' + esc(oj.description.split('—')[0].trim()) + ' — chiffrée à ' + fmtJh(Number(oj.jh)) + ' J/H, non retenue dans le présent devis. Réintégrable par avenant.</td></tr>';
+      });
+    }
   });
 
   // CDC summary
@@ -165,10 +177,10 @@ function buildDevisHtml(data) {
   var eff = cap + tol;
   var devWeeks = Math.ceil(totalJhIncluded / eff) || 1;
   var planningRows = '';
-  // S0 — Définition besoin
+  // S0 — Définition besoin (includes kick-off)
   var s0start = new Date(issuedAt);
-  planningRows += '<tr><td><strong>S0</strong></td><td>' + fmtDateShort(s0start) + '</td><td>Définition du besoin</td></tr>';
-  planningRows += '<tr class="highlight"><td></td><td>' + fmtDateShort(kickoff) + '</td><td><strong>Kick-off dev</strong></td></tr>';
+  var s0end = new Date(kickoff);
+  planningRows += '<tr><td><strong>S0</strong></td><td>' + fmtDateShort(s0start) + ' — ' + fmtDateShort(s0end) + '</td><td>Définition du besoin · Kick-off ' + fmtDateShort(kickoff) + '</td></tr>';
   // FU-15: Add deposit invoice row if deposit_balance mode
   if (p.payment_schedule_mode === 'deposit_balance') {
     var schedJsonPlan = p.payment_schedule_json || {};
@@ -197,7 +209,7 @@ function buildDevisHtml(data) {
     ? '<div class="sig-name">' + esc(prestaSignatures[0].signer_name) + '</div><div class="sig-meta">' + fmtDate(prestaSignatures[0].signed_at) + '</div>' + (prestaSignatures[0].signature_image ? '<img class="sig-img" src="' + prestaSignatures[0].signature_image + '">' : '')
     : '<div class="sig-placeholder"></div>';
   var clientSignHtml = clientSignatures.length
-    ? '<div class="sig-name">' + esc(clientSignatures[0].signer_name) + '</div><div class="sig-meta">' + fmtDate(clientSignatures[0].signed_at) + '</div>' + (clientSignatures[0].signature_image ? '<img class="sig-img" src="' + clientSignatures[0].signature_image + '">' : '<div style="font-style:italic;font-size:10pt;color:#6B7280;margin-top:6pt;">' + esc(clientSignatures[0].signer_name) + '</div>')
+    ? '<div class="sig-name">' + esc(clientSignatures[0].signer_name) + '</div><div class="sig-meta">' + fmtDate(clientSignatures[0].signed_at) + '</div>' + (clientSignatures[0].signature_image ? '<img class="sig-img" src="' + clientSignatures[0].signature_image + '">' : '<div style="font-style:italic;font-size:9.5pt;color:#6B7280;margin-top:6pt;">' + esc(clientSignatures[0].signer_name) + '</div>')
     : '<div class="sig-placeholder"></div>';
 
   // Certificate data
@@ -260,15 +272,15 @@ body {
 /* ── IDENTITY BLOCKS ── */
 .identity { display: flex; gap: 32pt; margin-bottom: 24pt; }
 .identity-col { flex: 1; }
-.identity-label { font-size: 8pt; font-weight: 600; letter-spacing: 0.05em; color: #6B7280; text-transform: uppercase; margin-bottom: 6pt; }
+.identity-label { font-size: 8.5pt; font-weight: 600; letter-spacing: 0.05em; color: #6B7280; text-transform: uppercase; margin-bottom: 6pt; }
 .identity-name { font-size: 11pt; font-weight: 600; color: #0A0A0A; margin-bottom: 4pt; }
 .identity-detail { font-size: 8.5pt; color: #1F2937; line-height: 1.5; }
 .identity-detail a { color: ${accent}; text-decoration: none; }
 
 /* ── PROJECT TITLE BLOCK ── */
-.doc-type { font-size: 9pt; font-weight: 600; letter-spacing: 0.05em; color: ${accent}; margin-bottom: 6pt; }
+.doc-type { font-size: 8.5pt; font-weight: 600; letter-spacing: 0.05em; color: ${accent}; margin-bottom: 6pt; }
 .project-title { font-size: 22pt; font-weight: 600; color: #0A0A0A; margin-bottom: 8pt; line-height: 1.2; }
-.project-meta { font-size: 9pt; color: #6B7280; margin-bottom: 20pt; }
+.project-meta { font-size: 8.5pt; color: #6B7280; margin-bottom: 20pt; }
 .project-meta span + span::before { content: ' · '; }
 
 /* ── PREAMBLE ── */
@@ -278,19 +290,19 @@ body {
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 th { font-size: 8.5pt; font-weight: 600; letter-spacing: 0.03em; color: #6B7280; text-align: left; padding: 8pt 6pt; border-bottom: 1px solid #E5E7EB; }
 th.r, td.r { text-align: right; }
-td { padding: 7pt 6pt; font-size: 9.5pt; border-bottom: 1px solid #F3F4F6; vertical-align: top; }
-tr.feat-row td { font-weight: 600; color: #0A0A0A; padding-top: 12pt; border-bottom: none; }
+td { padding: 5pt 6pt; font-size: 9.5pt; border-bottom: 1px solid #F3F4F6; vertical-align: top; }
+tr.feat-row td { font-weight: 600; color: #0A0A0A; padding-top: 9pt; border-bottom: none; }
 tr.job-row td { color: #1F2937; font-weight: 400; }
 tr.job-row.offered td { color: #6B7280; }
 td.job-desc { padding-right: 12pt; word-wrap: break-word; overflow-wrap: break-word; }
-tr.total-row td { font-weight: 700; font-size: 10pt; border-top: 2px solid #0A0A0A; padding-top: 10pt; }
+tr.total-row td { font-weight: 700; font-size: 9.5pt; border-top: 2px solid #0A0A0A; padding-top: 10pt; }
 
 /* ── TOTAL BLOCK ── */
 .total-block {
   background: #F9FAFB; border-radius: 4pt; padding: 16pt 20pt; margin: 20pt 0;
   width: 55%; margin-left: auto;
 }
-.total-line { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6pt; font-size: 10pt; }
+.total-line { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6pt; font-size: 9.5pt; }
 .total-line .label { color: #6B7280; }
 .total-line .value { color: #1F2937; font-weight: 500; font-variant-numeric: tabular-nums; }
 .total-sep { border-top: 1px solid #E5E7EB; margin: 8pt 0; }
@@ -304,25 +316,25 @@ tr.total-row td { font-weight: 700; font-size: 10pt; border-top: 2px solid #0A0A
 .pill-refacto { background: #FEF3C7; color: #92400E; }
 .pill-must { background: #DCFCE7; color: #166534; }
 .pill-nice { background: #F4F3EE; color: #6B6560; }
-.pill-offered { background: #DCFCE7; color: #166534; font-size: 7.5pt; font-weight: 600; padding: 2pt 8pt; border-radius: 4pt; }
+.pill-offered { background: #DCFCE7; color: #166534; font-size: 7pt; font-weight: 600; padding: 2pt 8pt; border-radius: 4pt; }
 .incl { color: #059669; font-weight: 500; font-size: 8.5pt; }
 .excl { color: #6B7280; font-size: 8.5pt; }
 
 /* ── CONDITIONS ── */
 .conditions { margin-top: 24pt; }
 .conditions h3 { font-size: 11pt; font-weight: 600; color: #0A0A0A; margin-bottom: 10pt; }
-.conditions-grid { display: grid; grid-template-columns: 120pt 1fr; gap: 4pt 12pt; font-size: 9pt; }
+.conditions-grid { display: grid; grid-template-columns: 120pt 1fr; gap: 4pt 12pt; font-size: 9.5pt; }
 .conditions-grid .label { color: #6B7280; font-weight: 500; }
 .conditions-grid .value { color: #1F2937; }
-.iban-value { font-family: 'Courier New', monospace; font-size: 9pt; letter-spacing: 0.03em; }
+.iban-value { font-family: 'Courier New', monospace; font-size: 9.5pt; letter-spacing: 0.03em; }
 
 /* ── SIGNATURE BLOCK ── */
 .signature-block { margin-top: 32pt; display: flex; gap: 32pt; page-break-inside: avoid; }
 .sig-col { flex: 1; }
 .sig-label { font-size: 9pt; font-weight: 600; color: #0A0A0A; margin-bottom: 4pt; }
-.sig-mention { font-size: 8pt; color: #6B7280; margin-bottom: 12pt; font-style: italic; }
+.sig-mention { font-size: 7.5pt; color: #6B7280; margin-bottom: 12pt; font-style: italic; }
 .sig-name { font-size: 9.5pt; font-weight: 500; color: #0A0A0A; }
-.sig-meta { font-size: 8pt; color: #6B7280; }
+.sig-meta { font-size: 7.5pt; color: #6B7280; }
 .sig-placeholder { height: 48pt; border-bottom: 1px solid #E5E7EB; }
 .sig-img { max-width: 120pt; max-height: 48pt; margin-top: 4pt; }
 
@@ -330,7 +342,7 @@ tr.total-row td { font-weight: 700; font-size: 10pt; border-top: 2px solid #0A0A
 .annexe-break { page-break-before: always; }
 .annexe-label { font-size: 8.5pt; font-weight: 600; letter-spacing: 0.05em; color: ${accent}; text-transform: uppercase; margin-bottom: 4pt; margin-top: 24pt; }
 .annexe-title { font-size: 16pt; font-weight: 600; color: #0A0A0A; margin-bottom: 16pt; }
-.cdc-summary { font-size: 9pt; color: #6B7280; margin-bottom: 16pt; padding: 10pt 14pt; background: #F9FAFB; border-radius: 4pt; }
+.cdc-summary { font-size: 8.5pt; color: #6B7280; margin-bottom: 16pt; padding: 10pt 14pt; background: #F9FAFB; border-radius: 4pt; }
 
 /* ── HORS SCOPE ── */
 .exclusions-list { list-style: none; padding: 0; }
@@ -338,19 +350,19 @@ tr.total-row td { font-weight: 700; font-size: 10pt; border-top: 2px solid #0A0A
 .exclusions-list li strong { color: #0A0A0A; }
 
 /* ── PLANNING ── */
-.planning-table th { font-size: 8pt; }
-.planning-table td { font-size: 9pt; padding: 6pt; }
+.planning-table th { font-size: 8.5pt; }
+.planning-table td { font-size: 9.5pt; padding: 6pt; }
 tr.highlight td { background: #F0FDF4; color: #166534; font-weight: 600; }
-.planning-note { font-size: 8pt; color: #6B7280; margin-top: 8pt; }
+.planning-note { font-size: 7.5pt; color: #6B7280; margin-top: 8pt; }
 
 /* ── CERTIFICATE ── */
 .cert-title { font-size: 16pt; font-weight: 600; color: #0A0A0A; margin-bottom: 20pt; }
 .cert-table { width: 100%; }
-.cert-table td { padding: 6pt 8pt; font-size: 9pt; vertical-align: top; border-bottom: 1px solid #F3F4F6; }
+.cert-table td { padding: 6pt 8pt; font-size: 9.5pt; vertical-align: top; border-bottom: 1px solid #F3F4F6; }
 .cert-table td:first-child { color: #6B7280; font-weight: 500; width: 35%; }
 .cert-table td:last-child { color: #1F2937; }
 .cert-hash { font-family: 'Courier New', monospace; font-size: 7.5pt; word-break: break-all; color: #1F2937; }
-.cert-legal { font-size: 8pt; color: #6B7280; font-style: italic; line-height: 1.5; margin-top: 20pt; }
+.cert-legal { font-size: 7.5pt; color: #6B7280; font-style: italic; line-height: 1.5; margin-top: 20pt; }
 
 /* ── ANTI-COUPURE ── */
 .total-block, .conditions, .signature-block, .identity, .pay-block { page-break-inside: avoid; }
@@ -359,19 +371,26 @@ tr.highlight td { background: #F0FDF4; color: #166534; font-weight: 600; }
 tr.feat-row { page-break-after: avoid; }
 
 /* ── CGV ── */
-.cgv-content { font-size: 9pt; line-height: 1.55; color: #1F2937; white-space: pre-line; }
+.cgv-content { font-size: 9.5pt; line-height: 1.55; color: #1F2937; white-space: pre-line; }
 
 /* ── IBAN REMINDER ── */
-.iban-reminder { margin-top: 24pt; padding: 12pt 16pt; background: #F9FAFB; border-radius: 4pt; font-size: 9pt; color: #1F2937; page-break-inside: avoid; }
+.iban-reminder { margin-top: 24pt; padding: 12pt 16pt; background: #F9FAFB; border-radius: 4pt; font-size: 9.5pt; color: #1F2937; page-break-inside: avoid; }
 .iban-reminder div { margin-bottom: 2pt; }
 .iban-reminder .iban-value { font-family: 'Courier New', monospace; letter-spacing: 0.03em; }
 
 /* ── FOOTER ── */
 .page-footer {
   position: fixed; bottom: 0; left: 0; right: 0;
-  font-size: 8pt; color: #6B7280;
+  font-size: 7.5pt; color: #6B7280;
   border-top: 1px solid #E5E7EB; padding-top: 6pt;
   display: flex; justify-content: space-between;
+}
+
+/* ── WATERMARK ── */
+.watermark {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
+  font-size: 80pt; font-weight: 700; color: rgba(0,0,0,0.06); pointer-events: none;
+  z-index: -1; white-space: nowrap;
 }
 </style>
 </head>
@@ -432,7 +451,7 @@ ${preamble ? '<div class="preamble">' + esc(preamble) + '</div>' : ''}
   </tbody>
 </table>
 
-${offeredRows ? '<div style="margin-top:16pt;"><table><thead><tr><th colspan="4" style="color:#059669; border-bottom-color:#DCFCE7;">Prestations offertes</th></tr></thead><tbody>' + offeredRows + '</tbody></table></div>' : ''}
+${offeredRows ? '<div style="margin-top:16pt;"><table><thead><tr><th colspan="4" style="color:#059669; border-bottom-color:#DCFCE7;">Prestations incluses sans frais</th></tr></thead><tbody>' + offeredRows + '</tbody></table></div>' : ''}
 
 <!-- Total block -->
 <div class="total-block">
@@ -504,6 +523,7 @@ ${data.presta_iban ? '<div class="iban-reminder"><div>Mode de règlement : Virem
 <div class="annexe-label">ANNEXE A</div>
 <div class="annexe-title">Cahier des charges</div>
 <div class="cdc-summary">${includedCount} jobs retenus sur ${totalCount} proposés — ${fmtJh(totalJhIncluded)} J/H facturés sur ${fmtJh(totalJhAll)} J/H estimés</div>
+<div style="font-size:7.5pt; color:#9CA3AF; margin-bottom:12pt;">NEW · nouveau développement — REFACTO · refonte de l'existant — MUST · essentiel — NICE · optionnel</div>
 
 <table>
   <thead>
@@ -563,6 +583,8 @@ ${lastSig ? `
   Droits d'accès, rectification, suppression sur demande à ${esc(contactEmail)}.
 </div>
 ` : ''}
+
+${p.status === 'draft' ? '<div class="watermark">BROUILLON</div>' : ''}
 
 </body>
 </html>`;
@@ -632,45 +654,53 @@ body { font-family: 'Inter', sans-serif; font-size: 9.5pt; line-height: 1.45; co
 .ref-label { font-size: 8.5pt; color: #6B7280; }
 .identity { display: flex; gap: 32pt; margin-bottom: 24pt; }
 .identity-col { flex: 1; }
-.identity-label { font-size: 8pt; font-weight: 600; letter-spacing: 0.05em; color: #6B7280; text-transform: uppercase; margin-bottom: 6pt; }
+.identity-label { font-size: 8.5pt; font-weight: 600; letter-spacing: 0.05em; color: #6B7280; text-transform: uppercase; margin-bottom: 6pt; }
 .identity-name { font-size: 11pt; font-weight: 600; color: #0A0A0A; margin-bottom: 4pt; }
 .identity-detail { font-size: 8.5pt; color: #1F2937; line-height: 1.5; }
 .identity-detail a { color: ${accent}; text-decoration: none; }
-.doc-type { font-size: 9pt; font-weight: 600; letter-spacing: 0.05em; color: ${accent}; margin-bottom: 6pt; }
+.doc-type { font-size: 8.5pt; font-weight: 600; letter-spacing: 0.05em; color: ${accent}; margin-bottom: 6pt; }
 .project-title { font-size: 22pt; font-weight: 600; color: #0A0A0A; margin-bottom: 8pt; line-height: 1.2; }
-.project-meta { font-size: 9pt; color: #6B7280; margin-bottom: 20pt; }
+.project-meta { font-size: 8.5pt; color: #6B7280; margin-bottom: 20pt; }
 .project-meta span + span::before { content: ' · '; }
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 th { font-size: 8.5pt; font-weight: 600; letter-spacing: 0.03em; color: #6B7280; text-align: left; padding: 8pt 6pt; border-bottom: 1px solid #E5E7EB; }
 th.r, td.r { text-align: right; }
-td { padding: 7pt 6pt; font-size: 9.5pt; border-bottom: 1px solid #F3F4F6; vertical-align: top; }
-tr.feat-row td { font-weight: 600; color: #0A0A0A; padding-top: 12pt; border-bottom: none; }
+td { padding: 5pt 6pt; font-size: 9.5pt; border-bottom: 1px solid #F3F4F6; vertical-align: top; }
+tr.feat-row td { font-weight: 600; color: #0A0A0A; padding-top: 9pt; border-bottom: none; }
 tr.job-row td { color: #1F2937; }
 td.job-desc { padding-right: 12pt; word-wrap: break-word; }
 .total-block { background: #F9FAFB; border-radius: 4pt; padding: 16pt 20pt; margin: 20pt 0; width: 55%; margin-left: auto; }
-.total-line { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6pt; font-size: 10pt; }
+.total-line { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6pt; font-size: 9.5pt; }
 .total-line .label { color: #6B7280; }
 .total-line .value { color: #1F2937; font-weight: 500; font-variant-numeric: tabular-nums; }
 .total-sep { border-top: 1px solid #E5E7EB; margin: 8pt 0; }
 .total-line.ttc .label { font-size: 11pt; font-weight: 600; color: #0A0A0A; }
 .total-line.ttc .value { font-size: 22pt; font-weight: 700; color: ${accent}; font-variant-numeric: tabular-nums; }
+.total-row td { font-weight: 700; font-size: 9.5pt; border-top: 2px solid #0A0A0A; padding-top: 10pt; }
 .pay-block { background: ${accent}; color: white; border-radius: 6pt; padding: 20pt 24pt; margin: 24pt 0; }
-.pay-block h3 { font-size: 12pt; font-weight: 700; margin-bottom: 12pt; }
-.pay-block .amount { font-size: 28pt; font-weight: 700; margin-bottom: 8pt; font-variant-numeric: tabular-nums; }
-.pay-block .due { font-size: 10pt; opacity: 0.85; margin-bottom: 16pt; }
+.pay-block h3 { font-size: 11pt; font-weight: 700; margin-bottom: 12pt; }
+.pay-block .amount { font-size: 22pt; font-weight: 700; margin-bottom: 8pt; font-variant-numeric: tabular-nums; }
+.pay-block .due { font-size: 9.5pt; opacity: 0.85; margin-bottom: 16pt; }
 .pay-grid { display: grid; grid-template-columns: 80pt 1fr; gap: 4pt 12pt; font-size: 9pt; }
 .pay-grid .label { opacity: 0.7; font-weight: 500; }
 .pay-grid .value { font-weight: 500; }
-.pay-grid .iban { font-family: 'Courier New', monospace; font-size: 9pt; letter-spacing: 0.03em; }
+.pay-grid .iban { font-family: 'Courier New', monospace; font-size: 9.5pt; letter-spacing: 0.03em; }
 .conditions { margin-top: 24pt; }
 .conditions h3 { font-size: 11pt; font-weight: 600; color: #0A0A0A; margin-bottom: 10pt; }
-.conditions-grid { display: grid; grid-template-columns: 120pt 1fr; gap: 4pt 12pt; font-size: 9pt; }
+.conditions-grid { display: grid; grid-template-columns: 120pt 1fr; gap: 4pt 12pt; font-size: 9.5pt; }
 .conditions-grid .label { color: #6B7280; font-weight: 500; }
 .conditions-grid .value { color: #1F2937; }
-.legal-mentions { font-size: 8pt; color: #6B7280; line-height: 1.5; margin-top: 24pt; border-top: 1px solid #E5E7EB; padding-top: 12pt; }
+.legal-mentions { font-size: 7.5pt; color: #6B7280; line-height: 1.5; margin-top: 24pt; border-top: 1px solid #E5E7EB; padding-top: 12pt; }
 .total-block, .conditions, .signature-block, .identity, .pay-block { page-break-inside: avoid; }
 .feat-group { page-break-inside: avoid; }
 tr.feat-row { page-break-after: avoid; }
+
+/* ── WATERMARK ── */
+.watermark {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
+  font-size: 80pt; font-weight: 700; color: rgba(0,0,0,0.06); pointer-events: none;
+  z-index: -1; white-space: nowrap;
+}
 </style>
 </head>
 <body>
@@ -752,6 +782,8 @@ ${inv.delivery_period_start && inv.delivery_period_end ? '<div class="project-me
   ${presta.legal_name ? esc(presta.legal_name) : ''} ${presta.legal_form ? '— ' + esc(presta.legal_form) : ''} ${presta.capital ? 'au capital de ' + esc(presta.capital) + ' €' : ''}<br>
   ${presta.siren ? 'SIREN ' + esc(presta.siren) : ''} ${presta.rcs_city ? '— ' + esc(presta.rcs_city) : ''} ${presta.tva_intra ? '— TVA ' + esc(presta.tva_intra) : ''}
 </div>
+
+${inv.status === 'cancelled' ? '<div class="watermark">ANNULÉ</div>' : inv.status === 'draft' ? '<div class="watermark">BROUILLON</div>' : ''}
 
 </body></html>`;
 }
@@ -839,7 +871,7 @@ export default async function handler(req, res) {
       var invRecoloredLogo = (invPresta || {}).logo_url ? recolorSvgLogo(invPresta.logo_url, (invPresta || {}).brand_color || '#0F172A') : null;
       var invLogoHtml = invRecoloredLogo
         ? '<img src="' + invRecoloredLogo + '" style="max-width:50mm;height:10mm;width:auto;object-fit:contain;">'
-        : '<span style="font-size:10pt;font-weight:700;color:#0A0A0A;">' + esc((invPresta || {}).legal_name || (invPresta || {}).name || '') + '</span>';
+        : '<span style="font-size:9.5pt;font-weight:700;color:#0A0A0A;">' + esc((invPresta || {}).legal_name || (invPresta || {}).name || '') + '</span>';
       var invHeader = '<div style="width:100%;font-family:Inter,sans-serif;display:flex;justify-content:space-between;align-items:center;padding:4mm 18mm 2mm 18mm;border-bottom:0.5px solid #E5E7EB;">'
         + '<span>' + invLogoHtml + '</span>'
         + '<span style="font-size:7pt;color:#9CA3AF;">' + esc(invoice.invoice_number || '') + '</span>'
@@ -1034,7 +1066,7 @@ export default async function handler(req, res) {
     var recoloredLogo = (prestaAccount || {}).logo_url ? recolorSvgLogo(prestaAccount.logo_url, (prestaAccount || {}).brand_color || '#0F172A') : null;
     var logoHtml = recoloredLogo
       ? '<img src="' + recoloredLogo + '" style="max-width:50mm;height:10mm;width:auto;object-fit:contain;">'
-      : '<span style="font-size:10pt;font-weight:700;color:#0A0A0A;">' + esc((prestaAccount || {}).legal_name || (prestaAccount || {}).name || '') + '</span>';
+      : '<span style="font-size:9.5pt;font-weight:700;color:#0A0A0A;">' + esc((prestaAccount || {}).legal_name || (prestaAccount || {}).name || '') + '</span>';
     var devisHeader = '<div style="width:100%;font-family:Inter,sans-serif;display:flex;justify-content:space-between;align-items:center;padding:4mm 18mm 2mm 18mm;border-bottom:0.5px solid #E5E7EB;">'
       + '<span>' + logoHtml + '</span>'
       + '<span style="font-size:7pt;color:#9CA3AF;">' + esc(project.ref_number || '') + '</span>'
