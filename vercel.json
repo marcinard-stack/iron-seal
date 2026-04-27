@@ -8,6 +8,7 @@
     { "source": "/deals/:status/:slug", "destination": "/viewer.html" },
     { "source": "/deals/:status", "destination": "/dashboard.html" },
     { "source": "/deals", "destination": "/dashboard.html" },
+    { "source": "/billing", "destination": "/billing.html" },
     { "source": "/", "destination": "/dashboard.html" }
   ]
 }

@@ -169,6 +169,13 @@ function buildDevisHtml(data) {
   var s0start = new Date(issuedAt);
   planningRows += '<tr><td><strong>S0</strong></td><td>' + fmtDateShort(s0start) + '</td><td>Définition du besoin</td></tr>';
   planningRows += '<tr class="highlight"><td></td><td>' + fmtDateShort(kickoff) + '</td><td><strong>Kick-off dev</strong></td></tr>';
+  // FU-15: Add deposit invoice row if deposit_balance mode
+  if (p.payment_schedule_mode === 'deposit_balance') {
+    var schedJsonPlan = p.payment_schedule_json || {};
+    if (typeof schedJsonPlan === 'string') try { schedJsonPlan = JSON.parse(schedJsonPlan); } catch(e) { schedJsonPlan = {}; }
+    var depPctPlan = Number(schedJsonPlan.deposit_percent || 30);
+    planningRows += '<tr class="highlight"><td></td><td>À la signature</td><td><strong>Facture d\'acompte (' + depPctPlan + '%)</strong></td></tr>';
+  }
   var firstMonday = new Date(kickoff);
   firstMonday.setDate(firstMonday.getDate() - firstMonday.getDay() + 1);
   for (var w = 1; w <= devWeeks + 1; w++) {
@@ -450,6 +457,27 @@ ${offeredRows ? '<div style="margin-top:16pt;"><table><thead><tr><th colspan="4"
     ${presta.cgv_url ? '<div class="label">CGV</div><div class="value">Consultables sur <a href="' + esc(presta.cgv_url) + '">' + esc(presta.cgv_url) + '</a></div>' : ''}
   </div>
 </div>
+
+${(function() {
+  if (p.payment_schedule_mode === 'deposit_balance') {
+    var schedJson = p.payment_schedule_json || {};
+    if (typeof schedJson === 'string') try { schedJson = JSON.parse(schedJson); } catch(e) { schedJson = {}; }
+    var depPct = Number(schedJson.deposit_percent || 30);
+    var depHt = totalHt * depPct / 100;
+    var depTtc = depHt * (1 + vatRate / 100);
+    var soldeHt = totalHt - depHt;
+    var soldeTtc = soldeHt * (1 + vatRate / 100);
+    return '<div class="conditions" style="margin-top:16pt;">'
+      + '<h3>Échéancier de paiement</h3>'
+      + '<table><thead><tr><th>Étape</th><th class="r">Montant HT</th><th class="r">Montant TTC</th></tr></thead>'
+      + '<tbody>'
+      + '<tr><td>Acompte (' + depPct + '%) — à la signature</td><td class="r">' + fmtEur(depHt) + '</td><td class="r">' + fmtEur(depTtc) + '</td></tr>'
+      + '<tr><td>Solde — à la livraison</td><td class="r">' + fmtEur(soldeHt) + '</td><td class="r">' + fmtEur(soldeTtc) + '</td></tr>'
+      + '<tr class="total-row"><td>Total</td><td class="r">' + fmtEur(totalHt) + '</td><td class="r">' + fmtEur(totalTtc) + '</td></tr>'
+      + '</tbody></table></div>';
+  }
+  return '';
+})()}
 
 ${data.presta_iban ? '<div class="iban-reminder"><div>Mode de règlement : Virement bancaire</div><div>IBAN : <span class="iban-value">' + esc(data.presta_iban) + '</span>' + (data.presta_bic ? ' · BIC : ' + esc(data.presta_bic) : '') + '</div></div>' : ''}
 

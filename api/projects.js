@@ -19,8 +19,26 @@ function generateInvoiceNumber(year, count) {
 }
 
 async function handleInvoices(req, res, sql, accountId, userId) {
-  // GET: list invoices for a project
+  // GET: list invoices for a project (or all invoices with ?all=1)
   if (req.method === 'GET') {
+    // FU-31: Return all invoices for the authenticated account
+    if (req.query.all === '1') {
+      if (!accountId) return res.status(401).json({ error: 'auth required' });
+      var allInvoices = await sql`
+        SELECT i.*, p.title as project_title, p.slug as project_slug, p.ref_number as project_ref,
+               c.name as client_name, c.legal_name as client_legal_name
+        FROM invoices i
+        JOIN projects p ON p.id = i.project_id
+        LEFT JOIN accounts c ON c.id = p.client_account_id
+        WHERE p.freelance_account_id = ${accountId}
+        ORDER BY i.created_at DESC
+      `;
+      for (var ai = 0; ai < allInvoices.length; ai++) {
+        allInvoices[ai].payments = await sql`SELECT * FROM invoice_payments WHERE invoice_id = ${allInvoices[ai].id} ORDER BY paid_at DESC`;
+      }
+      return res.json(allInvoices);
+    }
+
     var projectId = req.query.project_id;
     var slug = req.query.slug;
     if (slug) {

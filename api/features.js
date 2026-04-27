@@ -31,12 +31,20 @@ export default async function handler(req, res) {
     if (req.method === 'GET' && req.query.type === 'exclusions') {
       var projects = await sql`SELECT id FROM projects WHERE slug = ${slug}`;
       if (!projects.length) return res.status(404).json({ error: 'project not found' });
-      var rows = await sql`SELECT id, position, title, description FROM exclusions WHERE project_id = ${projects[0].id} ORDER BY position`;
+      var rows = await sql`SELECT id, position, title, description, reportable_lot2 FROM exclusions WHERE project_id = ${projects[0].id} ORDER BY position`;
       return res.json(rows);
     }
 
-    // PUT: update a job's included state
+    // PUT: update a job's included state or exclusion reportable_lot2
     if (req.method === 'PUT') {
+      // Exclusion update (FU-16)
+      if (req.body.exclusion_id != null && req.body.reportable_lot2 != null) {
+        var exclusion_id = req.body.exclusion_id;
+        var reportable_lot2 = req.body.reportable_lot2;
+        await sql`UPDATE exclusions SET reportable_lot2 = ${reportable_lot2} WHERE id = ${exclusion_id}`;
+        return res.json({ ok: true });
+      }
+
       var job_id = req.body.job_id;
       var included = req.body.included;
       if (job_id == null || included == null) return res.status(400).json({ error: 'job_id and included required' });

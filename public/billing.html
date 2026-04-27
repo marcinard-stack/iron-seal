@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facturation — Iron Seal</title>
+    <meta name="description" content="Suivi de facturation Iron Seal.">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, system-ui, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            color: #2d2b35; background: #f4f3ee; line-height: 1.6;
+        }
+
+        /* ---- TOP BAR ---- */
+        .topbar {
+            position: fixed; top: 0; left: 0; right: 0; height: 56px;
+            background: white; border-bottom: 1px solid #e8e6e0;
+            z-index: 300; display: flex; align-items: center;
+            padding: 0 16px;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .topbar-btn {
+            background: none; border: none; cursor: pointer; padding: 8px;
+            border-radius: 6px; color: #6b6560; display: flex; align-items: center;
+            justify-content: center; transition: all 0.15s;
+        }
+        .topbar-btn:hover { background: #edecea; color: #2d2b35; }
+        .topbar-btn svg { width: 18px; height: 18px; }
+
+        /* ---- LEFT SIDEBAR ---- */
+        .left-sidebar {
+            position: fixed; left: 0; top: 56px; bottom: 0; width: 260px;
+            background: #2d2b35; z-index: 250; display: flex; flex-direction: column;
+            transform: translateX(-260px); transition: transform 0.25s ease;
+            overflow: hidden;
+        }
+        .left-sidebar.open { transform: translateX(0); }
+        .left-sidebar-content { flex: 1; padding: 12px; overflow-y: auto; }
+
+        .sidebar-section { margin-bottom: 8px; }
+        .sidebar-section-title {
+            font-size: 11px; font-weight: 600; color: #8a8780;
+            text-transform: uppercase; letter-spacing: 0.8px;
+            padding: 8px 12px 6px; user-select: none;
+        }
+        .sidebar-item {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 12px; border-radius: 6px; color: #b1ada1;
+            font-size: 13px; cursor: pointer; transition: all 0.15s;
+            text-decoration: none;
+        }
+        .sidebar-item:hover { background: rgba(255,255,255,0.06); color: #e8e6e0; }
+        .sidebar-item.active { background: rgba(255,255,255,0.1); color: #e8e6e0; }
+        .sidebar-item svg { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.6; }
+
+        .left-sidebar-user {
+            padding: 12px; border-top: 1px solid rgba(255,255,255,0.08);
+            display: flex; align-items: center; gap: 10px; cursor: pointer;
+        }
+        .left-sidebar-user:hover { background: rgba(255,255,255,0.05); }
+        .left-sidebar-user .avatar {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: #c15f3c; color: white; font-size: 12px; font-weight: 600;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .left-sidebar-user .user-info { flex: 1; min-width: 0; }
+        .left-sidebar-user .user-name { font-size: 13px; font-weight: 500; color: #e8e6e0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .left-sidebar-user .user-plan { font-size: 11px; color: #8a8780; }
+
+        .left-overlay {
+            position: fixed; top: 56px; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.3); z-index: 240; display: none;
+        }
+        .left-overlay.show { display: block; }
+
+        /* ---- MAIN CONTENT ---- */
+        .main-content {
+            padding: 76px 36px 36px; max-width: 1200px; margin: 0 auto;
+        }
+        .page-header { margin-bottom: 28px; }
+        .page-header h1 { font-size: 22px; font-weight: 700; color: #2d2b35; margin-bottom: 4px; }
+        .page-header p { font-size: 13px; color: #8a8780; }
+
+        /* ---- ALERT BANNER ---- */
+        .alert-banner {
+            display: none; padding: 12px 16px; background: #fef2f2; border: 1px solid #fecaca;
+            border-radius: 8px; margin-bottom: 20px; font-size: 13px; color: #dc2626;
+            font-weight: 500;
+        }
+        .alert-banner.show { display: block; }
+
+        /* ---- KPI CARDS ---- */
+        .kpi-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+            margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: white; border: 1px solid #e8e6e0; border-radius: 10px;
+            padding: 18px 20px;
+        }
+        .kpi-card .kpi-label { font-size: 12px; color: #8a8780; margin-bottom: 4px; }
+        .kpi-card .kpi-value { font-size: 22px; font-weight: 700; color: #2d2b35; }
+        .kpi-card .kpi-value.danger { color: #dc2626; }
+
+        /* ---- FILTER BAR ---- */
+        .filter-bar { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+        .filter-tag {
+            font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 12px;
+            border: 1px solid #e8e6e0; background: white; color: #6b6560;
+            cursor: pointer; transition: all 0.15s; user-select: none;
+        }
+        .filter-tag:hover { border-color: #c15f3c; color: #c15f3c; }
+        .filter-tag.active { background: #2d2b35; color: white; border-color: #2d2b35; }
+
+        /* ---- TABLE ---- */
+        .inv-table {
+            width: 100%; border-collapse: collapse; background: white;
+            border: 1px solid #e8e6e0; border-radius: 10px; overflow: hidden;
+        }
+        .inv-table th {
+            text-align: left; font-size: 11px; font-weight: 600; color: #8a8780;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            padding: 10px 14px; border-bottom: 1px solid #e8e6e0; background: #faf9f7;
+        }
+        .inv-table th.r { text-align: right; }
+        .inv-table td {
+            padding: 10px 14px; font-size: 13px; color: #2d2b35;
+            border-bottom: 1px solid #f3f2ee; vertical-align: middle;
+        }
+        .inv-table td.r { text-align: right; }
+        .inv-table tr:last-child td { border-bottom: none; }
+        .inv-table tr:hover td { background: #faf9f7; }
+
+        .status-pill {
+            display: inline-block; font-size: 10px; font-weight: 600;
+            padding: 2px 8px; border-radius: 10px; text-transform: uppercase;
+        }
+        .status-pill.draft { background: #f3f4f6; color: #6B7280; }
+        .status-pill.sent { background: #dbeafe; color: #2563EB; }
+        .status-pill.paid { background: #dcfce7; color: #059669; }
+        .status-pill.paid_partial { background: #fef3c7; color: #D97706; }
+        .status-pill.overdue { background: #fef2f2; color: #DC2626; }
+        .status-pill.cancelled { background: #f3f4f6; color: #9CA3AF; }
+
+        .table-link {
+            color: #2563EB; text-decoration: none; font-size: 12px;
+        }
+        .table-link:hover { text-decoration: underline; }
+
+        .empty-state {
+            text-align: center; padding: 60px 20px; color: #8a8780;
+        }
+        .empty-state p { font-size: 14px; }
+
+        /* ---- RESPONSIVE ---- */
+        @media (max-width: 900px) {
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .main-content { padding: 60px 16px 16px; }
+            .kpi-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+            .kpi-card { padding: 14px 16px; }
+            .kpi-card .kpi-value { font-size: 18px; }
+            .inv-table { font-size: 12px; }
+            .inv-table th, .inv-table td { padding: 8px 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <div class="topbar-left">
+        <button class="topbar-btn" id="leftToggle" title="Menu">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="14" height="14" rx="2.5"/><line x1="7" y1="2.5" x2="7" y2="15.5"/></svg>
+        </button>
+    </div>
+    <a href="/deals" style="flex:1; display:flex; align-items:center; justify-content:center; gap:4px; text-decoration:none; min-width:0;">
+        <svg width="28" height="28" viewBox="5600 3800 4000 4000" style="flex-shrink:0;"><g transform="scale(1,-1) translate(0,-11520)"><g fill="#2d2b35"><path d="M6550 6288 c0 -772 4 -1409 9 -1417 7 -11 52 -12 242 -8 265 5 299 12 444 82 163 79 281 197 360 360 69 142 79 191 79 405 1 205 -4 225 -67 290 -53 55 -108 73 -212 72 -134 -2 -214 14 -282 54 -120 73 -161 151 -198 374 -39 237 -36 240 232 240 122 0 186 4 203 13 14 7 77 81 140 164 142 187 148 194 218 231 87 45 148 56 286 49 254 -13 444 -91 616 -253 119 -112 193 -232 243 -389 45 -142 49 -223 44 -860 -3 -503 -6 -600 -20 -657 -83 -339 -330 -595 -663 -685 -99 -27 -99 -27 -880 -31 -781 -3 -781 -3 -788 -49 -3 -25 -6 -135 -6 -244 l0 -199 734 0 c755 0 872 5 1026 41 328 77 610 263 815 539 72 97 165 279 204 403 62 196 63 206 68 860 3 367 1 642 -6 710 -19 213 -58 352 -146 530 -195 391 -561 667 -1001 753 -79 16 -179 18 -892 21 l-802 4 0 -1403z"/><path d="M7707 6812 c-34 -21 -67 -86 -67 -133 0 -65 68 -149 122 -149 31 0 75 27 99 61 31 43 31 132 1 181 -36 57 -100 74 -155 40z"/></g><g fill="white"><path d="M8100 7683 c330 -24 645 -170 884 -409 208 -207 336 -453 391 -749 11 -61 13 11 14 548 l1 617 -667 -2 c-368 -1 -648 -3 -623 -5z"/><path d="M7809 7186 c-59 -17 -142 -62 -171 -93 -13 -13 -75 -92 -138 -176 -63 -83 -126 -157 -140 -164 -17 -9 -81 -13 -203 -13 -268 0 -271 -3 -232 -240 37 -223 78 -301 198 -374 68 -40 148 -56 282 -54 104 1 159 -17 212 -72 63 -65 68 -85 67 -290 0 -214 -10 -263 -79 -405 -79 -163 -197 -281 -360 -360 -145 -70 -179 -77 -444 -82 -190 -4 -235 -3 -242 8 -5 8 -8 -122 -7 -301 1 -173 3 -301 5 -283 4 32 4 32 786 35 782 4 782 4 881 31 333 90 580 346 663 685 14 57 17 154 20 657 5 637 1 718 -44 860 -50 157 -124 277 -243 389 -120 113 -257 188 -412 226 -107 27 -332 36 -399 16z m6 -368 c66 -30 93 -161 46 -227 -24 -34 -68 -61 -99 -61 -29 0 -83 41 -103 80 -24 45 -24 93 1 144 32 67 94 92 155 64z"/><path d="M9373 4987 c-28 -175 -136 -427 -248 -577 -228 -308 -553 -503 -935 -563 -14 -3 251 -5 588 -6 l612 -1 0 610 c0 336 -1 610 -3 610 -1 0 -8 -33 -14 -73z"/></g><g fill="#c15f3c"><path d="M5777 5146 c2 -171 3 -176 32 -241 28 -62 106 -155 130 -155 5 0 11 -4 13 -9 2 -5 56 -39 121 -76 64 -36 117 -70 117 -74 0 -4 -44 -31 -97 -61 -195 -106 -252 -160 -297 -280 -22 -58 -29 -367 -9 -375 19 -7 389 43 453 61 135 38 242 147 289 296 8 23 13 149 16 352 4 287 3 320 -14 369 -37 108 -86 177 -161 231 -81 59 -136 74 -367 106 -120 17 -220 30 -223 30 -3 0 -4 -78 -3 -174z"/></g></g></svg>
+        <span style="font-family:'Sora',sans-serif; font-size:24px; font-weight:700; color:#2d2b35; letter-spacing:-0.03em;">iron seal</span>
+    </a>
+</div>
+
+<div class="left-overlay" id="leftOverlay"></div>
+<div class="left-sidebar" id="leftSidebar">
+    <div class="left-sidebar-content">
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">Pipeline</div>
+            <a class="sidebar-item" href="/deals/draft">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2.5l.5.5-8.5 8.5L2 13l1.5-3L12 1.5l1 1z"/><line x1="9.5" y1="6" x2="11" y2="7.5"/></svg>
+                Brouillons
+            </a>
+            <a class="sidebar-item" href="/deals/proposed">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8l5 5 7-9"/></svg>
+                Proposés
+            </a>
+            <a class="sidebar-item" href="/deals/active">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><polyline points="8,5 8,8 10.5,9.5"/></svg>
+                En cours
+            </a>
+            <a class="sidebar-item" href="/deals/completed">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,8.5 7,11.5 12,5"/><circle cx="8" cy="8" r="6"/></svg>
+                Terminés
+            </a>
+        </div>
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">Gestion</div>
+            <a class="sidebar-item active" href="/billing">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="12" height="10" rx="1.5"/><line x1="2" y1="7" x2="14" y2="7"/><line x1="5" y1="10" x2="8" y2="10"/></svg>
+                Facturation
+            </a>
+            <a class="sidebar-item" href="/settings">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M6.86 1.33h2.28l.32 1.93a5.5 5.5 0 011.32.77l1.84-.74.98 1.7-1.52 1.19a5.6 5.6 0 010 1.54l1.52 1.19-.98 1.7-1.84-.74a5.5 5.5 0 01-1.32.77l-.32 1.93H6.86l-.32-1.93a5.5 5.5 0 01-1.32-.77l-1.84.74-.98-1.7 1.52-1.19a5.6 5.6 0 010-1.54L2.4 5l.98-1.7 1.84.74a5.5 5.5 0 011.32-.77l.32-1.93z"/><circle cx="8" cy="8" r="2.2"/></svg>
+                Paramètres
+            </a>
+        </div>
+    </div>
+    <div class="left-sidebar-user" id="sidebarUser">
+        <div class="avatar" id="sidebarAvatar">?</div>
+        <div class="user-info">
+            <div class="user-name" id="sidebarUserName">...</div>
+            <div class="user-plan">Free</div>
+        </div>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="page-header">
+        <h1>Facturation</h1>
+        <p>Suivi de toutes vos factures</p>
+    </div>
+
+    <div class="alert-banner" id="alertBanner"></div>
+
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-label">Total facturé YTD</div>
+            <div class="kpi-value" id="kpiInvoiced">-</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Total encaissé YTD</div>
+            <div class="kpi-value" id="kpiCollected">-</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Reste à encaisser</div>
+            <div class="kpi-value" id="kpiRemaining">-</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Factures en retard</div>
+            <div class="kpi-value" id="kpiOverdue">-</div>
+        </div>
+    </div>
+
+    <div class="filter-bar" id="filterBar">
+        <span class="filter-tag active" data-filter="all">Toutes</span>
+        <span class="filter-tag" data-filter="pending">En attente</span>
+        <span class="filter-tag" data-filter="paid">Payées</span>
+        <span class="filter-tag" data-filter="overdue">En retard</span>
+    </div>
+
+    <div id="tableContainer">
+        <table class="inv-table" id="invoiceTable" style="display:none;">
+            <thead>
+                <tr>
+                    <th>N°</th>
+                    <th>Projet</th>
+                    <th>Client</th>
+                    <th>Type</th>
+                    <th class="r">Montant TTC</th>
+                    <th>Statut</th>
+                    <th>Échéance</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="invoiceBody"></tbody>
+        </table>
+        <div class="empty-state" id="emptyState" style="display:none;">
+            <p>Aucune facture pour le moment.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    var dfToken = localStorage.getItem('df_token');
+    if (!dfToken) { window.location.href = '/login'; return; }
+    var authHeaders = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken };
+
+    // Sidebar user
+    var dfUser = null;
+    try { dfUser = JSON.parse(localStorage.getItem('df_user')); } catch(e) {}
+    if (dfUser) {
+        var initials = dfUser.name ? dfUser.name.split(' ').map(function(w) { return w[0]; }).join('').toUpperCase().substring(0,2) : '?';
+        document.getElementById('sidebarAvatar').textContent = initials;
+        document.getElementById('sidebarUserName').textContent = dfUser.name || 'Utilisateur';
+    }
+
+    // Sidebar toggle
+    var sidebar = document.getElementById('leftSidebar');
+    var overlay = document.getElementById('leftOverlay');
+    document.getElementById('leftToggle').addEventListener('click', function() {
+        sidebar.classList.toggle('open'); overlay.classList.toggle('show');
+    });
+    overlay.addEventListener('click', function() {
+        sidebar.classList.remove('open'); overlay.classList.remove('show');
+    });
+
+    // Verify session
+    fetch('/api/auth?action=me', { headers: authHeaders })
+        .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+        .then(function(data) {
+            localStorage.setItem('df_user', JSON.stringify(data.user));
+            var initials = data.user.name ? data.user.name.split(' ').map(function(w) { return w[0]; }).join('').toUpperCase().substring(0,2) : '?';
+            document.getElementById('sidebarAvatar').textContent = initials;
+            document.getElementById('sidebarUserName').textContent = data.user.name;
+        })
+        .catch(function() {
+            localStorage.removeItem('df_token'); localStorage.removeItem('df_user');
+            window.location.href = '/login';
+        });
+
+    // Helpers
+    function fmtEur(v) {
+        return Number(v).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' \u20AC';
+    }
+    function fmtDateShort(d) {
+        if (!d) return '-';
+        var dt = new Date(d);
+        return dt.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+    function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    var statusLabels = { draft: 'Brouillon', sent: 'Envoyée', paid: 'Payée', paid_partial: 'Partiel', overdue: 'Impayée', cancelled: 'Annulée' };
+    var allInvoices = [];
+    var activeFilter = 'all';
+
+    // Filter bar
+    document.querySelectorAll('.filter-tag').forEach(function(tag) {
+        tag.addEventListener('click', function() {
+            document.querySelectorAll('.filter-tag').forEach(function(t) { t.classList.remove('active'); });
+            tag.classList.add('active');
+            activeFilter = tag.dataset.filter;
+            renderTable();
+        });
+    });
+
+    // Load invoices
+    fetch('/api/projects?entity=invoices&all=1', { headers: authHeaders })
+        .then(function(r) { return r.json(); })
+        .then(function(invoices) {
+            allInvoices = invoices;
+
+            // Check overdue: if sent and due_at < now, mark as overdue for display
+            var now = new Date();
+            allInvoices.forEach(function(inv) {
+                if ((inv.status === 'sent' || inv.status === 'paid_partial') && inv.due_at && new Date(inv.due_at) < now) {
+                    inv._display_status = 'overdue';
+                } else {
+                    inv._display_status = inv.status;
+                }
+            });
+
+            updateKpis();
+            renderTable();
+        })
+        .catch(function() {
+            document.getElementById('emptyState').style.display = 'block';
+        });
+
+    function updateKpis() {
+        var year = new Date().getFullYear();
+        var ytdInvoices = allInvoices.filter(function(i) {
+            return i.status !== 'cancelled' && i.created_at && new Date(i.created_at).getFullYear() === year;
+        });
+        var totalInvoiced = ytdInvoices.reduce(function(s, i) { return s + Number(i.amount_ttc || 0); }, 0);
+        var totalCollected = ytdInvoices.filter(function(i) { return i.status === 'paid'; }).reduce(function(s, i) { return s + Number(i.amount_ttc || 0); }, 0);
+        // Add partial payments
+        ytdInvoices.filter(function(i) { return i.status === 'paid_partial'; }).forEach(function(i) {
+            if (i.payments && i.payments.length) {
+                totalCollected += i.payments.reduce(function(s, p) { return s + Number(p.amount || 0); }, 0);
+            }
+        });
+        var remaining = totalInvoiced - totalCollected;
+        var overdueCount = allInvoices.filter(function(i) { return i._display_status === 'overdue'; }).length;
+
+        document.getElementById('kpiInvoiced').textContent = fmtEur(totalInvoiced);
+        document.getElementById('kpiCollected').textContent = fmtEur(totalCollected);
+        document.getElementById('kpiRemaining').textContent = fmtEur(remaining);
+        var kpiOv = document.getElementById('kpiOverdue');
+        kpiOv.textContent = overdueCount;
+        if (overdueCount > 0) kpiOv.classList.add('danger');
+
+        // Alert banner for >30 days overdue
+        var now = new Date();
+        var thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
+        var severeOverdue = allInvoices.filter(function(i) {
+            return i._display_status === 'overdue' && i.due_at && new Date(i.due_at) < thirtyDaysAgo;
+        });
+        if (severeOverdue.length) {
+            var banner = document.getElementById('alertBanner');
+            banner.textContent = severeOverdue.length + ' facture(s) impayée(s) depuis plus de 30 jours.';
+            banner.classList.add('show');
+        }
+    }
+
+    function renderTable() {
+        var filtered = allInvoices.filter(function(inv) {
+            if (activeFilter === 'all') return true;
+            if (activeFilter === 'pending') return inv._display_status === 'sent' || inv._display_status === 'paid_partial';
+            if (activeFilter === 'paid') return inv._display_status === 'paid';
+            if (activeFilter === 'overdue') return inv._display_status === 'overdue';
+            return true;
+        });
+
+        var table = document.getElementById('invoiceTable');
+        var empty = document.getElementById('emptyState');
+        var body = document.getElementById('invoiceBody');
+
+        if (!filtered.length) {
+            table.style.display = 'none';
+            empty.style.display = 'block';
+            return;
+        }
+        table.style.display = 'table';
+        empty.style.display = 'none';
+
+        body.innerHTML = filtered.map(function(inv) {
+            var ds = inv._display_status;
+            var statusLabel = ds === 'overdue' ? 'Impayée' : (statusLabels[inv.status] || inv.status);
+            var type = inv.invoice_type || '-';
+            if (type === 'acompte') type = 'Acompte';
+            else if (type === 'solde') type = 'Solde';
+            else if (type === 'jalon') type = 'Jalon';
+            else if (type === 'unique') type = 'Unique';
+
+            var clientName = inv.client_legal_name || inv.client_name || '-';
+            var projectLabel = inv.project_title || '-';
+
+            var actions = '';
+            if (inv.invoice_number) {
+                actions = '<a class="table-link" href="/api/pdf?type=invoice&invoice_id=' + inv.id + '&version=signed" target="_blank">PDF</a>';
+            } else {
+                actions = '<a class="table-link" href="/api/pdf?type=invoice&invoice_id=' + inv.id + '" target="_blank">Aperçu</a>';
+            }
+            if (inv.project_slug) {
+                actions += ' <a class="table-link" href="/deals/' + (inv.status === 'draft' ? 'draft' : 'active') + '/' + escHtml(inv.project_slug) + '">Projet</a>';
+            }
+
+            return '<tr>'
+                + '<td style="font-weight:600;">' + escHtml(inv.invoice_number || 'Brouillon') + '</td>'
+                + '<td>' + escHtml(projectLabel) + '</td>'
+                + '<td>' + escHtml(clientName) + '</td>'
+                + '<td>' + type + '</td>'
+                + '<td class="r" style="font-weight:500;">' + fmtEur(inv.amount_ttc) + '</td>'
+                + '<td><span class="status-pill ' + ds + '">' + statusLabel + '</span></td>'
+                + '<td>' + fmtDateShort(inv.due_at) + '</td>'
+                + '<td>' + actions + '</td>'
+                + '</tr>';
+        }).join('');
+    }
+})();
+</script>
+
+</body>
+</html>

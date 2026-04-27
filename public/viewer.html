@@ -46,6 +46,7 @@
             justify-content: center; transition: all 0.15s;
         }
         .topbar-btn:hover { background: #edecea; color: #2d2b35; }
+        .schedule-mode-btn.active { background: #0F172A !important; color: white !important; border-color: #0F172A !important; }
         .topbar-btn svg { width: 18px; height: 18px; }
         .topbar-title {
             font-size: 13px; font-weight: 500; color: #6b6560;
@@ -812,6 +813,22 @@
             <button class="confirm-cancel" id="invoiceCancel">Annuler</button>
             <button class="confirm-ok primary" id="invoiceCreate">Créer la facture</button>
         </div>
+        <div id="invoiceScheduleHint" style="display:none; margin-top:8px; padding:8px 12px; background:#f0fdf4; border-radius:6px; font-size:11px; color:#166534;"></div>
+        <div id="invoiceError" style="display:none; margin-top:8px; padding:8px 12px; background:#fef2f2; border-radius:6px; font-size:11px; color:#dc2626;"></div>
+        <div id="invoiceRecap" style="display:none; margin-top:12px; margin-bottom:12px; padding:10px 14px; background:#f9f8f6; border-radius:6px; font-size:12px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <span style="color:#6b6560;">Total devis</span><span style="font-weight:600;" id="recapTotal">-</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <span style="color:#6b6560;">Déjà facturé</span><span style="font-weight:600;" id="recapInvoiced">-</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+                <span style="color:#6b6560;">Reste à facturer</span><span style="font-weight:600; color:#0F172A;" id="recapRemaining">-</span>
+            </div>
+            <div style="margin-top:6px; height:4px; background:#E5E7EB; border-radius:2px; overflow:hidden;">
+                <div id="recapBar" style="height:100%; background:#059669; border-radius:2px; transition:width 0.3s;"></div>
+            </div>
+        </div>
         <div id="invoiceList" style="margin-top:16px; border-top:1px solid #e8e6e0; padding-top:12px; display:none;">
             <div style="font-size:12px; font-weight:600; color:#4a4850; margin-bottom:8px;">Factures existantes</div>
             <div id="invoiceListItems"></div>
@@ -1175,6 +1192,23 @@
         <div style="display:flex; justify-content:flex-end; margin-top:6px;">
             <button id="preambleSave" style="background:#0F172A; color:white; border:none; border-radius:6px; padding:6px 16px; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit;">Enregistrer</button>
             <span id="preambleSaved" style="font-size:11px; color:#059669; margin-left:8px; display:none; align-self:center;">✓ Enregistré</span>
+        </div>
+    </div>
+
+    <!-- Schedule mode toggle (FU-14) — visible to presta in draft -->
+    <div id="scheduleSection" style="display:none; margin-bottom:24px;">
+        <div style="font-size:13px; font-weight:600; color:#2d2b35; margin-bottom:8px;">Mode de facturation</div>
+        <div style="display:flex; gap:8px; margin-bottom:12px;">
+            <button class="schedule-mode-btn active" data-mode="on_delivery" style="padding:8px 14px; border:1px solid #e8e6e0; border-radius:8px; font-size:12px; font-family:inherit; cursor:pointer; background:white; color:#2d2b35;">Facture unique à la livraison</button>
+            <button class="schedule-mode-btn" data-mode="deposit_balance" style="padding:8px 14px; border:1px solid #e8e6e0; border-radius:8px; font-size:12px; font-family:inherit; cursor:pointer; background:white; color:#2d2b35;">Acompte + solde</button>
+        </div>
+        <div id="depositConfig" style="display:none;">
+            <div style="display:flex; gap:12px; align-items:center;">
+                <label style="font-size:12px; color:#4a4850;">Acompte de</label>
+                <input type="number" id="depositPercent" value="30" min="1" max="99" style="width:60px; padding:6px 10px; border:1px solid #e8e6e0; border-radius:6px; font-size:13px; text-align:center;">
+                <span style="font-size:12px; color:#4a4850;">% du Total HT</span>
+                <span id="depositAmount" style="font-size:12px; font-weight:600; color:#0F172A;"></span>
+            </div>
         </div>
     </div>
 
@@ -2092,9 +2126,27 @@
 
     function renderExclusions(exclusions) {
         var ul = document.getElementById('exclusionsList');
+        var isPrestaEditable = !IS_SHARED && PROJECT_DATA && PROJECT_DATA.status === 'draft' && USER_ACCOUNT_ID && PROJECT_DATA.freelance_account_id == USER_ACCOUNT_ID;
         ul.innerHTML = exclusions.map(function(ex) {
-            return '<li><strong>' + ex.title + '</strong> : ' + ex.description + '</li>';
+            var checked = ex.reportable_lot2 ? ' checked' : '';
+            var checkbox = isPrestaEditable ? '<label style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;font-size:11px;color:#6b6560;cursor:pointer;"><input type="checkbox" class="lot2-check" data-id="' + ex.id + '"' + checked + ' style="accent-color:#0F172A;"> Lot 2</label>' : (ex.reportable_lot2 ? ' <em style="color:#6b6560;font-size:11px;">(lot 2 envisagé)</em>' : '');
+            return '<li><strong>' + ex.title + '</strong> : ' + ex.description + checkbox + '</li>';
         }).join('');
+
+        // Bind checkboxes
+        if (isPrestaEditable) {
+            ul.querySelectorAll('.lot2-check').forEach(function(cb) {
+                cb.addEventListener('change', function() {
+                    var exId = parseInt(this.dataset.id);
+                    var val = this.checked;
+                    fetch('/api/features?slug=' + SLUG, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('df_token') || '') },
+                        body: JSON.stringify({ exclusion_id: exId, reportable_lot2: val })
+                    });
+                });
+            });
+        }
     }
 
     // ===== CDC CHECKBOX RESTRUCTURE =====
@@ -2895,6 +2947,32 @@
 
     function openInvoiceModal() {
         invoiceOverlay.classList.add('show');
+        // FU-26-bis: Pre-fill from échéancier
+        var hint = document.getElementById('invoiceScheduleHint');
+        var errEl = document.getElementById('invoiceError');
+        hint.style.display = 'none';
+        errEl.style.display = 'none';
+        if (PROJECT_DATA && PROJECT_DATA.payment_schedule_mode === 'deposit_balance' && (PROJECT_DATA.status === 'signed' || PROJECT_DATA.status === 'active')) {
+            var schedJ = PROJECT_DATA.payment_schedule_json || {};
+            if (typeof schedJ === 'string') try { schedJ = JSON.parse(schedJ); } catch(e) { schedJ = {}; }
+            var depPct = Number(schedJ.deposit_percent || 30);
+            // Compute total HT from features
+            var totalHtCalc = 0;
+            if (typeof allFeatures !== 'undefined' && allFeatures.length) {
+                var tjmCalc = Number(PROJECT_DATA.tjm_override || 500);
+                allFeatures.forEach(function(f) {
+                    (f.jobs || []).forEach(function(j) {
+                        if (!j.is_offered && j.included) totalHtCalc += Number(j.jh) * tjmCalc;
+                    });
+                });
+            }
+            if (totalHtCalc > 0) {
+                var depAmt = totalHtCalc * depPct / 100;
+                document.getElementById('invoiceAmountHt').value = depAmt.toFixed(2);
+                hint.textContent = 'Montant pré-rempli depuis l\'échéancier (acompte ' + depPct + '%)';
+                hint.style.display = 'block';
+            }
+        }
         loadInvoices();
     }
 
@@ -2905,6 +2983,26 @@
         var milestone = document.getElementById('invoiceMilestone').value.trim();
         var amountHt = document.getElementById('invoiceAmountHt').value.trim();
         var btn = document.getElementById('invoiceCreate');
+        var errEl = document.getElementById('invoiceError');
+        errEl.style.display = 'none';
+
+        // FU-26-bis: Anti-doublon solde
+        var isSoldeType = milestone && milestone.toLowerCase().indexOf('solde') !== -1;
+        if (isSoldeType || (PROJECT_DATA && PROJECT_DATA.status === 'delivered')) {
+            // Check existing invoices for a non-cancelled solde
+            var existingSolde = false;
+            var existingItems = document.querySelectorAll('#invoiceListItems > div');
+            existingItems.forEach(function(div) {
+                var txt = div.textContent.toLowerCase();
+                if (txt.indexOf('solde') !== -1 && txt.indexOf('annulée') === -1) existingSolde = true;
+            });
+            if (existingSolde) {
+                errEl.textContent = 'Une facture de solde existe déjà pour ce projet.';
+                errEl.style.display = 'block';
+                return;
+            }
+        }
+
         btn.disabled = true; btn.textContent = 'Création...';
         var dfToken = localStorage.getItem('df_token') || '';
         var body = { slug: SLUG };
@@ -2929,6 +3027,30 @@
         fetch('/api/projects?entity=invoices&slug=' + SLUG)
             .then(function(r) { return r.json(); })
             .then(function(invoices) {
+                // FU-26-bis: Update recap
+                var recapEl = document.getElementById('invoiceRecap');
+                var totalHtDevis = 0;
+                if (typeof allFeatures !== 'undefined' && allFeatures.length && PROJECT_DATA) {
+                    var tjmR = Number(PROJECT_DATA.tjm_override || 500);
+                    allFeatures.forEach(function(f) {
+                        (f.jobs || []).forEach(function(j) {
+                            if (!j.is_offered && j.included) totalHtDevis += Number(j.jh) * tjmR;
+                        });
+                    });
+                }
+                if (totalHtDevis > 0 && invoices.length) {
+                    var invoicedHt = invoices.filter(function(i) { return i.status !== 'cancelled'; }).reduce(function(s, i) { return s + Number(i.amount_ht); }, 0);
+                    var remainHt = Math.max(0, totalHtDevis - invoicedHt);
+                    var pctDone = Math.min(100, Math.round(invoicedHt / totalHtDevis * 100));
+                    document.getElementById('recapTotal').textContent = totalHtDevis.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' \u20AC HT';
+                    document.getElementById('recapInvoiced').textContent = invoicedHt.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' \u20AC HT';
+                    document.getElementById('recapRemaining').textContent = remainHt.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' \u20AC HT';
+                    document.getElementById('recapBar').style.width = pctDone + '%';
+                    recapEl.style.display = 'block';
+                } else {
+                    recapEl.style.display = 'none';
+                }
+
                 if (!invoices.length) { invoiceListEl.style.display = 'none'; return; }
                 invoiceListEl.style.display = 'block';
                 var statusColors = { draft: '#6B7280', sent: '#2563EB', paid: '#059669', paid_partial: '#D97706', overdue: '#DC2626', cancelled: '#6B7280' };
@@ -3031,6 +3153,83 @@
             setTimeout(function() { preambleSaved.style.display = 'none'; }, 2000);
         });
     });
+
+    // ===== SCHEDULE MODE TOGGLE (FU-14) =====
+    var scheduleSection = document.getElementById('scheduleSection');
+    var depositConfig = document.getElementById('depositConfig');
+    var depositPercent = document.getElementById('depositPercent');
+    var depositAmount = document.getElementById('depositAmount');
+
+    if (!IS_SHARED && PROJECT_DATA && PROJECT_DATA.status === 'draft' && USER_ACCOUNT_ID && PROJECT_DATA.freelance_account_id == USER_ACCOUNT_ID) {
+        scheduleSection.style.display = 'block';
+        // Load saved mode
+        var savedMode = PROJECT_DATA.payment_schedule_mode || 'on_delivery';
+        var savedJson = PROJECT_DATA.payment_schedule_json || {};
+        if (typeof savedJson === 'string') try { savedJson = JSON.parse(savedJson); } catch(e) { savedJson = {}; }
+        if (savedJson.deposit_percent) depositPercent.value = savedJson.deposit_percent;
+
+        document.querySelectorAll('.schedule-mode-btn').forEach(function(btn) {
+            if (btn.dataset.mode === savedMode) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+        if (savedMode === 'deposit_balance') depositConfig.style.display = 'block';
+        updateDepositAmount();
+
+        document.querySelectorAll('.schedule-mode-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.schedule-mode-btn').forEach(function(b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                var mode = btn.dataset.mode;
+                depositConfig.style.display = mode === 'deposit_balance' ? 'block' : 'none';
+                updateDepositAmount();
+                saveSchedule(mode);
+            });
+        });
+
+        depositPercent.addEventListener('change', function() {
+            updateDepositAmount();
+            var activeMode = document.querySelector('.schedule-mode-btn.active');
+            saveSchedule(activeMode ? activeMode.dataset.mode : 'on_delivery');
+        });
+    }
+
+    function updateDepositAmount() {
+        // Calculate from detail table totals
+        var totalHt = 0;
+        if (PROJECT_DATA && PROJECT_DATA._computed_total_ht) {
+            totalHt = PROJECT_DATA._computed_total_ht;
+        } else {
+            // Sum from the custom JH column in packages table
+            var customTotal = document.querySelector('#packagesTable tfoot .r:last-child, #devisTable tfoot .r:last-child');
+            // Fallback: compute from allFeatures if available
+            if (typeof allFeatures !== 'undefined' && allFeatures.length) {
+                var tjm = Number((PROJECT_DATA && PROJECT_DATA.tjm_override) || 500);
+                var jhSum = 0;
+                allFeatures.forEach(function(f) {
+                    (f.jobs || []).forEach(function(j) {
+                        if (!j.is_offered && j.included) jhSum += Number(j.jh);
+                    });
+                });
+                totalHt = jhSum * tjm;
+            }
+        }
+        var pct = parseInt(depositPercent.value) || 30;
+        var amt = totalHt * pct / 100;
+        depositAmount.textContent = amt > 0 ? '= ' + amt.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' \u20AC HT' : '';
+    }
+
+    function saveSchedule(mode) {
+        var pct = parseInt(depositPercent.value) || 30;
+        var dfToken = localStorage.getItem('df_token') || '';
+        fetch('/api/projects', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dfToken },
+            body: JSON.stringify({ slug: SLUG, payment_schedule_mode: mode, payment_schedule_json: { deposit_percent: pct } })
+        });
+    }
 
     // ===== PRESTA SIGNATURE MODAL (F3) =====
     var prestaSignOverlay = document.getElementById('prestaSignOverlay');
